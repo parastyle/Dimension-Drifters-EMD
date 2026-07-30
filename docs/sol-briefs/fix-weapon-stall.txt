@@ -1,0 +1,53 @@
+You are Sol `fix-weapon-stall` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/fix-weapon-stall
+(branch sol/fix-weapon-stall). IMPLEMENTATION. Autonomous — no questions. Report incrementally. NO
+live-gate stack boot is required (a stalled live gate hung prior Sols); a unit/behavioral test is the gate.
+
+## CONFIRMED ROOT CAUSE (already diagnosed + code-verified — implement the fix, do not re-diagnose)
+Regression: MOST melee/caster weapons PERMANENTLY STOP after a few attacks. Root cause in
+`packages/client/src/scenes/ArenaScene.ts` (the local attack predictor, ~lines 10218-10260), introduced by
+B4 commit `b930931`:
+- Line ~10229-10237: `const predictionLead = (this.localPredictedAttackSeq - self.attackSeq) >>> 0;`
+  then `else if (predictionLead > 0) return;` — an UNBOUNDED gate: while the predicted seq is ahead of the
+  authoritative seq, ALL further attacks are refused, waiting for authority to catch up.
+- Line ~10241-10244: the Drive-affordability precheck only covers `weapon?.thrown || weapon?.gun ||
+  weapon?.warp`. It does NOT cover MELEE or CASTER weapons.
+- Line ~10258: every predicted attack does `this.localPredictedAttackSeq = (this.localPredictedAttackSeq
+  + 1) >>> 0;`.
+- The SERVER bills Drive for ALL weapon types incl. melee (`GameRoom.ts` `trySpendWeaponResource` in the
+  swing path ~line 5983). So: a melee/caster attack made while Drive is too low is PREDICTED (seq++) and
+  SENT, then the server REJECTS it (attackSeq never advances) -> `predictionLead` sticks at 1 forever ->
+  line ~10232 blocks every future attack permanently. Guns/thrown have the precheck so they never open the
+  gap (they just don't fire while broke, then resume) — which is why guns work but melee/casters die.
+
+## THE FIX (two parts, both in ArenaScene.ts local-attack predictor)
+1. **Extend the Drive-affordability precheck to EVERY discrete weapon that bills Drive** — melee and caster
+   included, not just thrown/gun/warp — placed BEFORE the `localPredictedAttackSeq` increment, so the
+   client never predicts/sends an attack the server will reject for Drive. Determine "bills Drive" the same
+   way the server does (use `driveCostView(weapon.id).cost` > 0, or the shared predicate the server uses in
+   `trySpendWeaponResource`/`weapon-resource.ts` — mirror the SERVER's billing set exactly so client
+   prediction and server acceptance agree). Do NOT change beams/channel/aura weapons that already early-out
+   above. Do NOT change the Drive COST model or the server.
+2. **Make the prediction-lead gate BOUNDED / self-healing** — so any stranded lead (from latency, packet
+   loss, or any rejection) recovers: if `predictionLead > 0` persists without an authoritative edge for a
+   bounded window (a small frame/time budget), roll `this.localPredictedAttackSeq` back to
+   `self.attackSeq >>> 0` and allow the retry, instead of returning forever. Preserve B4's INTENT (don't
+   open a second speculative beat under normal one-frame latency) — only heal a lead that is genuinely
+   stuck.
+
+Keep B4's Overcasters recoil-isolation otherwise intact. This is a CLIENT-only fix; do not touch the
+server Drive spend, cost formula, or the resource bar economy.
+
+## Verification
+- Add a focused regression test proving the fix: a melee (and a caster) weapon that hits a Drive rejection
+  can FIRE AGAIN after Drive regenerates / the lead is stuck (the pre-fix predictor would stay blocked
+  forever). Prefer a deterministic unit/behavioral test on the predictor logic (extract/expose the gate if
+  needed) OR a client test harness — NOT a full live-stack boot. Also add/keep a source assertion that the
+  Drive precheck now covers melee+caster.
+- `pnpm typecheck` + FULL `pnpm test` GREEN in this worktree. LF endings ONLY. The GameRoom module-scope
+  Math.random seed is already in main.
+
+## Rules
+Worktree; commit on sol/fix-weapon-stall; orchestrator merges. Do NOT touch main or ports 5180/2567.
+FIRST: write `docs/sol-reports/fix-weapon-stall.md` (understanding + plan). Append. FINAL line = verdict:
+what changed (file:line), the regression test path + what it proves, and confirmation melee+caster now
+recover after a Drive rejection.

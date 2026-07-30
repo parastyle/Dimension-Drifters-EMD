@@ -1,0 +1,39 @@
+You are Sol `impl-b52-part-snap` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b52-part-snap
+(branch sol/b52-part-snap). RIG VISUAL BUG — DIAGNOSE THEN FIX. Autonomous.
+
+## The owner's repro (verbatim, 2026-07-25)
+"As my character walks forward his head and some of his body snap back like 3 frames twice a
+second." — PART-level snapping (head + some body parts) while the root moves smoothly; ~2Hz
+cadence; parts look ~3 frames stale then catch up.
+
+## Diagnosis leads (verify, don't assume)
+- 2Hz cadence suggests the walk-bob/jiggle cycle boundary: a phase wrap that RESETS part offsets
+  discretely instead of wrapping continuously.
+- "3 frames stale" suggests a part-level render-prev/interpolation cache resetting periodically
+  (root uses one interpolation clock, parts another).
+- Recent rig-area commits to bisect against: B43 split (7093f3c — move-only but composition order),
+  B39 head-nod (068ca0e — continuous head rotation+drop while gun held), B47 element transforms
+  (09544b8 — per-element overlays), B51 client changes (f1cbca8 — prediction/interp edits).
+  Find the first bad commit with a HEADLESS repro: walk a character in a straight line, capture
+  per-frame HEAD node x/y relative to body root, assert monotonic smoothness (no backward jumps
+  > 1px between consecutive frames at fixed walk speed).
+1. Build that headless per-frame part-position probe first (playwright/game-boot like the
+   orchestrator probe pattern), PROVE the snap exists on HEAD, quantify (px, Hz).
+2. Bisect to the causing commit, name it.
+3. ROOT-FIX (continuous wrap / unified interpolation clock — whatever the cause demands), keep
+   the probe as a regression test with the smoothness assertion.
+4. Sweep: run the probe on 3 characters x walking/held-gun/attacking to confirm no other part
+   snaps (feet, hands, weapon).
+
+## Guardrails
+No pose/feel redesign — fix the discontinuity only. LF endings; migrate tests. Queue is empty —
+no parallel Sols.
+
+## Verification
+typecheck + FULL test green; probe smoothness assertion green on all sweep cases; before/after
+per-frame trace charts (JSON) under docs/owner-notes-audit-v12-evidence/b52-part-snap/.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Report docs/sol-reports/impl-b52-part-snap.md.
+FINAL line = verdict: culprit commit, cause, fix, smoothness sweep results, evidence path, files
+touched.

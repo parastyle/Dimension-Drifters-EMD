@@ -1,0 +1,64 @@
+You are Sol `b60-vastaghar-charge` in an ISOLATED WORKTREE at
+C:/Users/Exped/ddv2-wt/b60-vastaghar-charge (branch sol/b60-vastaghar-charge). SURGICAL RESTORE.
+Autonomous. Scope is ONE boss action. Do not touch anything else.
+
+## What happened
+Batch `b60-poi-delete` (merged, commit 48f8f7f) removed POI landmarks from dimensions per owner
+ruling. While doing so it ALSO deleted Vastaghar's `LandmarkBreak` action entirely. That was wrong
+and was never requested.
+
+I read the implementation. `stepLandmarkBreak` in `packages/server/src/rooms/BossController.ts` is a
+**CHARGE ATTACK**: the boss interpolates along a line from (stepX[0],stepY[0]) to
+(stepX[1],stepY[1]) while calling `sink.damageRect(...)` with 24 damage and 720 knockback over a
+620-range, 135-halfWidth lane. The landmark destruction was a COSMETIC SIDE EFFECT at the very end —
+a single `emitArenaMutation(VastagharArenaMutationKind.LandmarkBreak, poiIndex, ...)` call that was
+ALREADY conditionally guarded by `if (poiIndex !== VASTAGHAR_POI_NONE)`. The client visual
+(`rig-combat.ts`) is only a body rotation + scaleY squash on windup. Nothing about the attack needs
+a landmark to exist.
+
+Result of the deletion: Vastaghar's `phaseTwoDeck` dropped from 3 actions to 2. That is a third of a
+boss phase's moveset lost for a naming reason.
+
+## Your job — restore the charge, drop only the landmark part
+1. **Restore the action** in `packages/shared/src/bosses.ts` with its ORIGINAL tuning, recovered from
+   commit 48f8f7f's parent: windupTicks 23, activeTicks 10, recoveryTicks 25, stepFeet
+   [VastagharFoot.Body], stepDamage [24], stepKnockback [720], innerRange 0, outerRange 620,
+   halfWidth 135, sweepRadians 0, maxTargets 1, stepOffsets [], stepRadii [].
+   Restore its `phaseTwoDeck` entry and its cooldown entry (13).
+2. **Rename it so the name matches what it does.** `LandmarkBreak` is now a lie. Use
+   `SunderCharge`. Rename the enum MEMBER in `packages/shared/src/boss.ts` but KEEP ITS NUMERIC
+   VALUE (5) — the value is wire state and must not shift.
+3. **Delete the landmark residue, do not restore it:**
+   - `VastagharArenaMutationKind.LandmarkBreak` (value 2) and its emit call in `stepLandmarkBreak`.
+     Leave the other mutation kinds (StuckStep, WorldTurn) alone; do NOT renumber them.
+   - `maxDestroyedPois` on the encounter def and the `this.destroyedPoiCount >= this.def.maxDestroyedPois`
+     gate at BossController.ts ~3255, plus `destroyedPoiCount` itself if nothing else reads it.
+   - `VASTAGHAR_POI_NONE` and the `stepFoot[0]` poiIndex plumbing IF they now have no other consumer.
+     Check before deleting — some of that plumbing may be shared with other actions.
+4. **Rename the server + client methods** to match: `startLandmarkBreak` -> `startSunderCharge`,
+   `stepLandmarkBreak` -> `stepSunderCharge`, and the `rig-combat.ts` branch.
+5. Bump `SCHEMA_VERSION` in `packages/shared/src/constants.ts` (currently 47 after the POI batch) and
+   update every test that pins it.
+
+## The attack must actually work
+`packages/server/src/rooms/BossController.test.ts` had a test looping until a `LandmarkBreak` arena
+mutation appeared. That mutation is gone, so that test cannot be restored as written — replace it
+with one that asserts the CHARGE behaves: the boss translates along its lane during activeTicks and
+`damageRect` is called with the expected damage/knockback. Do not just delete the coverage.
+
+## Guardrails
+- ONE action. Do not retune other Vastaghar actions, do not touch other bosses, do not touch POI
+  deletion work (it is merged and correct apart from this one overreach).
+- A parallel Sol owns `packages/client/public/tiles/ashlands/` and
+  `tools/artkit/gen-terrain-kits.mjs`. Stay out.
+- LF endings.
+
+## Verification
+`pnpm gen` + `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green. Then fight Vastaghar
+live and confirm phase two plays THREE distinct actions including the charge, and that the charge
+deals damage and knockback. State what you observed.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b60-vastaghar-charge.md`
+with what was restored, what was deleted as residue, and the live-fight observation. FINAL line =
+verdict: action restored + renamed, residue removed, phaseTwoDeck size, test result, live result.

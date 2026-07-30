@@ -1,0 +1,59 @@
+You are Sol `impl-b32-frostbore-breakaction` in an ISOLATED WORKTREE at
+C:/Users/Exped/ddv2-wt/b32-frostbore-breakaction (branch sol/b32-frostbore-breakaction).
+IMPLEMENTATION — BREAK-ACTION RELOAD via SURGICAL SPRITE CUT. Autonomous — no questions. Report
+incrementally. NO live-stack boot; unit + live gate on private ephemeral ports.
+
+## Context — the owner's order (verbatim, 2026-07-24)
+"[the Frostbore redo] is a failure btw, if it was flat I wouldnt see the barrel openings...Also
+this is a break action shotgun, we'll need the break-action reload animation...for this one only
+we can actually surgically cut the finished image and lever the barrel"
+
+Subject: `x2-frostbore-scattergun`. The freshly-harvested art at
+`packages/client/public/sprites/x2-frostbore-scattergun/part-1.png` (commit 3fe2103) STAYS —
+the owner sanctioned exploiting it rather than regenerating.
+
+## Your job — OWNER-SANCTIONED image surgery (one-off exception to the no-PNG-edit rule)
+1. **Cut the sprite** into two registered parts at the receiver hinge (the visual break point just
+   ahead of the trigger housing where the snowflake plate meets the barrel band):
+   - part-1.png = stock + receiver/trigger assembly (the piece that stays in the hands)
+   - part-2.png = the double-barrel assembly (the piece that levers)
+   Use sharp (tools/artkit has it) for the cut; keep both pieces at the ORIGINAL registration
+   (same canvas or authored ox/oy offsets so composited-closed they reproduce the original image
+   pixel-perfect minus the cut seam). Clean the cut edge minimally (a few px of painted metal
+   continuation) so both open and closed states read solid. Keep the originals' palette.
+2. **Break-action reload animation.** The gun is a 2-shot double barrel:
+   - Fire 2 shells → reload cycle: barrel assembly pivots DOWN around the hinge point (~25-35
+     degrees, quick snap open), brief shell-eject beat, snaps closed, ready.
+   - Deterministic from the authoritative attack/reload clock (same discipline as the Wyrmskull
+     firing frame + pump/lever mechanisms in SpriteRig's GunHandlingMechanism family — add a
+     "break" mechanism rather than a one-off hack).
+   - Both facings; remote players see the same cycle; muzzle points track the barrel part so
+     shots originate from the bores ONLY when closed.
+   - Support hand stays on the fore-wrap through the cycle (no floating hands).
+3. **Cadence contract.** 2 shots then the break-reload pause; keep overall DPS within ±10% of the
+   weapon's current nominal (tune per-shot damage or reload seconds to fit; document).
+4. **SFX**: wire a break-open + snap-shut sound from the shipped SFX families (or the closest
+   existing shotgun family accents). No new ElevenLabs generation needed unless a fitting clip is
+   truly absent — if you must generate, use the shipped soundkit pipeline sparingly (2 clips max).
+
+## Guardrails
+- The surgical-cut approach is FOR THIS WEAPON ONLY — do not generalize it or touch other
+  weapons' art. STANDING BANS: no player auras, no chains/tassels, nothing radial.
+- Parallel Sols own: revolver/dual-gun anim surfaces (B29), the B30 recovered-orders weapons.
+  Rebase onto main if they land first; your mechanism addition must compose with theirs.
+- LF endings only. Schema bumps from CURRENT value + update all pins. Migrate affected tests.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green. `pnpm assets:check` green.
+- Unit: closed-state composite reproduces the pre-cut image (pixel-diff tolerance small), break
+  cycle timing derives from the authoritative clock, muzzle valid only closed.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567) on `proto-cowboy-hidden-face`: fire 2
+  shells + capture the break-open, eject beat, snap-shut on both facings. Evidence under
+  `docs/owner-notes-audit-v11-evidence/b32-frostbore-breakaction/`.
+
+## Rules
+Worktree; COMMIT YOUR WORK on sol/b32-frostbore-breakaction (the previous art wave forgot to
+commit — do not repeat that); orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b32-frostbore-breakaction.md` (cut-line plan + mechanism design). Append
+per stage. FINAL line = verdict: sprite cut registered, break mechanism live (angle/timing), DPS
+band, closed-composite fidelity, evidence path, files touched.

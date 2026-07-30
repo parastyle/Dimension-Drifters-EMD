@@ -1,0 +1,68 @@
+You are Sol `impl-b3-integrator` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b3-integrator
+(branch sol/b3-integrator). IMPLEMENTATION — CATALOG INTEGRATOR. Autonomous — no questions. Report
+incrementally. NO live-stack boot; unit + catalog census + live gate on private ephemeral ports.
+
+## Context
+Three B3 fan art assets are ALREADY installed in main:
+- `packages/client/public/sprites/x2-iron-war-fan/part-1.png`
+- `packages/client/public/sprites/x2-ember-fan/part-1.png`
+- `packages/client/public/sprites/x2-storm-fan/part-1.png`
+
+Corresponding art-Sol reports at `docs/sol-reports/impl-b3-art-<slug>.md` — READ them for prompts/dimensions.
+Reference the SHIPPED B2 integrator work (`docs/sol-reports/impl-b2-integrator.md`, commit `c65dea1`)
+for the catalog integration pattern, especially the beam/gun/melee/thrown signature choices and how
+muzzle overrides + VFX recipes are wired.
+
+## Your job — B3 owner note (verbatim from `docs/sol-reports/notes-ledger-v10.md`)
+Owner: "need Fan weapons, melee projectile hybrids"
+
+Per v9 spec (in the ledger): every fan MUST deal AUTHORITATIVE melee damage at close range AND create
+its own AUTHORITATIVE projectile during the same authored combo. The projectile is NOT cosmetic — it is
+a real hit.
+
+Wire the 3 fans with distinct hybrid choreographies:
+
+1. **Iron War Fan** (`x2-iron-war-fan`) — combo FINISHER emits a **cutting gust** (short, narrow, forward
+   gust projectile) after the melee close-swing lands. Rigid steel-blade damage on the swing, the gust
+   is a separate authoritative projectile deployed on the third-hit accepted swing.
+2. **Ember Fan** (`x2-ember-fan`) — close sweep releases a short **cinder-blade cone** (short-range cone
+   of small ember shards) coincident with the swing. The cone is authoritative.
+3. **Storm Fan** (`x2-storm-fan`) — crossed-fan (paired X) melee strike launches a **narrow returning
+   arc** — like a boomerang-esque returning slash projectile that comes back to the player after ~250-350ms.
+
+## Concrete deliverables
+1. **Concept entries** in `data/weapon-concepts-300.json` — one per fan, with grip/size/rangeBand,
+   melee stats (damage/cadence/reach), hybrid `projectile` block, and pose language (all three are
+   2H fans held in a "fan-forward" idle at chest level with the OFF hand on the pivot; use the shipped
+   B17 `poseLanguage` schema).
+2. **Manifest entries** in `packages/client/src/sprites/manifest.ts` — use each PNG's real pixel dims
+   from the art reports.
+3. **Muzzle definitions** — the "muzzle" for a projectile-hybrid fan is the fan's leading edge (the tip
+   where the projectile spawns). Author in `data/weapon-muzzle-overrides.json` or the generator input.
+4. **Shared/server hybrid combo definition** in `packages/shared/src/weapons.ts` +
+   `packages/server/src/rooms/GameRoom.ts` — combo layer that on each accepted swing produces BOTH the
+   normal melee hit AND spawns the authoritative projectile (with each fan's distinct behavior:
+   forward gust, cone shards, returning arc).
+5. **VFX recipes** in the shipped `packages/client/src/vfx/*` — one per fan; distinct from each other
+   and from any existing weapon's VFX. Ember shard trail, storm arc, iron gust.
+6. Catalog tests: 3 new expansion rows, distinct behaviors, textures exist with visible alpha bounds,
+   nominal DPS ballpark (melee ≈ 15 + projectile ≈ 5 for a hybrid ≈ 20 sustained).
+
+## Guardrails
+- The projectile is AUTHORITATIVE, not visual. Server spawns it, server resolves it. Test that a
+  planted enemy takes the melee hit AND is subsequently hit by the projectile in the same combo beat.
+- STANDING chain/tassel/rope BAN — fans have static painted ribbon guards, no dangling.
+- Do NOT touch B2's 7 wacky weapons, whole-art characters (proto-*), B17's pose-language schema, or pets.
+- LF endings only. Preserve existing tests.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check`. `pnpm typecheck`. FULL `pnpm test` green. `pnpm assets:check` green.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567) — for each of the 3 fans, fire the combo and
+  capture: (a) close-melee damage on a planted enemy, (b) authoritative projectile hit (distinct kill
+  or damage event) on the same enemy. Retain evidence under `docs/owner-notes-audit-v10-evidence/b3-fan-hybrids/`.
+
+## Rules
+Worktree; commit on sol/b3-integrator; orchestrator merges. FIRST: write `docs/sol-reports/impl-b3-integrator.md`
+(understanding + per-weapon behavior signature + plan). Append per weapon. FINAL line = verdict: 3
+wired, 3 distinct hybrid signatures, melee + authoritative projectile proof per weapon, DPS ballpark,
+evidence path, files touched, weapon-count census (332 → 335).

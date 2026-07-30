@@ -1,0 +1,23 @@
+You are Sol `pet-robotic-roster`. DESIGN ONLY — your only write is your report. C:/Users/Exped/DDv2.
+
+## Owner directive (binding): PETS ARE ROBOTIC
+Read `docs/design/OWNER-DECISIONS-characters-pets.md` item 7. The owner rejected a pet that looked
+like a "rock-turd" (organic lump). ALL pets read as MECHANICAL/ROBOTIC — drones, constructs, chrome,
+servos, plating, glowing optics, antennae, jointed limbs, exhaust, little mechanical critters. Never
+organic. Robotic ≠ ugly: cute robots, majestic drones, weird contraptions all qualify — "built, not grown."
+
+## Your mandate
+Read the existing pet roster + evolution design: `docs/design/pet-1-roster.md`,
+`docs/design/pet-2-evolution.md`, and the shipped pets in `packages/shared/src/pets.ts` (copper-snail,
+brass-crab, slate-tortoise, etc. — several read as stone/metal LUMPS, which is the problem).
+
+RECAST the roster and evolution lines as robotic. For every proposed/existing pet, give its ROBOTIC
+reinterpretation: what mechanical creature it becomes, its silhouette, its "built" signature (optics,
+plating, servos, exhaust, antennae), and how its 3 evolution bands escalate MECHANICALLY (bigger frame,
+more limbs/rotors/plating, chrome finish, energy core) — the PSO2-MAG dramatic divergence but robotic.
+Keep the roster count and the branching-on-4 decision. Explicitly list which existing pets most need
+rescuing from the organic-lump read and their robotic replacement.
+
+Write `docs/design/pet-robotic-roster.md`. First action: create it with your understanding. Append as
+you go. Do NOT touch product code/assets. Live game on 5180/2567 is UP — do not touch. Record
+assumptions; do not ask.

@@ -1,0 +1,51 @@
+You are Sol `impl-b58-art-capsule` in the ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b58-art-capsule
+(branch sol/b58-art-capsule). ART-ONLY. Autonomous — no questions. NO live-stack boot.
+
+## Context — the owner's fiction ruling (verbatim, 2026-07-25)
+"The chests will be dimensional capsule btw. Look kinda like helldiver pods, but for an armory.
+Resupplies from the dimension police department you work for."
+
+This replaces the placeholder chest sprite flagged as an open art order by B20 L2. Chests are
+DIMENSIONAL CAPSULES: armory resupply pods sent by the Dimension Police Department the player
+works for.
+
+## Your ONE subject (two states of the same object = one subject)
+**Final id:** `dimensional-capsule`
+**Install:**
+- `packages/client/public/sprites/dimensional-capsule/part-1.png` — SEALED (just landed)
+- `packages/client/public/sprites/dimensional-capsule/part-2.png` — OPEN (armory exposed)
+
+**Generation prompt for part-1 (verbatim — do not restyle):**
+"Prop-only in-world sprite (no character, no background): a SEALED dimensional resupply capsule —
+a squat armored drop-pod, roughly barrel-proportioned with a heavy blast-scorched base and four
+stubby landing fins, riveted gunmetal plating with a single bold hazard-striped band, a small
+glowing indicator light, and a stenciled police-issue insignia panel (badge-like shield stencil,
+no readable text). Gritty dark-comic cel treatment, hard outlines, ~5-7 colours, readable
+silhouette at small scale. Flat orthographic side view. Flat #00ff00 background."
+
+**Generation prompt for part-2 (verbatim — match part-1 exactly):**
+"Prop-only in-world sprite: the SAME dimensional resupply capsule from part-1, now OPEN — identical
+pod body, palette, proportions, insignia and registration, but the front hatch has split/hinged
+wide to reveal a lit interior armory rack with weapon silhouettes racked inside and a soft glow
+spilling out. Same size, same orientation, same side view as part-1 so the two states swap in
+place. Gritty dark-comic cel, hard outlines. Flat #00ff00 background."
+
+## Standing laws
+- ONE subject only (the two states above ARE the one subject). LF endings only.
+- NO chains/tassels/ropes/dangling elements (standing ban — no hanging straps or cables).
+- Nothing radial/ambient; no player-aura framing.
+- Gritty dark-comic cel, flat #00ff00 chroma, must key cleanly with the shipped keyer.
+- part-2 must register EXACTLY over part-1 (same canvas, same pod footprint) so the open/closed
+  swap does not pop.
+
+## Deliverables — ART ASSETS ONLY
+1. Generate via the shipped ArtKit pipeline (`tools/artkit/harvest-install.mjs` conventions).
+2. Install ONLY to the two paths above. NO manifest/catalog/shared edits — a later integrator
+   wires the swap, the drop-in arrival, and replaces the placeholder.
+3. Each PNG > 200x200 native, < 2048x2048, keys cleanly, no green fringe.
+
+## Reporting + COMMIT
+FIRST: write `docs/sol-reports/impl-b58-art-capsule.md` with your plan. Append.
+COMMIT your PNGs + report on your branch (do not leave work uncommitted).
+FINAL line = verdict: subject id, both PNG paths, prompts used, pixel dimensions, registration
+confirmation.

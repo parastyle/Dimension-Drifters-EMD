@@ -1,0 +1,51 @@
+You are Sol `impl-notes-quickfix` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/notes-quickfix
+(branch sol/notes-quickfix). IMPLEMENTATION — OWNER-NOTES QUICKFIX BATCH. Autonomous — no questions.
+Report incrementally. NO live-stack boot; unit + live gate on private ephemeral ports.
+
+## Five owner orders (verbatim from data/owner-notes.jsonl, 2026-07-24)
+1. `x2-glimmerdust-prospector-wand` — "archive weapon"
+2. `x2-tumbleweed-flail` — "archive weapon"
+3. `x2-dustdevil-riotgun` — "because its a mag loaded shotgun it should not have a pump animation,
+   the hand should be on the vertical foregrip and stay there"
+4. `x2-nullspike-pike` — "each attack is a fast triple stab"
+5. `x2-cinderbrand-pike` — "Fast triple jab"
+Plus: 6. `x2-reliquary-lantern-wand` — "projectiles need to be particles"
+
+## Per-order contract
+1+2. **Archive** both weapons using the established archive pattern (find precedent: `archived`
+   flag / B6 archives batch — grep `archived` in the catalog + shared code). Archived weapons leave
+   the active pool but their assets/defs stay (owner may revive later). Update census tests.
+3. **De-pump the Riotgun.** The def carries a `"pump"` handling tag; SpriteRig's
+   `GunHandlingMechanism` (packages/client/src/entities/SpriteRig.ts:616+) animates pump-tagged
+   guns' support hands. Remove the pump tag so the mechanism resolves to none; the support hand
+   must stay PLANTED on the authored `vertical-foregrip` secondary grip through the entire fire
+   cycle, both facings. Do not change damage/cadence/spread. NOTE: the authored grip points from
+   wave-4 (`4141c54`) are correct — this is purely killing the pump cycle animation.
+4+5. **Fast triple stab/jab pikes.** Each ATTACK of both pikes becomes a fast triple thrust —
+   3 distinct authoritative hits in quick succession per attack cycle (match the shipped Nullspike
+   3-hit precedent from B8 if it still exists — verify; the owner's re-note suggests it may not
+   feel like a fast triple. Cadence: the 3 stabs land fast within the attack window; total DPS
+   stays within ±10% of each pike's current nominal).
+6. **Lantern wand particles.** Replace the wand's current projectile presentation with a particle
+   treatment (use the shipped particle-pack factory packs — pick an element-appropriate pack).
+   Server projectile authority/damage/cadence unchanged; this is presentation. The particle stream
+   must remain clearly readable as the damaging projectile path (hit-envelope law).
+
+## Guardrails
+- STANDING BANS: no chains/tassels, no player auras (weapon VFX never renders a glow around the
+  character), no thumbs on character hands.
+- Do NOT touch kung-fu wraps, fans, Wyrmskull, Mirage (parallel Sols own those), B20 surfaces
+  (stats/XP/level/crit), characters, pets. LF endings only. Preserve/migrate tests.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green. `pnpm assets:check` green.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567) on `proto-cowboy-hidden-face`:
+  riotgun fires with planted foregrip hand (both facings); each pike shows the fast triple; lantern
+  wand fires particle projectiles; both archived weapons absent from the active pool. Evidence
+  under `docs/owner-notes-audit-v11-evidence/notes-quickfix/`.
+
+## Rules
+Worktree; commit on sol/notes-quickfix; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-notes-quickfix.md` (understanding + per-order plan). Append per order.
+FINAL line = verdict: 2 archived, riotgun de-pumped, 2 pikes triple, wand particles, evidence
+path, files touched.

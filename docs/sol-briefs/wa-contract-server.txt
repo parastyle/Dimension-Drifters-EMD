@@ -1,0 +1,40 @@
+You are Sol `wa-contract-server` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/wa-contract-server
+(branch sol/wa-contract-server). IMPLEMENTATION. Autonomous — no questions. Report incrementally. NO
+live-stack boot (it has hung Sols); unit tests + a private server BOOT are your gate.
+
+## YOUR ORDER — Wave 1, Sol 1 of the wardrobe-retirement plan
+READ `docs/sol-reports/plan-wardrobe-retire.md` — implement the section "Sol 1 — `whole-art-contract-server`"
+EXACTLY (its Scoped file partition, Outline steps 1-8, Risk note, and Verification). That section is your
+authoritative spec.
+
+Summary of intent: make the DEFAULT / missing / invalid character selection spawn AUTHORITATIVELY as
+`proto-sheriff` (a whole-art character) instead of the boilerplate wardrobe dummy. Emit a typed
+`WHOLE_ART_CHARACTERS` subset + `DEFAULT_CHARACTER = "proto-sheriff"` from the roster generator; default
+schema/onJoin to it; accept a bounded `selectedCharacterId` on join validated against the whole-art subset;
+and — critically — RETIRE the gear-derived run identity (`snapshotRunCharacter` instead of
+`resolveGearLoadout -> gearRuns -> snapshotGearRun`) while KEEPING account gear sanitation for save-compat
+(archive, do not delete). This is the "gear is gameplay identity" risk the plan flags — make the loss of
+gear power EXPLICIT in tests, don't half-preserve it.
+
+## Scope guardrails
+- Stay within the plan's Sol-1 file partition (roster generator, `characters.ts` generated output,
+  `state.ts`, `GameRoom.ts`, `GameRoom.test.ts`, `progression.test.ts`; `character-classes.ts` only if a
+  shared whole-art guard belongs there). Do NOT touch client render/menu/sprite files (other Sols own them).
+- PETS ARE OUT OF SCOPE — do not touch pet definitions/runtime/rewards/tests beyond an unchanged-behavior
+  assertion. Preserve the weapon Armory/Carry. Do NOT hard-delete archived gear code/data/tests; do NOT
+  renumber catalog entries or reorder wire/schema fields.
+
+## Verification (this Sol)
+- `pnpm gen` + `pnpm gen:check` (you touch the roster generator). `pnpm typecheck`. FULL `pnpm test` green
+  in this worktree. Boot the private server ONCE after tests to catch census/module-init failures (do NOT
+  use ports 2567/5180). LF endings ONLY.
+- Unit cases per the plan: no selection -> sheriff; each valid prototype accepted; legacy/unknown -> sheriff;
+  a V4 account with 113-compatible gear still sanitizes/round-trips but creates NO gearRuns, gearSeeded
+  false, cosmetics empty, whole-art kit owns combat; normal cycling never enters Drifter/cc-*; schema field
+  order/version unchanged; existing pet selection + pet snapshot assertions stay green.
+
+## Rules
+Worktree; commit on sol/wa-contract-server; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-wa-contract-server.md` (understanding + plan). Append as you go. FINAL line =
+verdict: DEFAULT_CHARACTER + WHOLE_ART_CHARACTERS emitted, default/invalid spawn = sheriff proven by unit
+test, gear run identity retired but account-gear retained, files touched, and the census/pet suites green.

@@ -1,0 +1,49 @@
+You are Sol `v8-thrown-and-sniper` in C:/Users/Exped/DDv2 on branch feat/v0.118-metagame.
+IMPLEMENTATION order. You fix real code, generate real art, and prove it live.
+
+## Orders (owner, 2026-07-23 + carried v7 ledger)
+
+1. **THROWING STARS (NEW):** build the 4 throwing stars from the v7 ledger — iron, fire, ice, void.
+   Full pipeline (catalog entries, generated art, thrown delivery, cards). These were never built
+   (`v7-stars-archive-catalog` never ran); you own them now.
+2. **KUNAI (NEW):** add a kunai as a thrown weapon. Does not exist yet. Generated art, thrown delivery.
+3. **PLAIN .50-CAL SNIPER (NEW):** the owner finds the existing `x2-barrett-50-cal-sniper` too
+   crusader/occult-themed. KEEP the Barrett. Add a SECOND, deliberately PLAIN, modern-military .50-cal
+   bolt-action sniper — no occult/saint/crusader motifs, just a clean anti-materiel rifle. Reuse the
+   bolt-action mechanism the repo just shipped (see `docs/sol-reports/v8-bolt-action.md`).
+
+READ FIRST:
+- `docs/design/OWNER-DECISIONS-characters-pets.md` (items 7-9).
+- `docs/sol-reports/v8-bolt-action.md` — the bolt-action seam + how the Barrett was added (census
+  guards, art pipeline). Reuse it for the plain sniper.
+- The existing thrown-weapon path: weapons already use `throw`/`throw-release`/`thrown` delivery
+  (Sidewinder Spontoon, Boothook Harpoon). REUSE that animation/delivery for stars + kunai; do not
+  invent a new one.
+- `docs/sol-reports/README.md` — durable reporting.
+
+## HARD LAWS
+- Generated bitmap art per the standing rule (stars, kunai, plain sniper). No procedural stand-ins.
+- CATALOG CENSUS: you are adding ~6 weapons. A pinned census guard has crashed the server on boot
+  before. Find and update EVERY pinned count/guard/test together (`weapon-resource.ts`, the count
+  tests, portal count) so the server still boots. Run `pnpm gen` -> `pnpm gen:check` ->
+  `pnpm assets:check` -> focused tests -> typecheck. Never hand-edit generated output.
+- Server authority + DPS: place the new weapons in a sane DPS band for their class; document it.
+- Muzzle-in-art-space for the sniper (reuse the shared affine). Thrown weapons use the throw origin.
+- The owner's live game on 5180/2567 is UP. Do NOT touch those ports. Live gates use ephemeral private
+  ports (runArenaSpec/startSpecStack), tear down only what you start.
+- LF line endings only.
+- STAY OUT of character files (`sprites/chars-v2/**`, `data/characters-v2.json`) and pet files — other
+  Sols own those.
+
+## PROOF (visual order)
+- The 4 stars + kunai must appear in the training-room gallery (they'll be in ACTIVE_WEAPON_CATALOG_IDS)
+  and throw correctly; the plain sniper must fire with a correct muzzle and bolt cycle. Add/extend a
+  permanent live gate proving the thrown weapons launch from the throw origin and the sniper's muzzle
+  is within tolerance stationary + strafing. Retain evidence under
+  `docs/owner-notes-audit-v8-evidence/thrown-and-sniper/`.
+- Run FULL `pnpm test` + `pnpm typecheck` before declaring done.
+
+## Reporting — NON-NEGOTIABLE
+FIRST action: write `docs/sol-reports/v8-thrown-and-sniper.md` (understanding + plan) before any edit.
+Append as you go. Final line: explicit verdict — which weapons shipped, census guards updated, gate
+thresholds, and confirmation the server still boots. Never weaken a threshold. Work autonomously.

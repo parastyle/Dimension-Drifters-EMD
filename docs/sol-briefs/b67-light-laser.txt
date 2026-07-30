@@ -1,0 +1,61 @@
+You are Sol `b67-light-laser` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b67-light-laser
+(branch sol/b67-light-laser). NEW GAMEPLAY SYSTEM. Autonomous.
+
+## Owner order (verbatim, 2026-07-26)
+> "Make a flashlight and or laser pointer system that can be flipped on and off."
+
+## Context you need
+The B63 gun order is adding 30 modern guns, and **27 of them carry a laser/light combo unit** drawn
+into the sprite as a silhouette detail (see `docs/sol-reports/order-b63-modern-guns.md`). Right now
+that unit is pure decoration. This batch makes it real and toggleable.
+
+The three guns without a unit are the scoped long-range ones (Varmint Bolt, Anvil .50, Zenith Photon
+DMR). Weapons with no unit must not gain a toggle — the affordance has to match the art.
+
+## Build
+1. **A per-weapon capability**: does this weapon have a light, a laser, both, or neither? Derive it
+   from weapon data rather than hand-listing 360 weapons. The B63 guns declare it; older weapons
+   mostly have neither. Make the default honest — absent unless the weapon actually has one.
+2. **A toggle**, on a sensible free key. Check the existing bindings first
+   (`ArenaScene` registers `W,A,S,D,R,P,Q,E,Z,X,F,G,H,T,B,C,M,TAB,ESC,SPACE,SHIFT,CTRL,ONE..FIVE,
+   arrows,ENTER`) and pick something unused. State your choice and why. If laser and light are
+   separate, decide whether it is one cycling key or two — make the call and justify it.
+3. **The render.** A laser is a thin bright line from the muzzle toward the aim point. A flashlight is
+   a soft cone. Both originate at the WEAPON MUZZLE and follow the existing aim vector.
+4. **Persist the toggle** across weapon swaps and across a run in the sensible way — a player who
+   turned their light on does not want it off every time they switch guns. Use your judgement and say
+   what you chose.
+
+## STANDING LAWS — breaking these fails the batch
+- **NO PLAYER AURAS.** Owner ruling, absolute: weapon VFX never renders a glow or aura around the
+  player. A flashlight cone is a directional beam from the muzzle — it must NEVER become a radial
+  glow centred on the character. This law has been violated before and the owner said "never again".
+- **Never interrupt gameplay with a modal.** The toggle is instant, no menu.
+- The laser/light must not wash out gameplay semaphores (telegraphs, parry windows, the gas ring).
+  Keep it readable but subordinate — it is flavour plus a little utility, not a lighting overhaul.
+- Multiplayer: other players must see your light. Decide whether the toggle is server state or a
+  client cosmetic broadcast, and justify it. Do NOT add per-frame network traffic for this.
+
+## Performance
+This runs during 40-enemy fights. Do not add a per-frame allocation, a new render target, or a
+full-screen shader. If your approach needs any of those, STOP and report instead.
+
+## Guardrails
+- **The owner is working on map art: `packages/shared/src/mapgen.ts`,
+  `packages/client/src/scenes/arena/floor-renderer.ts`, `packages/client/public/tiles/**`. DO NOT TOUCH.**
+- `data/weapon-concepts-300.json` is being appended to by ~24 parallel gun Sols. Read only; do not
+  reformat or reorder.
+- Parallel Sols own the weapon subclass taxonomy and the rig/animation system. Stay out of both.
+- Bump `SCHEMA_VERSION` if wire shape changes; update every test pinning it. LF endings.
+
+## Verification
+`pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green. Then live: equip a gun that HAS a
+unit, toggle it on and off, and confirm the beam/cone originates at the muzzle and tracks the cursor.
+Equip a gun WITHOUT one and confirm the toggle does nothing. Capture
+`docs/sol-reports/b67-evidence/laser-on.png`, `light-on.png`, `both-off.png`.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b67-light-laser.md` with the
+capability derivation, the key choice, the network decision, the persistence decision, and the
+performance numbers. FINAL line = verdict: key bound, weapons with light/laser/both/neither counts,
+network approach, test result, capture paths.

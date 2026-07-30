@@ -1,0 +1,49 @@
+You are Sol `drifter-head-v2` in C:/Users/Exped/DDv2 on branch feat/v0.118-metagame. IMPLEMENTATION.
+
+## Context: v1 worked but the head is too SHALLOW and bobs too far
+The drifter was just split into 6 parts (body/head/hand-l/hand-r/foot-l/foot-r) with a floating head —
+see commit f1f56a6 and `docs/sol-reports/char-head-split.md`. It is on-style and the mechanic works,
+BUT: the head sprite is too SHALLOW (basically a hat + a sliver of shadow), and the head-bob amplitude
+is too large, so at the top of the bob the head floats OFF the body leaving a visible gap that reads as
+a decapitated floating head. Owner ruling: the head needs MORE HEIGHT, and the rig needs to sit the
+head CLOSER to the body. These go TOGETHER — a taller head lets it sit close without looking like a
+"head stump on an egg." Fix both in this pass. ONE subject: the drifter only.
+
+## Two coupled changes
+
+### 1. TALLER HEAD (regenerate the drifter head, isolated)
+Reuse the EXISTING head-split pipeline and the drifter's `artBrief` in `data/character-concepts.json`
+(the one that already emits a detached head). MODIFY only the head description so the generated head has
+noticeably MORE VERTICAL HEIGHT/VOLUME below the hat brim — a taller head mass (hat + a fuller
+shadowed head beneath it), NOT just a hat with a shadow sliver. Keep the face fully concealed (shadow
+under the brim, no visible biological face). Keep the pill body, hands, feet identical — this pass only
+changes the HEAD sprite's height. Regenerate ONLY the drifter through the real gen → slice → install
+pipeline so `head.png` is taller; `body.png` stays the headless pill. ONE-SUBJECT-PER-AGENT: you
+generate only the drifter head; do not batch other characters.
+
+### 2. RIG CLOSER (tighten the float so the head never separates)
+The head float/bob lives in `packages/client/src/entities/SpriteRig.ts` —
+`FLOATING_HEAD_SPRING_TUNING` (around line 1377) and the head rest/anchor offset. REDUCE the bob
+amplitude and/or DEEPEN the rest overlap so the head sits close to the body and the bob is a gentle
+hover that ALWAYS keeps the (now taller) head overlapping the body's shoulder line — no gap at any bob
+extreme. Target: a subtle alive bob like a hand near the body, never a launched/decapitated look. Do
+NOT change hands/feet/body animation; only the head float.
+
+## PROOF (this is why v1 shipped a flaw — VERIFY VISUALLY THIS TIME)
+Re-capture the drifter in the ephemeral stack (NOT ports 5180/2567): a REST frame AND the bob
+EXTREMES. The head must (a) be visibly taller than v1, and (b) stay overlapping the body at the top of
+the bob — NO floating gap, NO stump. Retain before(v1)/after(v2) frames under
+`docs/owner-notes-audit-v8-evidence/drifter-head-v2/`. In your report, state the measured head height
+increase and the min head-to-body overlap across the full bob (must be > 0 at every extreme).
+
+## Rules
+- Owner live game on 5180/2567 is UP — do not touch. Ephemeral private ports only.
+- If you touch the character catalog/manifest run `pnpm gen`/`gen:check`/`assets:check`; typecheck;
+  keep server booting. Run FULL `pnpm test`. LF endings.
+- Stay in lease: drifter art, character-concepts drifter head text, slicer if needed, SpriteRig head
+  float/tuning, your report + evidence. Do NOT touch weapon catalog / chakram / pet files.
+
+## Reporting
+FIRST action: write `docs/sol-reports/drifter-head-v2.md` (understanding + plan). Append as you go.
+Final line: verdict — head height increase, min overlap across bob (>0 required), rest+bob captures
+paths, on-style confirmation (taller head, sits close, no gap, no stump). Work autonomously; do not ask.

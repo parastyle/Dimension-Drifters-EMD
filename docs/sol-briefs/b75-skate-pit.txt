@@ -1,0 +1,75 @@
+You are Sol `b75-skate-pit` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b75-skate-pit
+(branch sol/b75-skate-pit). TWO OWNER-REPORTED DEFECTS. Autonomous.
+
+## Defect 1 — ice skating after movement (REGRESSION, introduced ~1h ago)
+Owner: *"my character does ice skating after movement, slight but its there"*
+
+**This is a regression from `34095d94` (b74-movement-lurch), which I merged and pushed.** That batch
+correctly removed the turn-hitch that was causing lurching, but it removed the ENTIRE accel/decel
+model with it: `MOVE_STOP_DECEL` and `MOVE_RECOVER_ACCEL` no longer exist in
+`packages/shared/src/constants.ts`, replaced by "ordinary locomotion is always exactly MOVE_SPEED".
+
+So the SIMULATION now stops instantly on input release, while B68's presentation layer still eases
+the rendered root out over its blend window. The visible glide is that gap. Verify this before fixing
+— measure the predicted/authoritative root velocity and the PRESENTED root position separately on
+input release and show where they diverge.
+
+**The fix must not reintroduce the lurch.** The owner's law stands:
+> "Character should move at 1 speed constantly unless attacking or parrying or is slow by like...idk ice"
+
+That law governs TRAVEL speed. It does not require the render to teleport to a halt, and it does not
+license a speed dip while moving. Land somewhere that is crisp on stop and constant while moving.
+Options to weigh (pick and justify): exclude a legitimate stop from the presentation ease; give the
+presented root a much shorter stop blend than its general blend; or reinstate a stop ramp that is
+short enough to read as crisp while never modulating travel speed.
+
+**Both must hold:**
+- b74's constant-speed test still passes: 8 directions, forward and backpedal, zero variance.
+- New test: on input release, the PRESENTED root reaches a full stop within a stated tight bound.
+  Assert the bound, do not eyeball it.
+
+## Defect 2 — damage before reaching the pit
+Owner: *"sometimes if I walk towards a pit I'll take damage before I get there"*
+
+`isPitAtPx` (`packages/shared/src/mapgen.ts:627`) is a pure TILE test at a single point —
+`tileAtPx(...) === TILE_PIT`. So the hazard boundary is the tile grid, but what the player SEES is the
+painted rim: `buildPaintedRims` / `ensureRimLipTexture` in
+`packages/client/src/scenes/arena/floor-renderer.ts` draw the lip inside the ground-side of the
+boundary. If the painted edge sits further out than the tile boundary, the player is standing on
+apparent ground while their sample point is already in a `TILE_PIT` cell — damage before the visible edge.
+
+Diagnose precisely: compare the tile boundary in world px against where the rim art actually reads as
+the edge, and check which body point is sampled (centre vs feet). State the measured offset in pixels.
+
+Fix so **the hazard matches what the player sees.** Prefer correcting the sample/threshold over
+repainting art. Do NOT simply shrink pit damage globally — falling in must still be lethal-feeling and
+`nearestGroundPx` recovery must still work.
+
+Add a regression test asserting the damage boundary agrees with the rendered edge within a stated
+tolerance.
+
+**NOTE:** `packages/client/src/scenes/arena/floor-renderer.ts` was previously owner-guarded. That
+guard is lifted for THIS defect only — you may read it freely and change it if and only if the fix
+genuinely belongs there. Prefer the sampling side. Touch nothing else in that file.
+
+## Guardrails
+- Parallel work: `b72-lava-dimension`, `b73-walkability-painter`, and guns are unmerged on other
+  branches. Do not touch `data/weapon-concepts-300.json`.
+- Keep B68's guarantees: one PresentedActorState per frame, unified clock, root isolated from
+  corrections, limb priority with blends. Keep B74's limb physics (head/hands/feet, idle + moving).
+- No player auras. No modal interruptions. Weapon attacks never displace the character.
+- LF endings.
+
+## Verification
+- `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green TWICE consecutively.
+- `tools/diag-rb-telemetry.mts` completes every scenario with ZERO requests/applications/snaps/pixels
+  in BOTH top-down and belt.
+- State measured before/after numbers for both defects: stop distance in px after input release, and
+  the pit boundary offset in px.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b75-skate-pit.md` with the
+sim-vs-presentation divergence measurement, the stop policy you chose and why it cannot reintroduce
+the lurch, the pit offset measurement, and both regression tests. FINAL line = verdict: skate cause+fix
++ stop distance before/after, pit offset before/after, constant-speed test still passing, telemetry,
+2x test results.

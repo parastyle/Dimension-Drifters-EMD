@@ -1,0 +1,35 @@
+You are Sol `audit-orchestration`. READ-ONLY SYNTHESIS. Do NOT edit code/tests. Write ONLY your report
+`docs/sol-reports/audit-orchestration.md`. Main tree. Autonomous — no questions.
+
+## Context
+Four audit Sols just finished. READ all four in full:
+- `docs/sol-reports/audit-structure.md`  (architecture soundness, god-files, prune list)
+- `docs/sol-reports/audit-movement.md`   (movement kit vs best practice + Overcasters bug)
+- `docs/sol-reports/audit-weapons.md`    (aiming/firing/hit-reg vs best practice)
+- `docs/sol-reports/audit-qa.md`         (test blind spots + QA hardening plan)
+Also skim `docs/sol-reports/notes-ledger-v9.md` (the outstanding owner-note batches B1-B13) and the repo's
+orchestration tooling: `tools/sol/worktree.sh`, `tools/janitor/`, `docs/sol-reports/` conventions, the
+one-subject-per-art-Sol law, and `.github/workflows/ci.yml`.
+
+## THE JOB — "how to best orchestrate them"
+Synthesize the four audits + the notes ledger into a single RECOMMENDED ORCHESTRATION PLAN the owner can
+act on. Cover:
+1. CROSS-CUTTING THEMES: where do the four audits agree/reinforce (e.g. the "green tests, wrong runtime"
+   boundary-coverage gap; the ArenaScene god-file; hit-reg trust; movement/netcode seams; CRLF parity)?
+   Rank the systemic risks.
+2. A PRIORITIZED PROGRAM: order the fixes (audit findings + outstanding note batches) into waves by
+   value × risk × dependency. Which must precede which (e.g. a character-render/movement/hit-reg
+   abstraction before piling more weapons on it)? Which are safe parallel tracks vs must-serialize?
+3. SOL FLEET DESIGN: for each wave, recommend Sol team composition — how many, worktree vs read-only,
+   which are art-only (one subject each), what the acceptance gate is (prefer LIVE gates over source-grep
+   given audit-qa's findings), and the safe merge order for catalog-touching work.
+4. PROCESS FIXES: concrete improvements to the orchestration machinery itself (worktree flow, durable
+   reporting, CRLF/.gitattributes normalization, flake fixtures, CI gaps, live-gate coverage) so the next
+   fleet is more reliable than this one.
+
+## Rules
+- READ-ONLY. Your report is the only artifact. LF endings. Cite the source audit + file:line for each
+  recommendation. Be concrete and sequenced, not generic.
+FIRST action: create the report with your reading notes + structure; append per section; final line =
+verdict: the top-3 systemic risks + the recommended first two waves + the single highest-leverage process
+fix.

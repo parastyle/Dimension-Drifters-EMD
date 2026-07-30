@@ -1,0 +1,34 @@
+You are Sol `impl-b18-art-tornado-storm` in the ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b18-art-tornado-storm
+(branch sol/b18-art-tornado-storm). ART-ONLY. Autonomous — no questions. Report incrementally. NO
+live-stack boot.
+
+## Your ONE subject
+**Name:** Storm Lightning Tornado VFX (Storm Fan, element: shock)
+**Final id:** `vfx-tornado-storm-shock`
+**Generation prompt (verbatim — do not restyle; use this exact prompt):**
+"VFX-only in-world sprite: a readable VERTICAL STORM TORNADO / thundercloud vortex funnel — a
+tapering spiral funnel (wide at TOP, narrow at BOTTOM) composed of layered deep-blue and
+slate-storm cloud bands spiraling upward, jagged white-cyan lightning bolts arcing across the
+funnel and crackling off its edges, faint rain-streak accents, ~4-8 colours, gritty dark-comic
+cel treatment with hard outlines. Silhouette must READ as a spinning storm tornado at small
+scale. Flat #00ff00 background. No character, no weapon, no scenery — VFX subject only."
+
+## Standing laws (common brief, applies verbatim)
+- ONE image subject only — never generate any other subject in this run.
+- LF endings only. NO live-stack boot. Commit on your branch; orchestrator merges.
+- Gritty dark-comic cel, readable silhouette, flat #00ff00 chroma background.
+- Chain/tassel/rope BAN — irrelevant for a tornado, but no dangling ribbon elements.
+
+## Deliverables — ART ASSETS ONLY (learned rule: do NOT touch shared files)
+1. Generate via the shipped ArtKit pipeline (`tools/artkit/harvest-install.mjs` conventions).
+2. Install to `packages/client/public/sprites/vfx-tornado-storm-shock/part-1.png`.
+3. Do NOT add manifest entries, weapon-concept rows, or ANY edit to shared/generated files —
+   the B18 integrator wires everything. PNG + report are your only deliverables.
+
+## Verification
+- The installed PNG chroma-keys cleanly (no green fringe) with the shipped keyer.
+- Finished PNG > 200x200 native, < 2048x2048.
+
+## Reporting
+FIRST: write `docs/sol-reports/impl-b18-art-tornado-storm.md` with your plan. Append.
+FINAL line = verdict: subject id, PNG path, prompt used, pixel dimensions.

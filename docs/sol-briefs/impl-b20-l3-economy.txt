@@ -1,0 +1,49 @@
+You are Sol `impl-b20-l3-economy` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b20-l3-economy
+(branch sol/b20-l3-economy). IMPLEMENTATION — B20 LANE 3: ECONOMY. Autonomous — no questions.
+Report incrementally. NO live-stack boot; unit + live gate on private ephemeral ports.
+
+## Authority
+READ FIRST: `docs/sol-reports/design-lock-b20.md`, plus shipped lane reports
+`impl-b20-l1-teardown.md` (money drops live) and `impl-b20-l2-chests-relics.md` (chests/relics
+live). You are Lane L3 ONLY — do NOT build L4 (booster packs/meta shop UI) or L5 (tier curve).
+
+## L3 contract — money is a pure meta currency
+1. **REMOVE the shopkeeper.** Delete the shopkeeper NPC spawn/interaction, the shop UI, and the
+   sell-for-scrip flow (owner: "overused concept and gates the fun"). ARCHIVE art assets (move
+   nothing; just stop spawning/wiring — flag the asset paths as archived in the report). Remove
+   shop-related server messages/state and their tests. The arena must feel complete without it
+   (no dangling "E interact" hints pointing at nothing).
+2. **Floor disassembly.** A weapon lying on the ground (enemy drops, chest weapons the player
+   declines, bag overflow) can be DISASSEMBLED in place: hold-interact (E, distinct from the
+   pickup tap; ~0.4s hold) converts it to money (scrip) instantly where it lies — no menu, no
+   interruption. Value scales with the weapon's damage budget (document the curve; placeholder
+   tier from L2 is fine). Server-authoritative; satisfying break SFX/flash using existing
+   hit-effect language (no new particle systems; nothing radial/ambient).
+   Also allow disassembling FROM the bag via the existing bag panel (a small per-item action) —
+   same value curve — since bag space is finite.
+3. **Run-end auto-banking.** All unspent run money banks automatically when the run ends (win,
+   death, or extract). Persist via the existing meta-account persistence (the pet/meta account
+   storage from #22/#58). Show the banked total briefly on the end screen (existing end-screen
+   idiom). LOCKED: bank 100% (no tax — there is no in-run sink anymore).
+4. **Money HUD**: ensure the run-money readout is clear in the HUD (reuse the scrip readout;
+   rename any user-facing "scrip" label to "money" ONLY if trivial — do not repaint the HUD).
+
+## Guardrails
+- LOCKED LAWS: never interrupt gameplay; no player auras; no chains/tassels. Chests/relics (L2)
+  and their APIs are fixed — consume, don't modify. Kung-fu/parry/fans untouched.
+- Do NOT remove the scrip/meta persistence plumbing — banking builds ON it.
+- LF endings only. Migrate every shop-referencing test; document deletions.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green. `pnpm assets:check` green.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567) on `proto-cowboy-hidden-face`: kill an
+  enemy, disassemble its dropped weapon (capture the hold + money pop), disassemble from bag, end
+  a run and capture the banked total, confirm no shopkeeper anywhere. Evidence under
+  `docs/owner-notes-audit-v11-evidence/b20-l3-economy/`.
+
+## Rules
+Worktree; commit on sol/b20-l3-economy; orchestrator merges. If you add schema fields, bump
+SCHEMA_VERSION from its CURRENT value (36) and update every test pin. FIRST: write
+`docs/sol-reports/impl-b20-l3-economy.md` (shop-removal inventory + disassembly value curve +
+banking flow). Append per system. FINAL line = verdict: shopkeeper gone, floor+bag disassembly
+live with curve, auto-banking live, evidence path, files touched.

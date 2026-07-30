@@ -1,0 +1,22 @@
+You are Sol `diag-rb-authority` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/diag-rb-authority
+(branch sol/diag-rb-authority). DIAGNOSIS ONLY — no game-code fixes. Autonomous.
+
+## Mission
+Static + unit-level audit of the server-side authority stack for rubberband causes (owner
+reports heavy solo-localhost rubberbanding):
+1. Enumerate the B42 envelope checks (speed/nav/continuity) and the SERVER_MOTION_SOURCES
+   census (room-progression.ts). For EVERY motion source (dodge, jump, parry slides/launch/brace,
+   pit snap, elevator, revive, teleport, ultimate, weapon-fire-recoil): verify the server
+   registers the epoch BEFORE the displacement lands in state, that the epoch window covers the
+   full decay (B45's SERVER_MOTION_IMPULSE_TICKS vs actual impulse decay length!), and that the
+   envelope tolerance actually admits the motion's peak per-tick displacement.
+2. Audit B45 recoil specifically: rapid-fire guns re-triggering epochs, epoch expiry racing
+   decay, beam recoil (per-dt impulses) — compute worst-case per-tick displacement vs envelope.
+3. Audit interactions: recoil during dodge, parry slide during recoil, belt X-clamp + recoil.
+4. Write UNIT reproductions for every mismatch found (failing tests in your worktree = the
+   deliverable; mark them it.fails or keep on your branch). NO fixes.
+
+## Rules
+Worktree; COMMIT tests + report docs/sol-reports/diag-rb-authority.md (mismatch table: source,
+expected window, actual window, verdict). FINAL line = verdict: N sources audited, M mismatches
+named.

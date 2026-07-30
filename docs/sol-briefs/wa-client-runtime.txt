@@ -1,0 +1,49 @@
+You are Sol `wa-client-runtime` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/wa-client-runtime
+(branch sol/wa-client-runtime). IMPLEMENTATION. Autonomous — no questions. Report incrementally. NO
+live-stack boot (it has hung Sols); a unit/behavioral test is the gate — the ORCHESTRATOR does the live
+visual check.
+
+## YOUR ORDER — Wave 3, Sol 3 of the wardrobe-retirement plan
+READ `docs/sol-reports/plan-wardrobe-retire.md` — implement the section "Sol 3 — `whole-art-client-runtime`"
+EXACTLY (its Scoped file partition, Outline steps 1-7, Risk note, and Verification). That section is your
+authoritative spec.
+
+Summary of intent: disconnect normal client gear rendering now that the server (Sol 1) authoritatively
+spawns whole-art (default = `proto-sheriff`) and Sol 2 has already fixed the visual scale. Steps:
+1. `PLAYER_SPRITE` derives from the shared `DEFAULT_CHARACTER` (`proto-sheriff`), not `"drifter"`.
+2. `ArenaScene.init` data + joinOpts include a bounded `selectedCharacterId` passed through to the server for
+   validation (do NOT re-validate on the client; server owns it — Sol 1 already validates).
+3. Resolve ordinary player render ids against the shared whole-art subset. Missing/unknown/`drifter`/legacy
+   `cc-*` state from an older server maps VISUALLY to sheriff, not to the wardrobe dummy.
+4. Construct ordinary players WITHOUT `GEAR_PARTS_MANIFEST`; NEVER call `equipSyncedGear`; remove per-patch
+   `syncedGearLoadouts` decode/cache work from the ordinary render path. Keep gear imports ONLY where the
+   dev-only archived gear probe still needs them.
+5. Preserve the texture-ready barrier: if a qualified whole-art texture load reaches TERMINAL `missing`,
+   log clearly and render the RETAINED drifter/boilerplate base as a degraded fallback so the player is
+   never invisible. This exception is NOT used for no-selection (Sol 1 guarantees sheriff by default).
+6. `syncBlobs`: rebuild on authoritative whole-art id change; never re-enter a normal wardrobe sync.
+7. Replace tests celebrating an active Drifter wardrobe path with tests for: (a) sheriff fallback,
+   (b) selected whole-art creation, (c) NO gear calls even when legacy gear tails are present,
+   (d) explicit asset-failure visibility fallback, (e) whole-art-to-whole-art rebuild.
+
+## Scope guardrails
+- Stay within Sol 3's file partition (`ArenaScene.ts`, `ArenaScene.dualwield.test.ts`, other
+  `ArenaScene.*.test.ts` files ONLY where an existing fixture directly asserts player character creation).
+  Do NOT touch server (Sol 1's), sprite-scale (Sol 2's), or menu (Sol 4's) files.
+- PETS ARE OUT OF SCOPE — never touch pet definitions/runtime/rewards/tests beyond an unchanged-behavior
+  assertion. Preserve weapon Armory/Carry. Do NOT hard-delete archived gear code/data/tests; do NOT rename
+  or renumber generated fields.
+- The MIXED-VERSION RISK the plan flags: new server + old client works because the shipped client already
+  understands prototype whole-art; new client + old server MUST map Drifter/legacy values to sheriff. A
+  pending (not-yet-loaded) texture must NOT flash the dummy for one frame — only a TERMINAL missing does.
+
+## Verification (this Sol)
+- `pnpm typecheck` + FULL `pnpm test` GREEN in this worktree. LF endings ONLY. NO live-stack boot.
+- Unit/behavioral tests per (a)-(e) above. Add source assertions if needed (e.g. no ordinary gear-bake path
+  runs when whole-art art is healthy).
+
+## Rules
+Worktree; commit on sol/wa-client-runtime; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-wa-client-runtime.md` (where PLAYER_SPRITE + the whole-art fallback + gear
+disconnect live, plus your plan). Append. FINAL line = verdict: PLAYER_SPRITE now = sheriff, no ordinary
+gear-bake path, terminal-missing fallback visible + tested, files touched, tests proving (a)-(e).

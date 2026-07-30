@@ -1,0 +1,68 @@
+You are Sol `b64-movement-jank` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b64-movement-jank
+(branch sol/b64-movement-jank). OWNER-REPORTED REGRESSION. Diagnose, then fix. Autonomous.
+
+## The report (owner, 2026-07-26)
+> "Janky glitchy movement all around the board"
+
+"All around the board" = everywhere, not at specific obstacles.
+
+## What I have ALREADY RULED OUT — do not re-investigate these
+1. **Server correction / rubberbanding is NOT the cause.** I ran `tools/diag-rb-telemetry.mts` on
+   current HEAD. EVERY scenario reports `applications=0 requests=0 sumPx=0.000 maxPx=0.000`.
+   Zero corrections, zero warp pixels, zero snaps. B42 relaxed authority is holding.
+2. **Synchronous SQLite is NOT blocking the tick.** The new durable settlement store uses
+   `node:sqlite` (`DatabaseSync`, synchronous), but its call sites are only in join and settlement
+   paths (`room-progression.ts` ~1734-1760 and ~3130-3149). Nothing per-tick.
+3. **The reconnection batch did not touch the update loop.** Its ArenaScene changes are DOM overlay
+   code only.
+
+So the cause is almost certainly CLIENT-SIDE frame pacing / rendering, not netcode.
+
+## Prime suspects — everything merged in the last few hours
+Run `git log --oneline` and look at tonight's merges. In likelihood order:
+- **POI landmark deletion** (`48f8f7f`) removed ~878 lines from `packages/shared/src/mapgen.ts`,
+  including `poiCollisionCircles` and its three call sites (spawn validity, nav, collision).
+  Dimensions now have NO blocking geometry except pits. Check whether collision/nav resolution
+  degraded or now runs a pathological path.
+- **Decal alpha raise** (T4) took the `flat` role from 0.065 to 0.18 and set edge/solid to 0.52/0.64.
+  More visible objects should not cost much, but verify overdraw.
+- **Arena boundary shelf** (T2) added new geometry and an `arena-boundary-void` layer.
+- **New ashlands tile PNGs** — check texture sizes and upload cost.
+- **The reconnect overlay**: confirm it is NOT firing spuriously during normal play. If
+  `onLeave`/`onError` or the reconnect attempt logic triggers on healthy connections, the overlay
+  toggling would thrash layout and the reconnect attempts would disrupt the session. This is a REAL
+  risk and worth checking early even though the overlay code is not in the update loop.
+
+## Method — MEASURE, do not guess
+1. Start the game and capture actual frame timing. Find whether the jank is dropped frames, uneven
+   frame delta, GC pauses, or render-order churn. Numbers, not adjectives.
+2. Bisect against tonight's merges if measurement alone does not localise it. The branch history is
+   clean and each batch is a separate commit.
+3. Report the ROOT CAUSE with evidence before you change anything.
+
+## Second, smaller job — a stale scenario is aborting the harness
+`tools/diag-rb-telemetry.mts` dies partway with:
+`Error: topdown:ultimate-alpha-strike assertion failure: {"accepted":false,"classified":false}`
+That scenario exercises ULTIMATES, which owner ruling B55 switched OFF (`ULTIMATES_ENABLED`). The
+scenario is stale and it kills the run before the full matrix completes, so we lose coverage.
+Make it skip cleanly while ultimates are disabled — do NOT delete the scenario (ultimates may return)
+and do NOT weaken any other assertion. Update `expectedScenarios` if the harness pins a count.
+
+## Guardrails
+- **The owner is working on map art in `packages/shared/src/mapgen.ts`,
+  `packages/client/src/scenes/arena/floor-renderer.ts`, and `packages/client/public/tiles/**`.**
+  You MAY READ them — mapgen is a prime suspect — but if the fix requires editing any of those three,
+  STOP and report instead. Do not edit them.
+- Do not revert tonight's merges wholesale. Find the specific cause.
+- Do not touch `data/weapon-concepts-300.json` — 30 gun Sols are appending to it.
+- LF endings.
+
+## Verification
+`pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green. `tools/diag-rb-telemetry.mts` runs
+to COMPLETION with zero corrections still. Then play the game and confirm the jank is gone — state
+the before/after frame numbers.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b64-movement-jank.md` with
+the measurement evidence, the root cause, the fix, and the before/after numbers. FINAL line =
+verdict: root cause, fix, before/after frame metrics, harness completion, test result.

@@ -1,0 +1,71 @@
+You are Sol `impl-b20-l2-chests-relics` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b20-l2-chests-relics
+(branch sol/b20-l2-chests-relics). IMPLEMENTATION — B20 LANE 2: CHESTS + RELICS. Autonomous — no
+questions. Report incrementally. NO live-stack boot; unit + live gate on private ephemeral ports.
+
+## Authority
+READ FIRST: `docs/sol-reports/design-lock-b20.md` (owner-locked design) and
+`docs/sol-reports/impl-b20-l1-teardown.md` (L1 shipped: stats/XP/levels dead, weapons flat, crit =
+flat base + EMPTY additive modifier accumulator hook, XP pickups already reroute to money/scrip).
+You are Lane L2 ONLY. Do NOT build L3 (disassembly/banking/shop removal), L4 (booster packs), or
+L5 (weapon tier curve). Where L2 needs a weapon tier NOW, use a simple placeholder tier from the
+weapon's damage budget and mark it clearly for L5 to replace.
+
+## L2 contract — chests are the sole in-run itemization channel
+1. **Server-authoritative chest spawns.** Chests spawn over the run on the arena map (valid ground
+   via the existing mapgen/nav helpers; never inside POIs/pits). Cadence: baseline interval with
+   jitter + the LOCKED rubber-band: a weapon-BEARING chest is guaranteed at least every 2.5
+   minutes (design-lock default). Chest state lives on ArenaState (position, opened, kind);
+   deterministic from room seeds + tick so remotes agree.
+2. **Zone-risk placement.** Use the existing map zone layer (`MAP_ZONE_SCAR` etc. in
+   `packages/shared/src/mapgen.ts`): scar-zone chests roll better contents (higher weapon tier
+   weight + higher relic rarity weight) than commons-zone chests. Document the weighting table.
+3. **Chest contents** (rolled server-side on OPEN, instanced PER PLAYER in co-op — each player
+   gets their own roll from the same chest; a chest is consumed for a player once they open it):
+   - WEAPON: goes to the opener's bag via the existing arsenal/bag flow (placeholder time-tier
+     sampling: later run-clock = higher-budget weapons more likely).
+   - RELIC(S): see below.
+   - MONEY: scrip via the existing money-drop flow.
+   Mix + amounts tunable constants, documented.
+4. **The relic system** (new, shared/server-owned; client presents):
+   - **Common fungible lines** (stackable, additive): +energy pool, +energy regen, +parry
+     radius/forgiveness, -dodge cooldown, +move speed, +HP regen, +luck, +crit (feeds L1's crit
+     accumulator hook), +jump count.
+   - **Rare ability-changers**: dodge-roll TYPE overrides (the shuffle / DS2 ninja-flip / phase
+     out-in / bloodhound step — wire to the existing dodge kit; each changes distance/recovery/
+     i-frame PRESENTATION while keeping i-frame duration fair), revive (once per run), one-shot
+     protection (survive a lethal hit above HP threshold, cooldown).
+   - Relic state on PlayerState (server-applied effects; client HUD shows owned relics compactly —
+     small icon row, no gameplay interruption, consistent with the existing HUD language).
+   - Pickup presentation: opening a chest shows what dropped (brief non-blocking toast/card in the
+     existing HUD idiom — NEVER a modal that pauses gameplay; the owner's never-interrupt law).
+5. **Effects apply server-side** where authoritative (energy, dodge cooldown, parry radius, move
+   speed, HP regen, crit feed, revive, one-shot protection) with client prediction updated where
+   the kit already predicts (dodge/parry).
+
+## Guardrails
+- STANDING LAWS: never interrupt gameplay (no modal level-up-style UI); no player auras; no
+  chains/tassels. Chests are DESTRUCTIBLE-FUTURE-friendly (simple sprite + open state; the prop
+  rework comes later — do not build cover/collision blockers; chests must NOT block movement).
+- Use a placeholder chest sprite from existing art primitives if no chest art exists — flag it in
+  the report as an art order; do NOT generate art in this lane.
+- Do NOT touch: shopkeeper (L3 removes it), kung-fu combos, parry reaction code (parallel Sols),
+  fans, characters, pets. LF endings only. Full test migration.
+- RNG discipline: chest/relic rolls use their own seeded stream (mixSeeds pattern from mapgen) so
+  they don't shift existing streams (tonight's suite-order flakes came from stream shifts).
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green. `pnpm assets:check` green.
+- Unit: cadence + rubber-band guarantee (simulated clock), zone weighting, per-player instancing,
+  relic stacking math, dodge-type override behavior, revive + one-shot protection edge cases,
+  deterministic rolls from seeds.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567) on `proto-cowboy-hidden-face`: run a few
+  minutes of sim; capture chests spawning (scar vs commons), opening (weapon/relic/money), relic
+  HUD row, a dodge-type override in action, no gameplay interruption. Evidence under
+  `docs/owner-notes-audit-v11-evidence/b20-l2-chests-relics/`.
+
+## Rules
+Worktree; commit on sol/b20-l2-chests-relics; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b20-l2-chests-relics.md` (design: cadence/weights/relic table/state shapes).
+Append per system. FINAL line = verdict: chests live (cadence + rubber-band + zone-risk), relic
+system live (N commons, M rares), per-player instancing, art orders flagged, evidence path, files
+touched.

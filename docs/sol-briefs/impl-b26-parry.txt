@@ -1,0 +1,56 @@
+You are Sol `impl-b26-parry` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b26-parry
+(branch sol/b26-parry). IMPLEMENTATION — DIRECTIONAL PARRY REACTIONS. Autonomous — no questions.
+Report incrementally. NO live-stack boot; unit + live gate on private ephemeral ports.
+
+## Context — the owner's order (verbatim, 2026-07-24)
+"Need parry pushing character back with cool blocking animation on success. If the attack comes
+from underneath the character than it should do what it already does and lift the user into the
+air. However if you parry an attack from left or right your character should slide back
+proportional to the damage they'd have otherwise taken. If parry from above then character braces
+down for a sec. Parry would need three different weapon parries animations it cycles through per
+weapon sub-type. So if you block 3 bullets in a row it gives the illusion you blocked three
+different places (think cinematic)"
+
+## The contract
+1. **Directional reaction from attack incidence angle** (server-authoritative; angle from
+   attacker/projectile incoming vector relative to the defender):
+   - FROM BELOW: keep the EXISTING air-lift behavior exactly (do not re-implement; route to it).
+   - FROM LEFT/RIGHT: defender slides BACK (away from the attack) a distance PROPORTIONAL to the
+     damage the parry prevented (define px-per-damage with a floor + cap; nav-validated so the
+     slide can't cross walls/pits; document the curve in the report).
+   - FROM ABOVE: defender braces DOWN for a beat (crouch-compress pose ~0.25-0.4s, no
+     displacement), then recovers.
+   Server owns the reaction (position/state), client presents it; remote players see identical
+   motion. No change to parry timing windows, damage negation, or the parry gate itself.
+2. **Cinematic 3-animation cycle per weapon SUB-TYPE.** Each weapon sub-type (use the shared
+   catalog's family/classPool taxonomy — pick the natural sub-type key and justify it) gets THREE
+   distinct blocking animations (different guard positions: high/mid/low or left/center/right
+   deflect poses using the held weapon's sprite + hands). Consecutive successful parries CYCLE
+   through them (1->2->3->1) so blocking a burst reads like deflecting in three different places.
+   Cycle index is per-player server state (deterministic for remotes); resets after a few seconds
+   without parries.
+3. **Feel.** The block itself needs impact: brief hitstop/flash consistent with the existing
+   hit-effects language, weapon flashes to the guard pose, then the directional reaction plays.
+   Reuse the existing parry VFX/SFX hooks; do not invent new particle systems (B24 is cleaning
+   rogue particles — add NOTHING radial/ambient).
+
+## Guardrails
+- Do NOT touch: kung-fu combo code (parallel Sol B25 owns wrap combos — avoid editing combo-step
+  definitions; parry poses live in the parry path), fans, B24 VFX surfaces, characters' base
+  sprites, pets, B20 surfaces. STANDING BANS: no player auras, no chains/tassels. LF endings only.
+- Preserve the universal parry kit's balance: no changes to what CAN be parried or damage math.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green.
+- Unit: incidence-angle router (below/left/right/above quadrants + boundary cases), slide
+  proportionality curve (floor/cap), cycle sequencing + reset, nav-clamped slide.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567) on `proto-cowboy-hidden-face`: parry
+  attacks from each direction (use training-mode spawns), capture the air-lift (below), the
+  proportional slide (side), the brace (above), and a 3-parry burst showing all three guard
+  animations cycling. Evidence under `docs/owner-notes-audit-v11-evidence/b26-parry/`.
+
+## Rules
+Worktree; commit on sol/b26-parry; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b26-parry.md` (incidence model + slide curve + sub-type taxonomy + cycle
+design). Append per stage. FINAL line = verdict: 4 directional reactions live, 3-anim cycle per
+sub-type, slide curve documented, evidence path, files touched.

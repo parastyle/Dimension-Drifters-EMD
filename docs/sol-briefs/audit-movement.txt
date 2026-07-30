@@ -1,0 +1,30 @@
+You are Sol `audit-movement`. READ-ONLY AUDIT. Do NOT edit any code or tests. Write ONLY your report
+`docs/sol-reports/audit-movement.md`. Main tree. Autonomous.
+
+## Game: Dimension Drifters (C:/Users/Exped/DDv2)
+Top-down / belt co-op bullet-heaven, Phaser 4 client + Colyseus 0.16 authoritative server, shared sim in
+@dd/shared. Movement is client-predicted + server-reconciled. Aesthetic target: Madness Combat fluid,
+weighty, snappy motion. Owner cares deeply about game FEEL.
+
+## Audit: IN-GAME MOVEMENT vs BEST PRACTICE
+Trace and evaluate the full movement kit against best practice for a snappy top-down action/bullet-heaven
+with netcode. Cover:
+- Core locomotion: WASD accel/friction/max-speed, the direction-switch penalty (owner previously wanted
+  it reduced), turn/pivot feel, diagonal normalization.
+- The movement KIT: dash / dodge-roll (universal kit), slide + slide-hop momentum tech, jump + higher
+  jump/ground-pound, crouch/crouch-distance-jump. Are i-frames, cancels, and momentum consistent and
+  readable? Do abilities chain/cancel cleanly or fight each other?
+- Netcode feel: client prediction, server reconciliation, input->net->render seam (find `stepNetInput`,
+  the predictor, `rawFlourishIntent.desiredMoveX/Y`), interpolation/extrapolation, correction snapping,
+  hitch/teleport on reconciliation, freeze/hitstop interaction with prediction.
+- KNOWN OPEN BUG to analyze: Galvanic Overcasters has a CHARACTER-MOVEMENT netcode defect (projectile
+  half was fixed; movement half still open). Diagnose the likely cause from the code and propose a fix.
+- Feel polish: coyote time, input buffering, animation vs authoritative position, camera follow coupling.
+
+Find the real code (shared movement sim, server tick, client predictor/ArenaScene). Cite file:line.
+
+## Deliverable
+Prioritized findings P0/P1/P2, each: file:line, the feel/correctness problem, the best-practice standard
+it violates, and a CONCRETE fix recommendation (numbers/approach, not vibes). Call out the single biggest
+FEEL win. Include your Overcasters movement-bug diagnosis. No code changes — analysis only.
+FIRST action: create the report with understanding + plan; append as you go; final line = verdict.

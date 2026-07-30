@@ -1,0 +1,75 @@
+You are Sol `b69-catalog-integrate` in an ISOLATED WORKTREE at
+C:/Users/Exped/ddv2-wt/b69-catalog-integrate (branch sol/b69-catalog-integrate). INTEGRATION. Autonomous.
+
+## The situation
+21 new weapons were merged into the catalog (15 cop-dimension guns from order B63, 6 other-dimension
+weapons from order B66). The catalog went **359 -> 379** weapons; active **339 -> 359**; archived
+unchanged at 20.
+
+`pnpm gen`, `pnpm gen:check` and `pnpm typecheck` are CLEAN. But **29 tests across 32 files fail**,
+essentially all of them census/count pins that were written against the old catalog size.
+
+I have already bumped the one in `packages/shared/src/weapon-resource.ts` (the Drive-formula guard)
+from 359 to 379 and active 339 to 359, and left a comment saying these are a deliberate tripwire.
+Your job is the rest.
+
+**Note: master is UNPUSHED and currently red. Your branch is what makes it green again.**
+
+## THE RULE THAT DECIDES THIS BATCH
+These pins exist to catch **silent weapon loss and accidental catalog drift**. They are a safety net,
+not bureaucracy. So:
+
+- Where a test pins a COUNT that legitimately grew because we deliberately added 21 weapons — update
+  the number, and make the update legible (say in a comment or the test name what changed and why).
+- Where a test asserts a BEHAVIOURAL LAW over "every weapon" (recoil coverage, pose language, limb
+  claims, hit envelopes, muzzle derivation, gun-mechanism ownership) — **the new weapons must actually
+  SATISFY the law.** If one of the 21 fails such a law, that is a REAL DEFECT in that weapon: fix the
+  weapon's data, do not widen the assertion.
+- **Never** delete a test, skip a test, or loosen an assertion to make red go green. If you believe an
+  assertion is genuinely wrong, say so explicitly in your report with reasoning — do not quietly edit it.
+
+Sorting each failure into "legitimate count growth" vs "new weapon violates a law" IS the work.
+Report the split explicitly.
+
+## Known failing surfaces (non-exhaustive — run the suite yourself)
+- `tests/b24-radial-hunt.test.ts` — 323-weapon resolver cohort census
+- `tests/b30-expunged-vfx-envelope-audit.test.ts` — 323-weapon envelope sweep
+- `tests/b45-gun-recoil.test.ts` — "covers every ranged gun and ranged beam while melee/caster roots
+  stay planted". **The 15 new guns MUST have recoil.** If any lacks it, that is a real defect —
+  standing law: guns recoil, melee/caster never displace the character.
+- `tests/b48-gun-holds.test.ts` — gun mechanism census (pump/lever/fan pins)
+- `tests/b6-weapon-archives.test.ts`, `b31-recovered-art-integrator`, `b50-caster-vfx`, `b30-recovered-orders`
+- `packages/client/src/sprites/pose-language.test.ts` — "gives every current weapon id an intentional
+  named pose without an accidental fallback". **New weapons need intentional poses, not fallbacks.**
+- `packages/client/src/entities/SpriteRig.ranged.test.ts` — mechanism cycle per tagged shot
+- `packages/client/src/audio/gun-sfx.test.ts` — new guns likely need SFX mappings
+- `GameRoom.test.ts` / `GameRoom.economy-bank.test.ts` — Testing-Grounds paging + archived-id rejection
+- `MenuScene.character-tab`, `MenuScene.dev-links`, `ArenaScene.characters`, `ArenaScene.training`,
+  `ArenaScene.b5-attackroot`
+- `packages/server/src/settlement-restart.integration.test.ts` — verify whether this is genuinely
+  related or the known parallel-load flake; SAY WHICH.
+
+## Context that matters
+- `docs/sol-reports/order-b63-modern-guns.md` — the 30-gun order (15 merged so far), amendments A1-A5.
+- `docs/sol-reports/order-b66-twenty-weapons.md` — the 20-weapon order (6 merged so far).
+- **More weapons are still coming** (guns 16-30, weapons 07-20). Where a pin is a pure count that will
+  keep moving, consider whether it should derive from the catalog instead of being a literal — but do
+  NOT weaken any pin whose purpose is detecting loss. Make the call per-test and justify it.
+
+## Guardrails
+- **Owner map files OFF LIMITS:** `packages/shared/src/mapgen.ts`,
+  `packages/client/src/scenes/arena/floor-renderer.ts`, `packages/client/public/tiles/**`.
+- Do NOT add, remove or rename weapons. Do NOT retune balance. Integration only.
+- Parallel Sols own the rig/animation system (`b68-silky-limbs`), the subclass taxonomy and the
+  light/laser system. Stay out of those.
+- `data/weapon-concepts-300.json` may gain entries from other Sols — do not reformat or reorder it.
+- LF endings.
+
+## Verification
+`pnpm gen` + `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` **green, twice consecutively**.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b69-catalog-integrate.md`
+with a table: test -> failure kind (count growth | real defect) -> what you changed -> why. Plus an
+explicit list of any REAL DEFECTS found in the 21 new weapons and how you fixed them. FINAL line =
+verdict: N tests fixed, C count-pins bumped, D real defects found+fixed, flake verdict, 2x test results.

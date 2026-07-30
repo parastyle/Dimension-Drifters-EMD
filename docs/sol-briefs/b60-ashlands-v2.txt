@@ -1,0 +1,68 @@
+You are Sol `b60-ashlands-kit` continuing in your EXISTING WORKTREE at
+C:/Users/Exped/ddv2-wt/b60-ashlands-kit (branch sol/b60-ashlands-kit). ITERATION 2. Autonomous.
+
+Your v1 (`13a7676`) PASSED the value gate and I verified it independently:
+means 92.6 / 101.1 / 94.4 / 94.4, family drift ±4.3, spreads 17-27, rim split exactly y=128,
+tiling clean, tests green. Keep ALL of that. Do not regress the value band.
+
+It FAILS three contract items. These are spec violations, not taste notes. Fix all three.
+
+## MISS 1 — There is no ink. (§2 P2, §1.6)
+Your material boundaries are SOFT EMBOSSED GROOVES with bevel shading. The spec demands
+**deliberate DRAWN INK**: a hard, dark, constant-width line at §1.6 weights on every material
+boundary — the same treatment as the tunnel's marble joints. Read §1.6 and hit the stated weights.
+An embossed bevel is a lighting effect; an ink line is a drawn edge. This is the single biggest
+reason your tiles still do not sit next to the tunnel. Cel shading without ink is just flat shading.
+
+## MISS 2 — The tiles are monochrome. (§2 P3)
+Measured mean RGB of your four tiles: (99,91,86) (108,99,94) (100,93,87) (100,93,89). That is ONE
+desaturated warm grey, four times. The spec requires **4-6 colours + black ink + one accent**, with
+the accent occupying <= 8% of floor area. You shipped one colour and zero accent.
+
+This is `ashlands` — "cracked magma, falling ash". It currently reads as generic grey pavement. It
+needs a real ash/volcanic colour structure: pale settled ash against charred basalt against cooled
+slag, with the theme's amber/ember accent present but held under the 8% cap. Distinct hues, not one
+hue at four brightnesses.
+
+**Constraint: do this WITHOUT leaving the 70-125 value band.** Colour variety comes from HUE and
+SATURATION, not from making things lighter or darker. That is the discipline the whole spec is built
+on and it is entirely achievable — value and colour are independent axes.
+
+## MISS 3 — The four roles are not readable. THIS IS THE MOST IMPORTANT ONE.
+Your four variants differ only by PATTERN SCALE: large plates / medium cobble / fine gravel / small
+plates. A player cannot tell which is which, and cannot tell what any of them MEANS.
+
+Re-read §-1 R7's load-bearing note. Owner deleted every POI landmark from dimensions. These four
+tiles are now **the entire spatial-orientation system**. There is nothing else. If a player cannot
+tell at a glance and in motion which kind of ground they are standing on, dimensions become a
+featureless field and the owner will reject the direction.
+
+Author the four by their SEMANTIC ROLE and make each one legible as that role:
+- **tile-0 quiet bed** — undisturbed, settled, the default. Calmest of the four.
+- **tile-1 worn route** — this ground has been TRAVELLED. Directional wear, a swept/scuffed path
+  read. It must read as a route even when the player cannot see where it goes.
+- **tile-2 disturbed cluster** — something HAPPENED here. Broken, upheaved, churned.
+- **tile-3 pit approach** — the ground is FAILING. Stress fractures widening toward collapse. This
+  is the one that must read as a warning, because it borders the only lethal terrain we have left.
+
+Same material family, four different histories. Not four different materials, and not one material
+at four grain sizes.
+
+## Also worth your attention (report, do not necessarily fix)
+In my live capture, a heavy amber wash — the ashlands hot-lip burn telegraph plus its glow — visually
+dominates the arena and substantially washes out the floor values we just tuned. It is a legitimate
+gameplay semaphore (§6.3), so do NOT unilaterally weaken it. Measure roughly how much of the viewport
+it covers at a typical fight and report the number so the owner can rule on it.
+
+## Verification (unchanged, all must pass)
+- `node tools/artkit/check-tile-values.mjs ashlands` exits 0
+- `pnpm typecheck` clean, FULL `pnpm test` green
+- Re-capture BOTH evidence images (live arena + entity-outline crop) — they must show v2, not v1.
+- ALSO emit `docs/sol-reports/b60-evidence/ashlands-tiles-sheet.png`: a 2x2 contact sheet of the four
+  tiles at 1:1, so role differentiation can be judged without launching the game.
+
+## Rules
+Same worktree, same branch. COMMIT ON TOP of 13a7676. LF endings. Update
+`docs/sol-reports/b60-ashlands-kit.md` with a v1-vs-v2 section: per-tile mean RGB (prove the colour
+fix), ink weights used, and one sentence per tile on how its role reads. FINAL line = verdict:
+per-file means + mean RGB, band pass/fail, ink weight, amber-wash coverage %, test result.

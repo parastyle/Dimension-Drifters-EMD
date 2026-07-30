@@ -1,0 +1,30 @@
+You are Sol `impl-b15` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b15-vfx-remove
+(branch sol/b15-vfx-remove). IMPLEMENTATION. Autonomous — no questions. Report incrementally. NO
+live-stack boot (it has hung Sols); a unit-test is the gate.
+
+## YOUR ORDER — BATCH B15 from `docs/sol-reports/notes-ledger-v10.md`
+READ that ledger's B15 section for the FULL spec. Summary:
+
+**Three data-only VFX suppressions:**
+1. **Rusty Cleaver** (`rusty-cleaver`) — owner "remove VFX". Remove ALL bespoke VFX recipes/layers so it
+   has no visible effect beyond the base swing (fallback default only).
+2. **Tombstone Greatsword** (`tombstone-greatsword`) — owner "remove vfx". Same — strip all VFX layers.
+   Note: B10 previously removed only the bone particles; this note goes further — strip everything.
+3. **Drowned Anchor** (`x-sword-anchor`) — remove its explicit VFX recipe (v10 identified this as an
+   adjacent B10 amendment that landed here). Keep normal blade damage/animation, remove special VFX.
+
+All three: DATA-ONLY changes to `data/weapon-concepts-300.json`, regenerated
+`packages/client/src/vfx/weapon-vfx.generated.ts`, and any owner-note test updates. NO SpriteRig, NO
+combat authority, NO cadence/damage changes. Preserve nominal DPS exactly.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` green. `pnpm typecheck` + FULL `pnpm test` green in this worktree. LF
+  endings ONLY.
+- Add/extend a focused test: each of the 3 weapons has NO bespoke VFX layers in `weapon-vfx.generated.ts`
+  (empty layers array or absent recipe entry — match how other stripped weapons look). Existing
+  data-consistency + weapon-vfx census tests must remain green (adjust census counts if warranted).
+
+## Rules
+Worktree; commit on sol/b15-vfx-remove; orchestrator merges. FIRST: write `docs/sol-reports/impl-b15.md`
+(understanding + plan). Append per weapon. FINAL line = verdict: 3 weapons stripped, evidence path,
+files touched.

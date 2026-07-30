@@ -1,0 +1,46 @@
+You are Sol `impl-b43-split-monoliths` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b43-split-monoliths
+(branch sol/b43-split-monoliths). STRUCTURAL REFACTOR — BEHAVIOR-PRESERVING MONOLITH SPLIT.
+Autonomous — no questions. Report incrementally. NO live-stack boot; unit + gate suite is the bar.
+
+## Owner-approved mandate (chat, 2026-07-24): "split them up, thanks."
+Split the two mega-files along their PROVEN seams so future parallel work stops colliding.
+This is a MOVE-ONLY refactor: zero behavior change, zero logic edits, zero renames of public
+exports (barrel re-exports keep every existing import path working).
+
+## Targets + module boundaries (derived from six weeks of batch usage — follow, refine only
+where the code's actual cohesion demands, and document any deviation)
+1. `packages/client/src/entities/SpriteRig.ts` (~12k lines) -> `packages/client/src/entities/rig/`:
+   - `rig-core.ts` (skeleton nodes, base transforms, facing/mirror)
+   - `rig-pose.ts` (pose language, idle stances, grip anchors)
+   - `rig-combat.ts` (combo stage transforms, melee presentation)
+   - `rig-gun-mechanisms.ts` (bolt/lever/pump/break/hammer/twirl + firing stance)
+   - `rig-flourish.ts` (draw/stow/flourish arming + streaks)
+   - `rig-gear.ts` (heads/gear/wrap-glove receivers)
+   - `SpriteRig.ts` remains as the thin class shell + barrel re-export so imports don't break.
+2. `packages/server/src/rooms/GameRoom.ts` -> `packages/server/src/rooms/room/`:
+   - `room-movement.ts` (movement step, envelope/authority, belt clamps)
+   - `room-combat.ts` (swing/fire/cast resolution, hit envelopes, parry)
+   - `room-enemies.ts` (spawning, tokens, commit-melee AI, bosses glue)
+   - `room-economy.ts` (chests, relics, money, disassembly, banking)
+   - `room-progression.ts` (floors/elevators, depth, run lifecycle)
+   - `GameRoom.ts` remains the Colyseus Room shell wiring the modules.
+Also split their test files along the same lines where a test file exceeds ~1.5k lines.
+
+## Hard rules
+- MOVE code verbatim; if a move forces a signature change, add a thin adapter instead.
+- Every commit in your branch must compile + pass `pnpm typecheck` (bisectable refactor).
+- NO public API/behavior change: `pnpm test` must pass UNMODIFIED except for import-path updates
+  inside moved test files. Any test whose ASSERTIONS you need to touch = you did it wrong.
+- `pnpm gen` + `pnpm gen:check` + `pnpm assets:check` green. LF endings. No schema changes.
+
+## Verification
+- FULL `pnpm test` green (assertions untouched).
+- Gate sweep on PRIVATE EPHEMERAL PORTS (never 5180/2567): black-screen smoke,
+  orchestrator-b34-visual-probe, b29-ranged-presentation, b22, b23 — all green.
+- A short import-graph note in the report proving no cycles between new modules.
+
+## Rules
+Worktree; COMMIT YOUR WORK in bisectable steps; orchestrator merges. Report at
+`docs/sol-reports/impl-b43-split-monoliths.md` (module map + line counts before/after + any
+boundary deviations). FINAL line = verdict: N modules extracted, SpriteRig/GameRoom line counts
+before/after, tests untouched-green, gates green, files touched.

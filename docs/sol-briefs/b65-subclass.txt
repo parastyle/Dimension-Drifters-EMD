@@ -1,0 +1,61 @@
+You are Sol `b65-subclass` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b65-subclass
+(branch sol/b65-subclass). NEW TAXONOMY + TRAINING GROUNDS PAGING. Autonomous.
+
+## Owner order (verbatim, 2026-07-26)
+> "in teh training grounds instead of cycling through pages of wildly indexed weapons...I should cycle
+> through pages of subclasses, page sort by subclass, then class. If we dont have a subclass system
+> yet. Make one that aligns with our current weapons. If a weapon falls into its own subclass label it
+> Special and thats its class"
+
+**There is NO subclass system today.** I checked: zero matches for `subclass` in `packages/shared/src`.
+You are building it.
+
+## Job 1 — derive the subclass taxonomy FROM THE WEAPONS WE ACTUALLY HAVE
+Do NOT invent a taxonomy top-down and force weapons into it. Read the real roster
+(`data/weapon-concepts-300.json`, `packages/shared/src/weapons.ts` and the generated catalogs, ~360
+weapons) and derive subclasses that describe what is actually there. Weapons already carry a `family`
+field — start there, but `family` is not automatically the right granularity; merge or split where the
+evidence says so.
+
+**Rules:**
+- Every weapon gets exactly ONE subclass.
+- **A subclass with only ONE member is not a subclass.** Per the owner: that weapon's class becomes
+  **`Special`**. Decide whether it also keeps a subclass label or whether `Special` stands alone —
+  make the call, implement it consistently, and state your reasoning.
+- Subclass → class must be a clean hierarchy: every subclass belongs to exactly one class. Existing
+  class is `type` (`melee` / `ranged` / `caster`) plus `Special` per the ruling above.
+- Emit a report table: class → subclass → member count → example ids. This is the artefact the owner
+  reviews, so make it readable.
+
+## Job 2 — make it CODEGEN-BACKED, not hand-maintained
+Weapons are strict codegen (`tools/artkit/gen-weapon-expansion.mjs`, §43 STRICT). The subclass must
+be derived or authored through the same pipeline so it cannot drift. Add a test asserting EVERY
+weapon resolves to exactly one subclass and one class, and that no subclass has exactly one member
+unless it is `Special`.
+
+## Job 3 — training grounds paging
+Today the Testing Grounds cycles pages of "wildly indexed" weapons. Change it to page **by subclass**,
+ordered **subclass within class**. One page = one subclass. Show the subclass and class name on the
+page so the player knows where they are.
+
+Relevant: `packages/client/src/input-routing.ts` (`pageDelta`, `mode === "training"`) and the Testing
+Grounds weapon spawn/pickup path. Find the rest yourself.
+
+## Guardrails
+- **The owner is working on map art in `packages/shared/src/mapgen.ts`,
+  `packages/client/src/scenes/arena/floor-renderer.ts`, `packages/client/public/tiles/**`. DO NOT TOUCH.**
+- **`data/weapon-concepts-300.json` is being appended to by ~24 parallel gun Sols RIGHT NOW.** Read it
+  freely. Do NOT reformat, reorder or rewrite it. If you must add a field, add it in a way that
+  tolerates concurrent appends — prefer deriving subclass in the generator over editing every entry.
+- Do not retune any weapon's balance. Taxonomy + UI only.
+- Bump `SCHEMA_VERSION` if wire shape changes; update every test pinning it. LF endings.
+
+## Verification
+`pnpm gen` + `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green including your new
+taxonomy test. Then enter the Testing Grounds live (press T) and page through — confirm pages are
+subclasses, ordered by class, labelled. Capture `docs/sol-reports/b65-evidence/training-paging.png`.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b65-subclass.md` with the
+FULL class → subclass → count table, the `Special` decision and reasoning, and the paging change.
+FINAL line = verdict: N classes, M subclasses, K Special, weapons covered, test result, capture path.

@@ -1,0 +1,24 @@
+You are Sol `impl-b37-art-tornadostorm` in the ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b37-art-tornadostorm
+(branch sol/b37-art-tornadostorm). ART-ONLY. Autonomous — no questions. Report incrementally. NO live-stack boot.
+
+## Your ONE subject
+Storm tornado frames 2+3 (same 3-frame vortex order)
+**Install:** packages/client/public/sprites/vfx-tornado-storm-shock/part-2.png + part-3.png
+**Generation prompt (verbatim — do not restyle):**
+"REFERENCE packages/client/public/sprites/vfx-tornado-storm-shock/part-1.png (storm cloud tornado with lightning). Generate TWO more frames of the SAME vortex mid-spin: identical silhouette, palette, size, funnel shape; cloud bands advanced + lightning bolts in different positions so part-1->2->3 cycles as living storm. Flat #00ff00 background each."
+
+## Standing laws
+- ONE subject only (multi-frame/multi-variant sets of the SAME subject are that one subject).
+- NO chains/tassels/dangles, no digits on hands, nothing radial-ambient. LF endings only.
+- Gritty dark-comic cel, flat #00ff00 chroma background, shipped keyer clean.
+- Frame/variant REGISTRATION: same canvas + registration as the reference where a reference exists.
+
+## Deliverables — ART ASSETS ONLY
+1. Generate via the shipped ArtKit pipeline (tools/artkit/harvest-install.mjs conventions).
+2. Install ONLY to the path(s) above. NO manifest/catalog/shared edits — the B37 integrator wires.
+3. Each PNG > 200x200 native, < 2048x2048, keys cleanly.
+
+## Reporting + COMMIT
+FIRST: write docs/sol-reports/impl-b37-art-tornadostorm.md with your plan. Append.
+COMMIT your PNGs + report on your branch (the last art wave forgot to commit — do not repeat that).
+FINAL line = verdict: subject id, PNG path(s), prompt used, pixel dimensions.

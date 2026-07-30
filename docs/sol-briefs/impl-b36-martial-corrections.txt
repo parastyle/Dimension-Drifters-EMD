@@ -1,0 +1,45 @@
+You are Sol `impl-b36-martial-corrections` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b36-martial-corrections
+(branch sol/b36-martial-corrections). IMPLEMENTATION — MARTIAL/MELEE CORRECTIONS. Autonomous — no
+questions. Report incrementally. NO live-stack boot; unit + live gate on private ephemeral ports.
+
+## 4 owner orders (verbatim from data/owner-notes.jsonl 2026-07-24)
+1. **REMOVE kung-fu displacement (16:23)**: "martial art character displacement is messing up
+   player positioning after the combo is done. Lets remove character displacement from the kungfu
+   weapons. Players can move while attacking for the same effect anyway."
+   Remove ALL root-motion character displacement from the 4 kung-fu wraps (muay thai, wing chun,
+   drunken, iron palm) AND `x2-emberfist-wraps`. KEEP the combo beats/animations/paper-rotate/
+   flips/stretch visuals (B25's theatrics stay — the CHARACTER just doesn't get moved by the
+   server anymore). Diagnose + note the post-combo positioning desync cause in the report (likely
+   root-motion reconciliation drift) so the class of bug is understood. B33's attack-input-slow
+   rule still applies (no root motion -> modest input slow while attacking; verify players CAN
+   move while punching, per the owner's intent).
+2. `x2-wyrmskull-reliquary` (19:05) — the mouth stays OPEN while the attack is HELD (open frame
+   persists during held fire; deterministic close on release). Extends the B13 firing-frame clock.
+3. `x2-reverent-broadsword` (19:06) — "should be martial-artsy. I'm seeing a forward 1 hand stab
+   with the other hand extended the opposite way, and then a paper-flip character 360 doing a
+   second stab. Real smooth." Author exactly that 2-beat combo: (a) forward one-hand stab, off
+   hand extended opposite, (b) full paper-flip 360 into a second stab. Smooth transitions, no
+   teleport pops, envelope follows the stabs. NOTE: per order 1, NO character displacement — the
+   360 spins in place.
+4. `x2-coyote-trickster-s-sparkmitt` (14:42) — idle stance like a BOXER: both arms in front near
+   the chin (use the pose-language machinery; applies to its Emberfist sibling too if they share
+   pose).
+
+## Guardrails
+- STANDING BANS apply. Parallel Sols: B35 (guns — don't touch), B34-L2 (belt), art Sols.
+  Rebase onto main at merge. LF endings. Schema bumps from CURRENT + update pins. Migrate tests
+  (B25/B33 displacement tests will need updates — keep their non-displacement assertions).
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567): capture (a) each wrap's full combo with
+  ZERO character displacement + player walking mid-combo, (b) post-combo position stable (no
+  snap), (c) wyrmskull mouth held open during held fire + closing on release, (d) the broadsword
+  2-beat stab/360-stab, (e) sparkmitt boxer idle. Both facings. Evidence under
+  `docs/owner-notes-audit-v11-evidence/b36-martial-corrections/`.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b36-martial-corrections.md` (desync diagnosis + per-order plan). FINAL
+line = verdict: displacement removed (5 weapons), desync cause named, wyrmskull hold-open,
+broadsword combo, boxer idle, evidence path, files touched.

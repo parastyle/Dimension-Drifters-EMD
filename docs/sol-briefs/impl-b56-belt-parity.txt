@@ -1,0 +1,65 @@
+You are Sol `impl-b56-belt-parity` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b56-belt-parity
+(branch sol/b56-belt-parity). P0 REGRESSION — BELT-MODE PARITY. Autonomous.
+
+## The owner's report (verbatim, 2026-07-25) — this is a trust-critical regression
+"This is exactly what I feared that you assured me wouldnt happen. Missing UI, weapons dont point
+to cursor, character is phasing in and out of two different coordinates... its not the same game
+with a new map, its a new map and several reworked somethings."
+
+The orchestrator promised (memory `ddv2-big-visual-changes-contract`): render-layer only, ALL
+surfaces enumerated, screenshot-gated, game fully playable after every merge. That promise was
+broken because every gate ran TOP-DOWN arena only; belt mode is a second behavior path that no
+gate covered.
+
+## Confirmed by the orchestrator just now
+- `?belt=corporate-grid` does NOT reach a live arena scene (scene inactive ~12s after load,
+  status stuck "connecting…", no console error). Belt boot is broken or racing.
+- Belt is not a separate scene — it is the SAME ArenaScene/sim threaded with a mode flag:
+  221 `belt` references in ArenaScene.ts, 68 in net/prediction.ts, 26 in room-movement.ts,
+  78 explicit `if (belt…)` branches. Every recent change (B42 authority, B51 epochs, B52 rig
+  clock, B53 flip, B45 recoil) was verified on the non-belt branch only.
+
+## Your job — restore FULL parity, then make the gap impossible
+1. **Boot**: make `?belt=<levelId>` reliably launch into a playable belt run (diagnose the
+   inactive-scene/connecting hang first; the MenuScene deep-link path was recently reordered —
+   verify it survives, including the corporate floors).
+2. **The three reported symptoms** — reproduce each headlessly BEFORE fixing, then fix:
+   a. **Missing UI** — enumerate every HUD/UI surface present in top-down but absent or broken in
+      belt (weapon dock, backpack, money, health, relic/trinket row, floor counter, prompts).
+      Produce the list in the report; restore all of them.
+   b. **Weapons do not point at the cursor** — belt aim must track the cursor exactly as top-down
+      does (respecting belt facing/mirroring). Check for a belt-specific aim branch that was
+      bypassed or fed screen-space instead of world-space coordinates.
+   c. **Character phasing between two coordinates** — a double-position/double-render of SELF
+      (predicted vs server, or rig drawn from two sources). This is the same class B51/B52 fixed
+      in arena; find the belt-path equivalent. It must render from ONE position source.
+3. **Parity sweep**: systematically diff belt vs top-down for every player-facing system —
+   movement, aim, attack, parry, dodge, jump, camera, HUD, pickups, chests, damage numbers, VFX
+   anchoring, SFX. Report a parity table (system | top-down | belt | verdict) and fix every gap
+   you find, not only the three reported.
+4. **Permanent gates (non-negotiable)**: extend the standing gates so belt is covered forever —
+   add belt-mode runs of the 43-scenario telemetry harness (tools/diag-rb-telemetry.mts), B52's
+   part-snap probe, and B53's flip probe; plus a belt smoke spec asserting scene-active + HUD
+   present + aim-tracks-cursor + single-position rendering. These must run in the same suite as
+   the top-down ones so no future batch can regress belt silently.
+
+## Guardrails
+- Do NOT redesign belt or fold it into top-down in this lane (a separate structural lane may do
+  that later). Restore parity + gates only.
+- Parallel Sols: b54-l2 (weapons schema/catalog), b55 (chests/relics/augments), b53 (rig flip).
+  Rebase onto main at merge; reconcile SCHEMA_VERSION rather than assuming.
+- STANDING LAWS unchanged. LF endings; migrate tests.
+
+## Verification
+- `pnpm gen`+`gen:check`+`typecheck`+FULL `pnpm test` green.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567), on `proto-cowboy-hidden-face`, in BELT
+  mode on a corporate floor: screenshots of (a) full HUD present, (b) weapon pointing at several
+  cursor positions incl. both facings, (c) a walk trace proving ONE self position (no phasing),
+  (d) attack/parry/dodge/jump working, (e) a chest opened. Plus the harness/probe runs above.
+  Evidence under `docs/owner-notes-audit-v12-evidence/b56-belt-parity/`.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Report docs/sol-reports/impl-b56-belt-parity.md
+with the missing-UI list and the full parity table. FINAL line = verdict: boot fixed, N UI
+surfaces restored, aim fixed, phasing root cause named, parity table size, belt gates added
+(list), evidence path, files touched.

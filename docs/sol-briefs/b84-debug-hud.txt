@@ -1,0 +1,76 @@
+You are Sol `b84-debug-hud` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b84-debug-hud
+(branch sol/b84-debug-hud). NEW DEV TOOL. Autonomous.
+
+## Owner order (2026-07-27, verbatim)
+> "can you put like...debugging metrics on my screen so when Im seeing bad shit happen and 2 of like
+> 10 metrics are red I would know what to talk about?"
+
+## Why this matters more than it looks
+Every performance/feel bug this session cost EXTRA batches because the report was qualitative —
+"feels janky", "warps every 5 seconds", "about an inch on my screen". Two batches were spent hunting
+a stall that turned out to be orphaned processes, and one hypothesis (texture streaming) was wrong.
+**This tool's job is to turn "feels bad" into "metric 3 and 7 went red".** Optimise for that.
+
+## Build: an on-screen diagnostic HUD
+Dev-gated behind `clientDevToolsEnabled()` — NEVER present in a production build. Toggled by a key;
+check the existing bindings in `ArenaScene` (`W,A,S,D,R,P,Q,E,Z,X,F,G,H,T,B,C,M,TAB,ESC,SPACE,SHIFT,
+CTRL,ONE..FIVE,arrows,ENTER`) and pick a free one. State your choice.
+
+**Each metric shows: label, current value, and a GREEN / AMBER / RED state against a stated threshold.**
+Red must mean "this is actually wrong", not "this is busy" — a HUD that is always half-red is useless.
+Document every threshold and why you chose it.
+
+### Metrics to include (all of these; add more if you find something diagnostic)
+1. **Frame time** — current + rolling p99. RED above 250 ms (that is the `forceResync` trigger at
+   `ArenaScene.ts:15193`), AMBER above ~33 ms.
+2. **Stall count** — frames >250 ms this session. Any non-zero is RED; this is the thing that causes warps.
+3. **Self corrections** — count, max px, and which band (Silent / Smooth / Snap) per B42/L10.
+   A Snap on SELF is RED — canon L10 says self must never hard-snap.
+4. **Render vs commit divergence** — px between the extrapolated render position and the position the
+   committed input actually produces. This is the `b83-input-alias` defect; surface it as a first-class
+   number. RED above a stated threshold.
+5. **Input latency** — ms from key press to committed command. L10 says self must never feel lag.
+6. **Server tick health** — measured interval vs `TICK_MS` (50 ms) and drift.
+7. **RTT / ping** to the room.
+8. **Prediction pending window** — unacknowledged inputs in flight. Growth means the client is
+   outrunning the server.
+9. **Entity load** — enemies, projectiles, active VFX/particles. Context for the numbers above.
+10. **Heap** — `performance.memory` where available, plus growth rate. GC pressure is a live suspect.
+11. **Resync count** — how many times `forceResync()` fired.
+
+### THE MOST IMPORTANT FEATURE: a copyable dump
+A key that copies a compact diagnostic snapshot (last ~10 s of the above, plus peaks) to the clipboard
+AND logs it to console. The owner will paste this to the orchestrator verbatim. Make it terse, plain
+text, and readable without tooling. **This single feature is the point of the batch** — design the
+report format so someone reading it cold can tell what went wrong.
+
+## Hard constraints
+- **The HUD must not cause what it measures.** Sample cheaply, throttle DOM/text updates (~4 Hz is
+  plenty for display while sampling every frame for the stats), never allocate per frame, never add a
+  render target or full-screen shader. Measure your own cost and report it — if the HUD is visible and
+  frame time rises measurably, you have failed the brief.
+- Never a modal, never steals input (law L05). It is an overlay, not a dialog.
+- Off by default. Toggle state may persist in localStorage.
+- No player auras, no gameplay changes of any kind. This batch is read-only with respect to the game.
+
+## Coordinate — `b83-input-alias` IS RUNNING RIGHT NOW
+It is fixing the render-vs-commit divergence and is actively editing
+`packages/client/src/scenes/ArenaScene.ts` and `packages/client/src/net/prediction.ts`.
+- Build the HUD as its OWN MODULE with the SMALLEST possible number of touch points in those files.
+- Prefer reading existing state over adding new plumbing.
+- **Rebase onto `origin/feat/v0.118-metagame` before you finish** and re-verify — b83 may have landed.
+- `b82-l10-no-self-snap` already added dev-gated correction instrumentation (HUD line + per-event
+  console). **Build on it; do not duplicate or replace it.** Read `docs/sol-reports/b82-l10-no-self-snap.md`.
+
+## Verification
+`pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green twice. Then run it live and capture
+`docs/sol-reports/b84-evidence/hud-normal.png` (all green during calm play) and `hud-stress.png`
+(under heavy load / rapid WASD mashing, showing something amber or red). Include a real pasted example
+of the copyable dump in your report. If no browser is available, say so plainly rather than
+fabricating captures.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b84-debug-hud.md` with the
+toggle key, the copy key, every metric and its thresholds with justification, the measured cost of
+the HUD itself, and a sample dump. FINAL line = verdict: toggle key, copy key, N metrics, HUD cost in
+ms/frame, captures, 2x test results.

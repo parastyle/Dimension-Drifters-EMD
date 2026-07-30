@@ -1,0 +1,74 @@
+You are Sol `b85-hud-wire` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b85-hud-wire
+(branch sol/b85-hud-wire). TWO DEFECTS, BOTH OWNER-BLOCKING. Autonomous.
+
+## Defect 1 — the diagnostic HUD reads all zeros (it is never sampled)
+Owner: *"metrics showed all 0s"*
+
+**Root cause is already found — do not re-derive it.** `packages/client/src/dev/diagnostic-hud.ts`
+exposes `recordFrame(deltaMs, nowMs)` and related intake methods. `ArenaScene.installDiagnosticHud()`
+(~line 14773) constructs the HUD and passes a context callback that fills only `pendingInputs`,
+`enemies`, `projectiles` and VFX stats.
+
+**Then nothing ever calls it.** `grep -n "diagnosticHud\." packages/client/src/scenes/ArenaScene.ts`
+returns ZERO matches after construction. There is no per-frame `recordFrame` call, so every metric
+stays at its initial zero. The module's unit tests pass because they drive the class directly; it was
+never run live (its own report says "live HUD cost unavailable / no browser").
+
+Wire it properly:
+- Call the frame intake EVERY frame from the scene update with the real `deltaMs`.
+- Feed every metric from a real source: frame time + p99, stall count (>250 ms), SELF corrections with
+  band (Silent/Smooth/Snap), render-to-commit divergence, input latency, server tick health/drift,
+  RTT, prediction pending, entity load, heap, resync count.
+- Where a metric has no real source yet, **display it as `n/a`, never as `0`.** A zero that means "not
+  measured" is worse than no metric at all — it is what wasted the owner's last test.
+- Verify F8 shows live changing numbers and F9 dumps them. **You must run it in a real rendered
+  browser.** If you cannot, say so plainly and do NOT claim it works.
+
+## Defect 2 — warping got WORSE after L10, and L10 is the prime suspect
+Owner: *"this is the warpiest its ever been"* — a regression against the immediately preceding build.
+
+Only two things merged since the last "better" report: `b82-l10-no-self-snap` (L10) and
+`b84-debug-hud`. The HUD is provably inert (never called), so **L10 is the suspect.**
+
+The plausible mechanism: L10 converted a SELF resync from one hard 320 px snap into a graded recovery
+across the Smooth window (~38 px/frame). If corrections are FREQUENT, the player no longer feels
+occasional discrete pops — they feel CONTINUOUS RUBBER-BANDING, which reads as "warpier" even though
+peak displacement dropped. Trading one big honest snap for a constant soft wrongness can be worse.
+
+**Investigate and report honestly. Options to weigh:**
+- Shorten the smoothing window so recovery is quick but still not a single-frame teleport.
+- Only grade corrections above a threshold; let tiny ones apply instantly (they are invisible anyway).
+- Rate-limit: if corrections arrive faster than the smoothing window, stop stacking glides — snap once
+  and resettle rather than perpetually chasing.
+- If the evidence says L10 as shipped is simply worse in practice, SAY SO and propose the revision.
+  Canon L10 is the owner's intent — "never feel lag on their own character" — not a specific window
+  length. Serving the intent may mean changing the implementation.
+
+**Do NOT** re-introduce speed modulation (canon L09), add input latency, or hide a stall.
+
+## Context you need
+- `b83-input-alias` may still be in flight or landed: it fixes render-vs-commit divergence at the
+  50 ms tick boundary (extrapolating live per-frame direction vs the committed one, up to ~16 px).
+  **Rebase onto `origin/feat/v0.118-metagame` before finishing** and re-verify. If b83 has landed,
+  say whether it changed the picture.
+- The HUD's own metric 4 (render-to-commit divergence) is how the owner will verify b83. Make sure
+  that metric is real, not a placeholder.
+
+## Guardrails
+- Canon L09 and L10 stand. Keep B42/B68/B74/B75/B76 guarantees.
+- HUD stays dev-gated, must never reach production, must not cost measurable frame time, never modal.
+- Do not touch `data/weapon-concepts-300.json`, the lava dimension, or the walkability painter.
+- LF endings.
+
+## Verification
+- `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green TWICE.
+- **Live proof, in a real browser**: a capture of the HUD showing NON-ZERO changing values during
+  play, plus a pasted F9 dump in the report. This is the acceptance criterion — the previous batch
+  shipped a HUD that had never displayed a real number.
+- State measured self-correction frequency and magnitude before/after your L10 change.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b85-hud-wire.md` with the
+wiring, which metrics are real vs `n/a`, the L10 findings with evidence, and a pasted F9 dump. FINAL
+line = verdict: metrics live N/12, n/a count, L10 verdict + change, correction freq/magnitude
+before/after, live proof yes/no, 2x test results.

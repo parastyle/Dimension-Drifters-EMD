@@ -1,0 +1,31 @@
+You are Sol `impl-b9-size` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b9-size
+(branch sol/b9-size). IMPLEMENTATION. Autonomous — no questions.
+
+## YOUR ORDER
+Implement BATCH B9 from the ledger. READ `docs/sol-reports/notes-ledger-v9.md` section "B9 — Weapon
+visual size and image orientation" for the FULL authoritative spec.
+
+The 5 changes (PRESENTATION size only — do NOT change damage, range, or collision reach):
+- Idol of the Pale Verdict (`x2-idol-of-the-pale-verdict`) — visual length 148 -> 207.2 (1.4x).
+- Dervish Greatblade (`x-sword-whirlwind`) — 118 -> 236 (2x).
+- Mournveil Scythe (`x2-mournveil-scythe`) — 280 -> 364 (1.3x).
+- Gravewind Rimfire (`x2-gravewind-rimfire`) — 54 -> 108 (2x).
+- Prismhex Diffraction Gauntlet (`x2-prismhex-diffraction-gauntlet`) — a STABLE horizontal image
+  mirror/facing datum so the painted thumb aligns with the rig hand on BOTH facings (thumb where the
+  pinky is => mirror). Do NOT regenerate a "similar" gauntlet; just mirror/flip via a facing datum.
+Use the generator's documented deterministic rounding if exact multiplication rounds.
+
+## STANDING RULES (all batches)
+- Touches `packages/shared/src/weapons.ts`, `data/weapon-concepts-300.json`, generated catalog,
+  sprite/facing metadata in `manifest.ts`/`SpriteRig.ts`, asset-dimension + pose tests. Run `pnpm gen`;
+  keep gen:check/assets:check green + server booting. `pnpm typecheck` + FULL `pnpm test` GREEN in this
+  worktree. LF endings ONLY. You may CREATE tests; do NOT weaken existing assertions.
+- Acceptance: exact catalog assertions prove all four multipliers AND unchanged gameplay range/damage; a
+  live before/after proves visual bounding-box ratios within 1%; Prismhex thumb/pinky correct on BOTH
+  facings without becoming upside down. Live gate on PRIVATE EPHEMERAL PORTS only (never 5180/2567).
+  Retain evidence under `docs/owner-notes-audit-v9-evidence/b9-size/`.
+- Worktree: commit on sol/b9-size; orchestrator merges. Don't touch main copy or ports 5180/2567.
+
+## REPORTING (durable, incremental — update as you go)
+FIRST: write `docs/sol-reports/impl-b9-size.md` (size/facing datum system + plan). Append. FINAL line =
+verdict: per-weapon status, before/after sizes, evidence paths, files touched.

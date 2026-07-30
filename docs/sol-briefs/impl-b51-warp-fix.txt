@@ -1,0 +1,42 @@
+You are Sol `impl-b51-warp-fix` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b51-warp-fix
+(branch sol/b51-warp-fix). FIX — WARP/SNAP CORRECTIONS. Autonomous.
+
+## Confirmed causes (READ the three diagnosis reports FIRST:
+docs/sol-reports/diag-rb-telemetry.md, diag-rb-authority.md, diag-rb-client.md — the first two are
+merged knowledge below; the third may add client-side items — implement its confirmed mismatches too)
+1. **Post-placement epoch registration** (class bug): `positionCorporateParty` (elevator
+   boarding), Dimension Door outbound/return, teleport-placement paths (testing-ground, restart,
+   rift-descent), pit snap-back — all assign x/y BEFORE opening the server-motion epoch; the
+   assignment tick is unowned -> huge one-tick "error" -> snap-warp (telemetry: 3570px elevator,
+   445px ultimate, 320px pit).
+2. **Capped-composite impulse tail**: epochs protect 11 future integrations; composites at/over
+   the speed cap (enemy-contact/commit hits, boss knockback 720-1000 px/s, recoil composites)
+   need a 12th.
+
+## The fix
+1. Add an atomic helper (e.g. `placeWithMotionEpoch(source, fn)`) that OPENS the epoch, then runs
+   the placement mutation, in room-movement/progression — adopt it at EVERY post-placement site
+   the audit named (elevator, dimension door, all teleport-placement paths, pit snap-back).
+   Grep for any other `x/y assignment followed by zeroMoveVel/epoch` pattern and convert it too.
+2. Extend impulse epoch windows to cover the full decay INCLUDING capped composites (derive the
+   window from the decay math instead of the constant, or +1 tick with a comment proving why).
+3. Convert the diagnosis Sols' failing repro tests (on branches sol/diag-rb-authority /
+   sol/diag-rb-client — cherry-pick or reimplement) into PASSING regression tests.
+4. PROVE with the telemetry harness (branch sol/diag-rb-telemetry has it — cherry-pick the
+   harness): rerun all 41 scenarios; ACCEPTANCE = zero nonzero corrections in every scenario
+   (silent <3px allowed), zero snaps anywhere. Include the before/after ranked table in your
+   report.
+
+## Guardrails
+Parallel Sol B49 (melee/thrown weapons) edits room-combat — your scope is
+movement/progression/epoch machinery; rebase at merge. Do not weaken the envelope checks or the
+banded policy. LF endings; schema from CURRENT + pins; migrate tests.
+
+## Verification
+gen/gen:check/typecheck/FULL test green + the 41-scenario harness table. Evidence under
+docs/owner-notes-audit-v12-evidence/b51-warp-fix/.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Report docs/sol-reports/impl-b51-warp-fix.md.
+FINAL line = verdict: N placement sites converted, window math, 41/41 scenarios clean
+(before/after totals), evidence path, files touched.

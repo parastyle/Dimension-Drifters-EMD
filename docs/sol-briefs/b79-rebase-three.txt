@@ -1,0 +1,74 @@
+You are Sol `b79-rebase-three` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b79-rebase-three
+(branch sol/b79-rebase-three). REBASE + REPAIR THREE STALE BRANCHES. Autonomous.
+
+## The situation
+Three finished branches were built against an OLD base and no longer integrate. Master has since
+gained ~27 new weapons, a rig rework, a movement-model deletion and a projectile-aim fix. All three
+were merged, broke master, and were REVERTED. Master is now green at `982ea8d5`
+(238 files, 2,894 passed, 20 skipped) and pushed.
+
+Your job: bring all three forward onto current master, fix what broke, and land them as ONE branch.
+
+### 1. `sol/b65-subclass` — weapon subclass taxonomy + Testing-Grounds paging
+**Why it broke:** it derived subclass rules from the catalog as it existed BEFORE the new weapons.
+Now every new family throws at import time and 241 test files fail to even load:
+`Error: Weapon x2-rancher-22-plinker has no subclass rule for ranged/rimfire-rifle`
+(`packages/shared/src/weapons.ts:1144` in `weaponTaxonomyFor`).
+
+Fix properly — **9 more guns and 14 more weapons are still queued**, so a hardcoded rule list will
+break again the moment they land. Requirements:
+- Every currently-catalogued weapon resolves to exactly one subclass and one class.
+- **Unknown/new families must NOT throw at module import.** Decide the graceful behaviour — derive a
+  subclass from `family`, or fall back to a documented default — and say what you chose and why.
+  A taxonomy that hard-throws on an unseen family makes every future weapon batch a build break.
+- Owner ruling stands: a subclass with only ONE member is not a subclass — that weapon's class
+  becomes **`Special`**.
+- Keep the Testing-Grounds paging: one page per subclass, ordered subclass-within-class, labelled.
+- Keep a test asserting the one-subclass/one-class invariant.
+
+### 2. `sol/b62-access-pause` — accessibility options panel + pause
+**Why it broke:** `ArenaScene.pause.test.ts` asserts the ArenaScene SOURCE TEXT contains
+`this.room.send("pauseVote", { confirmed })`, and that did not survive the merge into a heavily
+rewritten ArenaScene.
+
+Re-apply the work onto current ArenaScene so the behaviour is actually present. If a source-text
+assertion is the wrong shape of test, replace it with one that asserts BEHAVIOUR — but do not simply
+delete the coverage.
+Owner requirements, unchanged: all 11 accessibility settings reachable from one MenuScene panel;
+solo `Esc` pause must HALT THE SERVER TICK (not just freeze the view); multiplayer uses the locked
+consensus `pauseVote`; pause must never steal input when the game is live.
+
+### 3. `sol/b67-light-laser` — flashlight / laser pointer toggle
+**Why it broke:** merge conflicts in `packages/client/src/scenes/ArenaScene.ts`,
+`packages/shared/src/constants.ts` and `packages/shared/src/weapons.ts` — all three heavily rewritten
+since it branched (b68 rig presentation, b74 deleted the movement constants, many weapon merges).
+
+Re-apply onto current code. **STANDING LAW — NO PLAYER AURAS.** A flashlight cone originates at the
+weapon MUZZLE and points along the aim vector; it must never become a radial glow centred on the
+character. The owner ruled "never again" on that. 27 of the 30 B63 guns carry a laser/light unit in
+their art; the three scoped ones (Varmint Bolt, Anvil .50, Zenith Photon DMR) do not and must not
+gain a toggle.
+
+## Order of work
+Land them one at a time, running the full suite between each, so you know which one broke what.
+If any single one cannot be brought forward cleanly, **land the other two and report the third as
+blocked with the reason** — do not sink the batch for one item.
+
+## Guardrails
+- Canon **L09**: movement is one constant speed; feel comes from animation. The turn-hitch and
+  accel/decel constants are DELETED and must not return.
+- Keep B68 (one PresentedActorState, unified clock, limb priority), B74 (limb physics: head/hands/
+  feet, idle + moving), B75 (crisp stop, foot-disc pit sampling), B76 (aim snapshot at trigger).
+- Do not touch `data/weapon-concepts-300.json` — parallel gun Sols are appending.
+- Do not touch the lava dimension files or the walkability painter.
+- LF endings. Bump `SCHEMA_VERSION` if wire shape changes and update every test pinning it.
+
+## Verification
+`pnpm gen` + `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green **twice consecutively**.
+`tools/diag-rb-telemetry.mts` completes all scenarios with zero corrections in both modes.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b79-rebase-three.md` with,
+per branch: what broke, what you changed, and the verification. For the taxonomy, state explicitly
+how an unseen weapon family now behaves. FINAL line = verdict: b65 status, b62 status, b67 status,
+unseen-family behaviour, telemetry, 2x test results.

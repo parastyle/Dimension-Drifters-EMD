@@ -1,0 +1,124 @@
+You are Sol `b94-open-arena` in an ISOLATED WORKTREE at
+C:/Users/Exped/ddv2-wt/b94-open-arena (branch sol/b94-open-arena). Autonomous.
+
+## Owner order (2026-07-28)
+> "Can we remove holes from the map and make it near infinite like VS?"
+> "Yes, if we're doing finite. 8x should do"
+
+Two changes, one batch: DELETE PITS, and grow the arena 8x linear.
+
+## Deliverable 1 — remove pits entirely (lava dimension EXEMPT)
+
+`MAP_PIT_TARGET` 0.13 / `MAP_PIT_MAX` 0.22 means 13-22% of every map is currently hole. Pits caused
+five separate owner-facing bug classes in one session: damage before the visible edge, a 405px
+teleport snap-back, the walkability derive, a 48px collision inset, and hole-noise rejection.
+
+- `TILE_PIT` and every consumer come out: generation targets/spacing, jump-gap connectivity
+  (`MAP_MAX_JUMP_TILES`), pit damage, pit grace, pit reposition/snap-back, pit-lip and rim rendering,
+  `isPitAtPx`, and the pit-void palette entries. ~434 references across shared/server/client/tests —
+  most are deletions.
+- Ground becomes continuous. The arena boundary is the only hard limit.
+- The distance jump STAYS. It stops being a traversal tax and becomes a pure mobility/dodge tool,
+  which is how the owner already uses it. Do not shorten or re-tune it.
+- **The lava dimension is EXEMPT and must keep working unchanged.** Its islands-over-chasm is the one
+  place holes are the point, and b90/b91/b92 just landed there. Do not touch `lava-dimension.ts`,
+  `lava-prefabs.ts`, the lava collision derivation, or b90's two invariants.
+- If a system NEEDS pits to make sense (extract/rift disc placement, zone connectivity, gates), say so
+  and propose the replacement rather than silently weakening it.
+
+## Deliverable 2 — 8x linear arena
+
+`ARENA_WIDTH`/`ARENA_HEIGHT` 4800 -> 38400. That is 480x480 tiles at `MAP_TILE` 80, ~120s to cross at
+`MOVE_SPEED` 320. 224 references to those constants exist; most should already be relative.
+
+Known hazards — verify each, do not assume:
+- **The floor bake is DELETED, not chunked. Owner ruling 2026-07-28: "then take the washes away".**
+  `bakeStaticFloorGraphics` renders the zone washes into one arena-sized texture at
+  `STATIC_FLOOR_BAKE_SCALE` 0.5. Measured `MAX_TEXTURE_SIZE` on the owner's GPU is 16384, so 38400
+  would need 19200 and fail; the bake caps the arena at 32768 (6.8x) no matter what else changes.
+  Do NOT solve this with chunked or viewport-local baking. REMOVE the wash layer entirely:
+  `buildMapZoneGround` and its three low-alpha passes (0.025 / 0.095 / 0.12) go, along with the bake
+  path that existed to serve them. The owner wants the Vampire Survivors read — an unapologetic,
+  crisp, obviously-repeating tile — and the washes are exactly what mutes it.
+  The ground `tileSprite` is untouched: the GPU repeats one small texture across any arena size in a
+  single draw, so with the washes gone there is NO texture ceiling left. Say what else, if anything,
+  still bakes.
+  NOTE: `installFlatFloorToggle` (K key, ArenaScene) exists solely to A/B the washes. Once they are
+  deleted it is dead code — remove it and its `FLAT_FLOOR_*` names too.
+- **mapgen allocates `cols * rows` typed arrays and runs ~9 full sweeps.** At 230,400 tiles that is
+  ~0.9MB per Int32Array and 230k-iteration loops. Measure and report generation time; if it exceeds
+  ~100ms, chunk or lower the resolution of what does not need per-tile fidelity.
+- **Camera clamping, minimap scale, server bounds validation, and spawn/extract placement** all read
+  the arena size. Verify each still behaves at 8x.
+- Enemy spawning is ALREADY camera-relative (`SPAWN_CAMERA_HALF_WIDTH/HEIGHT`, `SPAWN_MIN_DISTANCE`,
+  `SPAWN_CANDIDATE_COUNT`), so density should follow the player and NOT thin out. PROVE this with a
+  measurement at both 4800 and 38400 — if density does drop, that is the real risk in this batch.
+
+## Verification
+- `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green TWICE.
+- Report: map generation time at 4800 vs 38400; floor build/draw cost; enemies-on-screen over a fixed
+  60s sample at both sizes; peak texture allocation. Confirm no texture is allocated proportional to
+  arena size any more.
+- Prove no pit remains outside lava: a test asserting generated maps contain zero `TILE_PIT`, and that
+  the lava dimension still produces its platforms/gaps unchanged.
+- Re-run b90's 2000-seed lava sweep to prove lava is untouched.
+- The five pre-existing dimensions must still load and play.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b94-open-arena.md` with what
+you deleted, the floor strategy you chose and why, the measured costs, and the spawn-density evidence.
+FINAL line = verdict: pit refs removed N, arena size, floor strategy, mapgen ms 4800 vs 38400, spawn
+density before/after, lava sweep, 2x test results.
+
+## Sol guardrails — the "do not fuck with" list
+
+Locked 2026-07-28 after a session in which five separate batches each fixed a real defect and the
+owner still could not walk in a straight line. Every rule below is a scar, not a preference: the
+citation is what it cost. Paste this block verbatim into every Sol brief.
+
+- **G1 — Never add a filter between prediction and the drawn root.** Five had accumulated: the
+  authority leash, the presentation chase, the debt ledger, the root limiter, and camera weight. Each
+  was defensible alone; together they WERE the warp, and each new one hid the previous. Adding another
+  needs an owner ruling. Removing one is usually the fix.
+  [Cost: b82, b83, b85, b87, plus four orchestrator patches. Resolved by DELETING a layer, not adding.]
+
+- **G2 — A tolerance constant ships with a derivation or it does not ship.**
+  `MAX_VISIBLE_OVERLAP_FRACTION = 0.32`, `edgeInsetPx = 48`, `bottomTrimFraction = 0.13`,
+  `collisionLength = 118`. Every one silenced a failing check and quietly degraded the game — 32%
+  platform overlap, two thirds of every floor unwalkable, 57.7 px of dead blade. If you cannot derive
+  the number from a body radius, a speed, or a tick, you are hiding a bug behind it.
+
+- **G3 — Art and hitbox never diverge silently.** If art scales, reach scales. A deliberate exception
+  must be declared in a machine-checked list with its owner citation, and a test must fail when the
+  exception stops being real. "Presentation-only" is not a licence to let the drawn edge lie.
+  [Cost: the Dervish Greatblade shipped with a pre-resize hitbox for six days.]
+
+- **G4 — No retry-then-throw where the game needs a guarantee.** Rejection sampling cannot guarantee
+  an invariant; it can only fail late. Construct so the invariant holds by arithmetic, and degrade
+  deterministically when construction is impossible. A live `throw` in generation is a crash path.
+
+- **G5 — Never grade your own live verification.** "No browser available" is an acceptable report.
+  Claiming a feature works without having seen it run is not, and it wasted a full owner test cycle
+  twice. State plainly what you could not verify.
+
+- **G6 — Never fix feel with easing, damping, or smoothing.** Canon L09/L10. Every smoothed thing
+  became positional debt, and debt is repaid as a warp the player feels later. The transition is
+  instant; what must not happen is EXTRA or WITHHELD distance.
+
+- **G7 — Assume the merge dropped your call site.** A merge can keep your new module and restore the
+  old caller, and the suite stays green because unit tests drive the module directly. Pin call sites
+  as literal source strings so the seam cannot rot silently.
+  [Cost: b83's fix was inert in the owner's build; found only when a later batch re-derived it.]
+
+- **G8 — Aggregates cannot see single-frame events.** A min/max/mean metric read all-green through a
+  visible 48 px pop. Any diagnostic you build needs per-frame capture of the raw quantity, not just
+  summary statistics.
+
+- **G9 — HARD NO-TOUCH.** Canon L09/L10/L11; the B42 plausibility envelope; b83's frame-sampled input
+  path; b90's two lava invariants (no touching surfaces, every edge jumpable);
+  `data/weapon-concepts-300.json`; the walkability painter. Changing any of these requires an explicit
+  owner order quoted in the brief.
+
+- **G10 — Follow the evidence over the brief's hypothesis.** Briefs state a suspected cause to save
+  you time, not to fix your conclusion. b87 and b91 both refuted their brief's hypothesis and were
+  right to. Say so plainly in the report when you do.

@@ -1,0 +1,153 @@
+You are Sol `b95-three-enemies` in an ISOLATED WORKTREE at
+C:/Users/Exped/ddv2-wt/b95-three-enemies (branch sol/b95-three-enemies). Autonomous.
+
+## Owner order (2026-07-28)
+> "Lets redo our enemies while we're here. three types. Runners, they run at you. They use same
+> character models we use for player characters. Cultists, same character models we use for player
+> characters, holding real authored weapons and using them as they were made and edited (we'll need AI
+> for them.) and then Bigs. These are big bosses, not necessarily tougher, but they get any kind of
+> character form."
+> "the runners are going to turn this game into more of an intense zombie repellent games. They're
+> kind brainwashed zombiefied people from dimensions. Then we have the cultists, the ones who made this
+> dimension purple mess, they should pose a real problem, shooting, meleeing, magicing...whatever...
+> and Bigs...uniques that spawn just to make the game more fun."
+> "for now, just use our purple characters as cultists ... Use Frost Rune Guardian as our runner"
+> "Lets set up some testing"
+
+Not lore-heavy. Three tiers, clean pacing: swarm -> threat -> spectacle.
+
+## The three archetypes
+
+**RUNNER** — brainwashed zombified people. Model: `proto-frost-rune-guardian` for now.
+No weapon, no ranged, no complex AI: seek the nearest player and contact. They must be CHEAP, because
+density IS the fantasy. `MAX_ENEMIES` is currently 80; runners should be affordable enough to test
+150-200 on screen. Report the cost per runner per tick and the count at which the tick budget breaks.
+
+  **Animation is a first-class requirement, not polish.** Owner: *"the runners will need a very
+  animated running animation, a lunge animation (They dont have weapons) where they fling themselves
+  at you like a zombie runner"*. Two states:
+  - RUN: heavily animated, full-body, unmistakably a sprint — this is the zombie-horde read and it
+    must be legible as a silhouette in a crowd, not a subtle gait.
+  - LUNGE: the attack. They fling themselves bodily at the target. No weapon is involved, so the whole
+    rig is free — nothing competes for limb claims the way a held weapon does. This SHOULD be the most
+    physical animation in the game.
+
+  Prior art to reuse, not rebuild: the `leaper` archetype already has a telegraphed close-then-leap
+  (`COMBO_LEAP_RANGE` / `_OFFER_TICKS` / `_AIR_TICKS` / `_SETTLE_TICKS` / `_COOLDOWN`, plus a landing
+  marker). The runner lunge is that mechanic with a different animation and no telegraph fairness
+  budget to protect. Say what you reused.
+
+  Canon note: L09/"attacks never displace the character" governs the PLAYER. An ENEMY lunge is
+  supposed to move the enemy — that is the mechanic. Do not apply the player rule here.
+
+  **DENSITY vs ANIMATION is the real tension in this batch.** A very animated full-body run at 150-200
+  simultaneous rigs is a rendering question, not a design one. Measure it. If it does not hold, say so
+  with numbers and propose the cheapest honest answer (simplified rigs past a distance, shared
+  animation phase, fewer animated joints at range) rather than quietly thinning the horde or quietly
+  dropping the animation. Report frame cost at 50 / 100 / 200 runners.
+
+**CULTIST** — the ones who made the purple mess. A real threat, not a swarm. Models (all six, rotate):
+`proto-punk-occult-summoner`, `proto-ninja-purple`, `proto-wizard`, `proto-cyberpunk-hacker`,
+`proto-alien-void-scholar`, `proto-hooded-rogue`.
+Each cultist HOLDS A REAL AUTHORED WEAPON from the catalog and uses it AS AUTHORED — its real timings,
+charges, combos, beams, casts, cooldowns, muzzle, VFX. Not an approximation.
+
+  **Build the AI per WEAPON SUBCLASS, not per weapon.** There are ~395 weapons; there is already a
+  subclass system. Ten to fifteen subclass behaviours is tractable and each weapon then inherits its
+  subclass's approach plus its own authored numbers. Per-weapon AI is not a thing you should attempt.
+  State the subclass->behaviour table you built.
+
+  Enemies already wield and drop their weapon (task #28) — reuse that, do not reinvent it.
+
+**BIG** — uniques that spawn to make the fight interesting. The 13 existing `archetype: "boss"` kinds
+BECOME Bigs; do not rebuild them in this batch. Owner ruling: **"not necessarily tougher"** — a Big
+earns its place by CHANGING THE RULES of the fight for its duration, not by having more HP. If you add
+anything here, add the classification and the spawn hook, nothing else.
+
+## Replace, do not accumulate
+The current non-boss kinds — swarm, rusher, ranger, spitter, leaper, duelist, zoner — collapse into
+Runner and Cultist. `dummy` stays if the Testing Grounds needs it; say so. Do not leave eight legacy
+archetypes alive beside the new three; that is exactly the accumulation G1 warns about.
+
+## Deliverable — TESTING is the point of this batch
+The owner asked to "set up some testing". They must be able to, in the Testing Grounds, with no code:
+- spawn N runners on demand,
+- spawn a cultist carrying a CHOSEN weapon (or a random one) and watch it actually use that weapon,
+- spawn a specific Big,
+- clear the field.
+A debug spawn RPC already exists (`debugSpawnOne`) and the dev tooling is gated behind
+`serverDevToolsEnabled()` / `clientDevToolsEnabled()`. Extend that; do not build a second system, and
+do not ship anything that reaches production.
+
+## Known context
+- Readability is the standing risk: at 80+ enemies wearing player models the screen must stay
+  triageable. For THIS batch the frost guardian (runner) and the six purple characters (cultist) are
+  visually distinct enough. The owner's plan is purple-infected runner variants and purple/red/black
+  cultist robes later — do not attempt that art now, but do not design anything that would block it.
+- Co-op friendly fire: enemies wearing player models means players may shoot allies. Note what you
+  observe; do not solve it in this batch unless it is trivial.
+
+## Verification
+- `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green TWICE.
+- Report: per-runner tick cost and the max sustainable runner count; the subclass->behaviour table;
+  which weapons you sampled for cultists and evidence they fired/swung with authored timing.
+- Prove the 13 Bigs still spawn and fight unchanged.
+- The five pre-existing dimensions plus lava must still play.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b95-three-enemies.md`.
+FINAL line = verdict: archetypes replaced N->3, runner cost/max count, subclass behaviours N, cultist
+weapon evidence, bigs unchanged y/n, testing controls added, 2x test results.
+
+## Sol guardrails — the "do not fuck with" list
+
+Locked 2026-07-28 after a session in which five separate batches each fixed a real defect and the
+owner still could not walk in a straight line. Every rule below is a scar, not a preference: the
+citation is what it cost. Paste this block verbatim into every Sol brief.
+
+- **G1 — Never add a filter between prediction and the drawn root.** Five had accumulated: the
+  authority leash, the presentation chase, the debt ledger, the root limiter, and camera weight. Each
+  was defensible alone; together they WERE the warp, and each new one hid the previous. Adding another
+  needs an owner ruling. Removing one is usually the fix.
+  [Cost: b82, b83, b85, b87, plus four orchestrator patches. Resolved by DELETING a layer, not adding.]
+
+- **G2 — A tolerance constant ships with a derivation or it does not ship.**
+  `MAX_VISIBLE_OVERLAP_FRACTION = 0.32`, `edgeInsetPx = 48`, `bottomTrimFraction = 0.13`,
+  `collisionLength = 118`. Every one silenced a failing check and quietly degraded the game — 32%
+  platform overlap, two thirds of every floor unwalkable, 57.7 px of dead blade. If you cannot derive
+  the number from a body radius, a speed, or a tick, you are hiding a bug behind it.
+
+- **G3 — Art and hitbox never diverge silently.** If art scales, reach scales. A deliberate exception
+  must be declared in a machine-checked list with its owner citation, and a test must fail when the
+  exception stops being real. "Presentation-only" is not a licence to let the drawn edge lie.
+  [Cost: the Dervish Greatblade shipped with a pre-resize hitbox for six days.]
+
+- **G4 — No retry-then-throw where the game needs a guarantee.** Rejection sampling cannot guarantee
+  an invariant; it can only fail late. Construct so the invariant holds by arithmetic, and degrade
+  deterministically when construction is impossible. A live `throw` in generation is a crash path.
+
+- **G5 — Never grade your own live verification.** "No browser available" is an acceptable report.
+  Claiming a feature works without having seen it run is not, and it wasted a full owner test cycle
+  twice. State plainly what you could not verify.
+
+- **G6 — Never fix feel with easing, damping, or smoothing.** Canon L09/L10. Every smoothed thing
+  became positional debt, and debt is repaid as a warp the player feels later. The transition is
+  instant; what must not happen is EXTRA or WITHHELD distance.
+
+- **G7 — Assume the merge dropped your call site.** A merge can keep your new module and restore the
+  old caller, and the suite stays green because unit tests drive the module directly. Pin call sites
+  as literal source strings so the seam cannot rot silently.
+  [Cost: b83's fix was inert in the owner's build; found only when a later batch re-derived it.]
+
+- **G8 — Aggregates cannot see single-frame events.** A min/max/mean metric read all-green through a
+  visible 48 px pop. Any diagnostic you build needs per-frame capture of the raw quantity, not just
+  summary statistics.
+
+- **G9 — HARD NO-TOUCH.** Canon L09/L10/L11; the B42 plausibility envelope; b83's frame-sampled input
+  path; b90's two lava invariants (no touching surfaces, every edge jumpable);
+  `data/weapon-concepts-300.json`; the walkability painter. Changing any of these requires an explicit
+  owner order quoted in the brief.
+
+- **G10 — Follow the evidence over the brief's hypothesis.** Briefs state a suspected cause to save
+  you time, not to fix your conclusion. b87 and b91 both refuted their brief's hypothesis and were
+  right to. Say so plainly in the report when you do.

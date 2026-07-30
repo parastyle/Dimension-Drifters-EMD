@@ -1,0 +1,68 @@
+You are Sol `b89-server-load-profile` in an ISOLATED WORKTREE at
+C:/Users/Exped/ddv2-wt/b89-server-load-profile (branch sol/b89-server-load-profile).
+DIAGNOSIS ONLY — NO PRODUCTION CODE CHANGES. Autonomous.
+
+## Why you are read-only
+`b88-l11-seen-hits` is editing `room-combat.ts` and `room-enemies.ts` RIGHT NOW. You must not write to
+production server files or you will conflict with it. You may add throwaway benchmark/profiling
+harnesses under `tools/` or `docs/`, and you must write a report. Nothing else.
+
+## The evidence (owner F9 capture, 2026-07-27, live fight)
+Client is healthy throughout — frame time 6.9ms, p99 6.0ms, zero stalls, zero SELF corrections.
+The SERVER is what degrades under combat load:
+
+| Metric | idle | during a fight with 6 enemies / 14 projectiles |
+| --- | --- | --- |
+| Server tick interval | ~50ms, drift -2.2ms | **drift peak 125.5ms** (2.5 missed ticks) |
+| Room RTT | 16.4ms | **peak 153.6ms** |
+| Client render<->commit divergence | 0.0px | **intra peak 95.8px / boundary peak 88.3px** |
+
+The tick TIMER granularity was already fixed (`ba53447e` samples at TICK_MS/5). This is different:
+the simulation itself is overrunning its 50ms budget under load, so `update()` runs multiple exact
+sub-steps in one invocation and the client rebases prediction by whole ticks.
+
+Entity load at the time was modest — 6 enemies, 14 projectiles, 0 active VFX surfaces. That is FAR
+below the caps. If 6 enemies can cost 125ms, something is superlinear or accidentally quadratic.
+
+## Your job — find where the tick time goes
+1. Build a repeatable server-only load harness (headless, no browser) that drives a room at
+   representative combat load and measures PER-PHASE cost inside `stepSim`. The phase order is a
+   documented CONTRACT with a golden test — use it as your breakdown.
+2. Report a ranked cost table: phase, mean ms, p99 ms, and how each scales as you sweep enemy count
+   (e.g. 1, 5, 10, 25, 50) and projectile count. **Scaling is the point** — an O(n^2) pair loop is
+   the prime suspect. `SpatialGrid` exists; find out whether every phase actually uses it or whether
+   some fall back to full scans.
+3. Name the top 3 costs with file:line and state the measured evidence for each.
+4. Propose a fix for each, with expected saving and risk. DO NOT IMPLEMENT.
+5. Explicitly check for accidental per-tick allocation (garbage) — the owner's heap showed
+   +1.93MB/s during the fight and a 251MB session peak. Report allocation per tick if you can
+   measure it.
+
+## Also answer these specific questions
+- Does `update()` ever run more than one sub-step per invocation under this load? How often, and how
+  many? That is what the client sees as a whole-tick jump.
+- Is `broadcastPatch()` itself a material cost at this entity count? Colyseus encodes the whole patch
+  once per batch; measure it separately from simulation.
+- Is anything in the tick doing work proportional to the CATALOG (weapons, enemy kinds, augments)
+  rather than to live entities? That would be invisible at low counts and constant-cost forever.
+
+## Guardrails
+- NO changes to any file under `packages/*/src/`. Diagnosis only. If you believe a one-line fix is
+  irresistible, describe it in the report and leave the code alone.
+- Do not touch `data/weapon-concepts-300.json`, the lava dimension, or the walkability painter.
+- LF endings.
+
+## Verification
+- Your harness must be re-runnable by the orchestrator with a single documented command; state it
+  verbatim in the report.
+- `pnpm typecheck` and FULL `pnpm test` must still pass (you changed no production code, so this is
+  a sanity check that your harness did not break the build).
+- Numbers must be measured, not estimated. If you cannot measure something, say so plainly.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b89-server-load-profile.md`
+with the harness command, the per-phase cost table, the scaling curves, the top 3 costs with
+file:line and evidence, allocation-per-tick, answers to the three specific questions above, and
+ranked fix proposals with expected saving and risk. FINAL line = verdict: worst phase + its ms,
+scaling shape, sub-steps per invocation under load, broadcast cost, top fix + expected saving,
+test results.

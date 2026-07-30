@@ -1,0 +1,82 @@
+You are Sol `b81-five-second-stall` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b81-five-second-stall
+(branch sol/b81-five-second-stall). OWNER-BLOCKING PERFORMANCE DEFECT. Autonomous.
+
+## The report (owner, verbatim, 2026-07-27)
+> "feels kinda laggy, I warp forward every 5 seconds"
+
+## The MECHANISM is already identified — do not re-derive it
+`packages/client/src/scenes/ArenaScene.ts:15193`:
+
+```
+if (deltaMs > 250) {
+  // A real frame stall (throttled tab wake / GC pause): drop the input backlog AND hard-resync the
+  // predictor on the next patch — its pending window is stale by the whole gap (amendment #12).
+  this.inputAccMs = 0;
+  elapsedForInput = 0;
+  this.predictor.forceResync();
+}
+```
+
+Any single frame longer than 250 ms drops the input backlog and HARD-RESYNCS the predictor. That
+resync is the visible "warp forward". **That code is correct** — it is the right response to a genuine
+stall, and it mirrors the server's own dt clamp.
+
+**THE BUG IS WHATEVER STALLS THE CLIENT FOR >250 ms EVERY ~5 SECONDS.** Find it. Do not "fix" this by
+raising the 250 ms threshold, softening the resync, or smoothing the snap — that hides a real hitch
+and would also weaken correction handling the owner depends on.
+
+## Why I could not measure it myself
+I attempted to profile from the in-app browser pane and it is NOT COMPOSITING — `requestAnimationFrame`
+returned **0 samples** over several seconds. Any frame-timing or position sampling in that surface is
+invalid. **You must profile in a REAL RENDERED BROWSER** — use the Playwright/rendered-stack path that
+earlier batches used successfully (`e2e/helpers/real-stack.ts`, `spec-stack.ts`; note they set
+`VITE_DD_DEV_TOOLS=1`). If you cannot get a genuinely compositing browser, SAY SO PLAINLY rather than
+reporting numbers from a throttled surface.
+
+## Method
+1. **Reproduce and measure.** Play a normal top-down run for at least 60 seconds. Record per-frame
+   deltas. Confirm the ~5 s cadence and capture the actual spike duration and interval. Report p50,
+   p95, p99, max, and the exact gaps between spikes.
+2. **Attribute the spike.** Use the profiler to find WHAT runs during the long frame — GC, texture
+   upload, asset decode, a tween/timer batch, a schema patch, a layout thrash. Name it with evidence.
+3. **Fix the cause.**
+
+## Leading suspects — check these first, then keep going
+- **Periodic object/tween churn.** `b64-movement-jank` found the Testing Grounds gallery spawning 42
+  pickups each allocating a duplicate shine image plus spawn/float/halo/spin tweens; it was made
+  static. Its p50 barely moved after that fix, which suggests a similar periodic allocation still
+  exists elsewhere. Look for anything that rebuilds a batch of GameObjects or tweens on an interval.
+- **GC from per-frame allocation.** A steady allocation rate produces a major GC on a regular cadence —
+  which matches "every 5 seconds" almost too well. Check the update path for per-frame object/array/
+  closure creation, especially in the rig (`packages/client/src/entities/rig/*`), VFX, and the
+  projectile/particle systems.
+- **Asset or texture work at runtime** — lazy loads, canvas texture creation, `createCanvas`/`refresh`.
+- **Colyseus schema patch handling** — a large or unbatched state application. Note `setPatchRate(0)`
+  in `room-progression.ts`: broadcasts are tick-locked, so a heavy tick could land as one big client
+  apply.
+- **The audio loop watchdog** (`AudioBus.ts:558`, `setInterval(..., 250)`) — probably innocent, but
+  confirm rather than assume.
+- The recently merged **lava-foundry** dimension and the **light/laser** render — both new. Confirm
+  the stall reproduces on `ashlands` too, so you know whether it is general or dimension-specific.
+
+## Guardrails
+- Do NOT weaken the >250 ms resync, the correction bands, or B42 relaxed authority.
+- Keep canon **L09** (one constant travel speed; feel comes from animation, never speed modulation)
+  and B68/B74/B75/B76 guarantees intact.
+- No player auras. No modal interruptions. Weapon attacks never displace the character.
+- Do not touch `data/weapon-concepts-300.json`.
+- LF endings.
+
+## Verification — numbers, not adjectives
+- `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green TWICE consecutively.
+- `tools/diag-rb-telemetry.mts`: all scenarios, zero requests/applications/snaps/pixels, BOTH modes.
+- **Before/after frame stats over a ≥60 s rendered run**: p50, p95, p99, max, and count of frames
+  >250 ms. The target is **ZERO frames over 250 ms during normal play**, so `forceResync` never fires.
+  If you cannot reach zero, report the residual honestly with the remaining cause.
+- Add a regression guard if you can make one that is honest and not flaky.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b81-five-second-stall.md`
+with the measured cadence, the profiler attribution (what actually ran in the long frame), the fix,
+and before/after frame tables. FINAL line = verdict: stall cause, cadence, fix, frames >250ms
+before/after, telemetry, 2x test results.

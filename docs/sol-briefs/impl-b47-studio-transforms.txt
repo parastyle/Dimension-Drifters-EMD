@@ -1,0 +1,47 @@
+You are Sol `impl-b47-studio-transforms` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b47-studio-transforms
+(branch sol/b47-studio-transforms). STUDIO V2 — FULL ELEMENT TRANSFORMS. Autonomous — no questions.
+
+## The owner's ask (verbatim, 2026-07-24, extending the B46 Pose Studio)
+"Im going to need to move hands, objects, rotate them, size them up...etc"
+
+## Prereq: B46 shipped the Pose Studio (READ docs/sol-reports/impl-b46-pose-studio.md).
+This lane makes every rendered element fully transformable, which requires the DATA MODEL to
+learn authored transforms first.
+
+## Part 1 — schema + rig support (shared/client)
+Add OPTIONAL authored per-element transform overrides to the weapon authoring model:
+`elementTransforms` keyed by element (hand-l, hand-r, foot-l, foot-r, weapon part-N), scoped
+per-POSE (idle/held) and per-BEAT (combo step): { dx, dy, rotationRad, scale }. The rig modules
+(rig-pose / rig-combat / rig-gear) apply them ON TOP of the computed pose, deterministically,
+both facings (mirror-aware: dx and rotation flip sign with facing). Absent = exactly today's
+behavior (fully backward compatible; zero visual change for unauthored weapons — census test).
+Generator emits them; gen:check covers drift.
+
+## Part 2 — studio gizmos
+In the B46 studio: click any element to select (hands, feet, each weapon part, head);
+- MOVE: drag body; arrow keys nudge.
+- ROTATE: rotation handle + angle field.
+- SCALE: corner handles (uniform) + scale field.
+- Per-scope editing: toggle whether the transform applies to the current BEAT, the POSE, or the
+  weapon's whole hold; copy-transform-to-other-facing; reset-element; reset-all.
+- Live playback shows the authored transforms in the animation loop immediately.
+All writes go to the authoring JSON via B46's save round-trip.
+
+## Guardrails
+- STANDING LAWS still enforced: no melee character-displacement authoring, no chains/auras.
+  Hand rotation is now expressible — the no-thumbs art makes it safe (that was the point of the
+  blob mitts); no art edits.
+- Do not touch B45's recoil surfaces. LF endings; schema bump from CURRENT + pins; migrate tests.
+
+## Verification
+- `pnpm gen`+`gen:check`+`typecheck`+FULL `pnpm test` green; backward-compat census (unauthored
+  weapons byte-identical render transforms).
+- Headless studio proof (private ports): select a hand -> move+rotate+scale -> plays in loop ->
+  save -> JSON row contains the transforms -> reload -> identical. Screenshots retained under
+  `docs/owner-notes-audit-v11-evidence/b47-studio-transforms/`.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Report at
+`docs/sol-reports/impl-b47-studio-transforms.md`. FINAL line = verdict: schema live, gizmos live
+(move/rotate/scale x per-scope), backward-compat proven, round-trip proven, evidence path, files
+touched.

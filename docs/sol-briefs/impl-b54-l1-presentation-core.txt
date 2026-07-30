@@ -1,0 +1,72 @@
+You are Sol `impl-b54-l1-presentation-core` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b54-l1-presentation-core
+(branch sol/b54-l1-presentation-core). B54 LANE 1 — SINGLE PRESENTATION STATE + SERVANT LIMBS.
+Autonomous. This is the batch both doctrine panels recommended.
+
+## The owner's doctrine (verbatim, 2026-07-25)
+"We've got a character body separate from all the limbs. This should be guaranteed to move at one
+constant speed all the time smoothly... any game in the world can do that, with a % speed modifier
+when attacking, getting hit, and also some gun knockback. The body parts should have fluid and
+dynamic servant principles that are aesthetic only. Cartoonish flippy floppy feet and arms when
+they're not in another overriding animation like a sword swing (obviously only the hands for a
+sword swing). Really loosy goosy completely unscripted movement other than basic needs that need
+to be met kinda exactly how Interactive Buddy felt." And: "we need animations disconnected from
+our netcode."
+
+## REQUIRED READING
+- docs/sol-reports/panel-anim-doctrine.md — 8 ranked gaps; top recommendation: ONE coherent
+  PresentedActorState per render frame driving root, velocity, aim, stance, action, and all six
+  rig parts exclusively.
+- docs/sol-reports/panel-netfeel-doctrine.md — 8 ranked gaps; top recommendation: replace
+  tick-phase-dependent self stepping with one monotonic render-rate owner presentation simulation.
+- docs/sol-reports/impl-b52-part-snap.md — proved the rendered (correction-bearing) root was
+  driving a rig gait clock. That feedback loop is the bug class this lane must make impossible.
+- docs/sol-reports/impl-b53-flip-warp.md — facing-flip positional pop plus its probe (a gate for you).
+- Lane 2 (`sol/b54-l2-limb-claims`, merged before you): the `limbClaims` contract you must honor.
+
+## The architecture to build
+1. **One presentation pass per render frame** producing a single `PresentedActorState`
+   (root x/y, velocity, facing, aim, stance, action phase, and the six part transforms). NOTHING
+   else may write rig transforms. Consolidate the six current writers (rig-pose 32 jiggle refs,
+   rig-core 11, combat/flourish/gear/gun-mechanisms 3 each) into this one ordered pass.
+2. **Body root: sim-intent only.** The root reads the authoritative/predicted LOCOMOTION intent —
+   constant speed times documented modifiers ONLY: attack multiplier, hit/stagger, gun recoil
+   (B45 classified impulse). It must NEVER read correction-bearing rendered positions, and no
+   animation clock may derive from a corrected value (the B52 loop). Corrections move the root
+   presented position smoothly per the existing banded policy — they never reach limb state.
+3. **Limbs are servants, springs by DEFAULT.** Every unclaimed limb runs the shipped spring
+   system continuously (PROCEDURAL_JIGGLE params: hand w10/z0.32, foot air/plant, inertia, max
+   displacement) driven by body motion, turns, landings, and recoil — loose, cartoonish, always
+   alive. Idle must NOT be static: body micro-motion keeps limbs floating (Interactive Buddy
+   target).
+4. **Claims override, then hand back.** An action claims only the limbs Lane 2 declares (a sword
+   swing claims the weapon hand — the other hand and both feet KEEP flopping). On release, hand
+   the limb back to springs carrying exit velocity (clamped by JIGGLE_HANDOFF_MAX_V) so it settles
+   instead of snapping.
+5. **One monotonic clock.** All animation phases (gait, jiggle, flip, combo) advance on a single
+   never-reset accumulator wrapped continuously — no per-event resets, no tick-phase dependence.
+   Interrupted flips/combos resume from current visual state.
+
+## Guardrails
+- Behavior-preserving where it matters: damage/timing/hit envelopes unchanged; this is
+  presentation only. Keep every shipped combo READABLE (the theatrics from B25/B49 must still
+  play) — claims are how they keep working.
+- STANDING LAWS: melee never moves the character; gun recoil does; no player auras; no chains.
+- LF endings; schema from CURRENT plus pins; migrate tests.
+
+## Verification (the bar is high — this batch exists to kill a bug class)
+- `pnpm gen` + `gen:check` + `typecheck` + FULL `pnpm test` green.
+- B52 part-snap probe AND B53 flip probe green (they are now your regression gates).
+- The 43-scenario telemetry harness (tools/diag-rb-telemetry.mts) still 43/43 clean.
+- NEW smoothness gate: per-frame part-position traces during walk / walk+attack / ADADAD tapping /
+  mid-combo / recoil — no part exceeds a small frame-to-frame jump, and unclaimed limbs show
+  CONTINUOUS spring motion (assert nonzero micro-motion at idle: proof of floppiness).
+- Live captures (private ports, never 5180/2567): idle floppiness, sword swing with only the
+  weapon hand claimed, kick with only a foot claimed, ADADAD flipping. Evidence under
+  docs/owner-notes-audit-v12-evidence/b54-l1-presentation-core/.
+
+## Rules
+Worktree; COMMIT YOUR WORK in reviewable steps; orchestrator merges. FIRST write
+docs/sol-reports/impl-b54-l1-presentation-core.md (the pass order, writer-consolidation map, clock
+design) before refactoring. FINAL line = verdict: single writer proven, root isolated from
+corrections, springs-default with claim/handoff, one clock, all gates green (list), evidence path,
+files touched.

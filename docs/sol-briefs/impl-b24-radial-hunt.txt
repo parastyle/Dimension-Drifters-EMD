@@ -1,0 +1,70 @@
+You are Sol `impl-b24-radial-hunt` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b24-radial-hunt
+(branch sol/b24-radial-hunt). IMPLEMENTATION — SURGICAL VFX FORENSICS. Autonomous — no questions.
+Report incrementally. NO live-stack boot; unit + live gate on private ephemeral ports.
+
+## Context — the owner's hunt order (verbatim, data/owner-notes.jsonl 2026-07-24)
+"There are ALOT of weapons that have tiny ant sized particles that are always radial behaviour. I
+want them out... many weapons are beautifully made, but they have a very tiny particle that
+appears, always radial and I need that part gone... not sure where it came from but it affects
+alot of weapons." Owner suspects they "were all probably added in the same cohort."
+
+## Owner-marked reference weapons (confirmed sightings of the rogue radial)
+- `x2-thunderpost-fetish` — "remove the radial special effect particle"
+- `x2-thunderhoof-splittingaxe` — "has a radial particle as well"
+- `x2-reaper-s-tithe` — "this one has a radial particle"
+- `x2-hollow-harvest` — "has 2 sets of VFX, a fire circle....and that radial rogue particle. get
+  rid of that particle" (KEEP the fire circle)
+- `x2-gravechain-scythe` — "has a circle VFX and a seperate radial particle" (KEEP the circle)
+- `x2-twin-whispervolumes` — "page particles are good...there are some super tiny ant particle
+  VFX that need to go" (KEEP the page particles)
+
+## Orchestrator forensic head start (verified in this tree)
+- `x2-thunderpost-fetish`, `x2-thunderhoof-splittingaxe`, `x2-reaper-s-tithe` have NO bespoke
+  entry in ANY vfx recipe module — their radial comes from a SYNTHESIZED/FALLBACK path, not
+  per-weapon art. The marked bespoke weapons (hollow-harvest etc.) show it IN ADDITION to their
+  authored layers → one shared default layer injected across many weapons.
+- Suspect surfaces: `packages/client/src/vfx/weapon-vfx-suite.ts` (synthesized fallback around
+  line 142), `caster-vfx-recipes.ts` staff default `blossom: "radial", particleShape: "spark"`
+  (line ~376), the 48-pack particle factory defaults, and `weapon-effect-vfx.ts`.
+- Use git archaeology (`git log -S "radial"` / blame on the suspect surfaces) to find the cohort
+  commit that introduced the shared radial emitter. Name the commit in your report.
+
+## Your job
+1. **Identify the single shared source** of the tiny always-radial particle layer. Prove it: for
+   2 marked weapons, trace the render path from weapon fire to that emitter.
+2. **Remove it at the source** — the shared default/synthesized radial layer dies for ALL weapons
+   at once. Do NOT hand-edit per-weapon recipes to mask it, and do NOT remove any authored bespoke
+   layer (fire circles, page particles, and every other legit VFX stay byte-identical).
+3. **Verify the blast radius**: enumerate every weapon that RESOLVED that layer before your change
+   (log the count + ids in the report). Owner-marked 6 must all be in it; if any marked weapon's
+   radial comes from a DIFFERENT source, remove that too (surgically) and say so.
+4. **Side orders from the same notes batch:**
+   - `x2-mournveil-scythe` — no radial, but REMOVE its on-cursor VFX entirely ("should just be
+     swinging like it does"). Keep the swing itself untouched.
+   - `x2-pocket-hexicon` — archive weapon (follow the archive pattern from tonight's
+     notes-quickfix, commit cf238ec).
+   - `x2-spitfire-censer-wand` — make the weapon render 40% bigger (displayLength/size metadata,
+     not art edits).
+   - `x2-twin-whispervolumes` — UP the size of the page projectiles and make them travel farther
+     (visual + matching authoritative range; keep DPS within ±10% — trim damage if range adds DPS).
+
+## Guardrails
+- SURGICAL: no legit VFX may change. Snapshot-test or before/after-capture the marked bespoke
+  weapons' remaining layers to prove only the rogue layer vanished.
+- Do NOT touch: fan weapons/tornadoes (x2-iron-war-fan, x2-ember-fan, x2-storm-fan — a parallel
+  Sol owns them), kung-fu wraps, B20 stat-teardown surfaces, characters, pets.
+- STANDING BANS: no player auras, no chains/tassels. LF endings only. Migrate affected tests.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green. `pnpm assets:check` green.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567) on `proto-cowboy-hidden-face`: fire the 6
+  marked weapons + mournveil + censer-wand + whispervolumes, both facings. Capture: no tiny radial
+  particles anywhere, bespoke layers intact, mournveil cursor-free, censer 40% bigger,
+  whispervolume pages bigger/farther. Evidence under
+  `docs/owner-notes-audit-v11-evidence/b24-radial-hunt/`.
+
+## Rules
+Worktree; commit on sol/b24-radial-hunt; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b24-radial-hunt.md` (forensic findings: source + cohort commit + affected
+weapon count, then plan). Append per stage. FINAL line = verdict: source named, cohort commit,
+N weapons cleaned, bespoke layers proven intact, side orders done, evidence path, files touched.

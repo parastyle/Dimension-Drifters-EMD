@@ -1,0 +1,32 @@
+You are Sol `impl-b10-vfx` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b10-vfx
+(branch sol/b10-vfx). IMPLEMENTATION. Autonomous — no questions.
+
+## YOUR ORDER
+Implement BATCH B10 from the ledger. READ `docs/sol-reports/notes-ledger-v9.md` section "B10 — Weapon VFX
+cleanup/reuse" for the FULL authoritative spec. NO new generated art — reuse/remove existing assets only.
+
+The 4 changes:
+- Fulgurite Storm-Sphere (`x2-fulgurite-storm-sphere`) — recompose from its EXISTING generated blue art so
+  coverage visibly connects the player to the outer damaging aura; no dead annulus between VFX and player.
+- Tombstone Greatsword (`tombstone-greatsword`) — remove ONLY the bone particles; keep stones + smoke.
+- Thunderhead Voulge (`x2-thunderhead-voulge`) — scale/tint its existing electrical art to a clearly LARGE
+  blue treatment whose extent matches its damage envelope.
+- Sanctified Headsman (`x2-sanctified-headsman`) — remove the recipe, extension visual treatment,
+  extension-only hit-envelope override, and extension ignition hooks. Keep normal sword animation +
+  ordinary blade damage. (Owner: the extendo-blade mechanic doesn't work for this sword.)
+
+## STANDING RULES (all batches)
+- Touches `data/weapon-concepts-300.json`, generated catalog, `packages/client/src/vfx/weapon-vfx.generated.ts`,
+  `weapon-vfx-suite.ts`, `blade-extension-treatments.ts`, `packages/shared/src/hit-envelope.ts`,
+  `SpriteRig.blade-extension.test.ts`, VFX owner-note tests. Run `pnpm gen`; keep gen:check/assets:check
+  green + server booting. `pnpm typecheck` + FULL `pnpm test` GREEN in this worktree. LF endings ONLY.
+  Preserve nominal DPS. You may CREATE tests; do NOT weaken existing assertions.
+- Acceptance (live gates on PRIVATE EPHEMERAL PORTS only, never 5180/2567): continuous blue Fulgurite
+  coverage player->radius; materially enlarged blue Voulge; Tombstone particle census has stone+smoke and
+  ZERO bone; Headsman capture has zero special VFX/extension and a server gate proves only its normal
+  blade envelope damages. Retain evidence under `docs/owner-notes-audit-v9-evidence/b10-vfx/`.
+- Worktree: commit on sol/b10-vfx; orchestrator merges. Don't touch main copy or ports 5180/2567.
+
+## REPORTING (durable, incremental — update as you go)
+FIRST: write `docs/sol-reports/impl-b10-vfx.md` (VFX recipe/extension system + plan). Append per weapon.
+FINAL line = verdict: per-weapon status, evidence paths, files touched.

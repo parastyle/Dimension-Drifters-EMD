@@ -1,0 +1,22 @@
+You are Sol `impl-b31-art-emberleaf` in the ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b31-art-emberleaf
+(branch sol/b31-art-emberleaf). ART-ONLY. Autonomous — no questions. Report incrementally. NO live-stack boot.
+
+## Your ONE subject
+Emberleaf Chapbook charge-fireball VFX (owner: hold trigger, fireball grows, release to shoot, explosion scales)
+**Install:** packages/client/public/sprites/vfx-emberleaf-fireball/part-1.png (NEW)
+**Generation prompt (verbatim — do not restyle):**
+"VFX-only in-world sprite: a readable ROILING FIREBALL orb — dense sphere of layered orange-red flame with a white-hot core, short flame tongues licking off the surface, ember flecks, ~5-7 colours, gritty dark-comic cel with hard outlines. Round silhouette that reads as a charged fireball at small AND large scale (it will be scaled during charge). Flat #00ff00 background. No character, no weapon."
+
+## Standing laws
+- ONE image subject only (the flame-fist's two parts are ONE registered subject). LF endings only.
+- NO fingers/thumbs on any fist art. NO chains/tassels/dangles. NO player-aura framing.
+- Gritty dark-comic cel, readable silhouette, flat #00ff00 chroma background, shipped keyer clean.
+
+## Deliverables — ART ASSETS ONLY
+1. Generate via the shipped ArtKit pipeline (tools/artkit/harvest-install.mjs conventions).
+2. Install ONLY to the path(s) above. NO manifest/catalog/shared edits — the B31 integrator wires.
+3. PNG > 200x200 native, < 2048x2048, keys cleanly.
+
+## Reporting
+FIRST: write docs/sol-reports/impl-b31-art-emberleaf.md with your plan. Append.
+FINAL line = verdict: subject id, PNG path(s), prompt used, pixel dimensions.

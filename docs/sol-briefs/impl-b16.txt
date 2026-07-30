@@ -1,0 +1,44 @@
+You are Sol `impl-b16` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b16-glove-hand
+(branch sol/b16-glove-hand). IMPLEMENTATION. Autonomous — no questions. Report incrementally. NO
+live-stack boot (a unit + measured live-idle-parts gate is the acceptance).
+
+## YOUR ORDER — BATCH B16 from `docs/sol-reports/notes-ledger-v10.md`
+READ that ledger's B16 section for the FULL spec. Also READ `docs/sol-reports/panel-dead-body-parts.md`
+(the 5-pose vocabulary + universal facing-side rule) and `docs/sol-reports/impl-b17.md` (the shipped
+schema and semantic classification — B17 is the direct dependency and is now IN MAIN, so build on it).
+
+Summary of intent — TWO owner notes, both consumed by B17's now-shipped `poseLanguage` machinery:
+1. **Ironbrand Heatfist** (`x2-ironbrand-heatfist`) — owner: "I'm seeing two hands punching, even
+   though this weapon is just 1 glove." SINGLE-GLOVE occupancy: only ONE hand is the glove (the
+   action-owned hand); the OTHER hand must classify per B17 as an authored-idle and resolve to the
+   facing-side idle-hand pose via `poseLanguage.idle` (pick from the 5-pose vocabulary — likely
+   `mirror-guard` for a boxing/glove weapon, matching Coyote/Sparkknuckle sisters if precedent). Do
+   NOT change combo/damage/cadence. Add the poseLanguage override in `data/weapon-concepts-300.json`
+   and let the generator emit it. B17's schema already validates it.
+2. **Hellmouth Palmcaster** (`x2-hellmouth-palmcaster`) — the exemplar the owner cited when asking for
+   the systemic fix. The unused hand must resolve to the facing side (not the far side). Add its
+   `poseLanguage.idle` datum. If the caster family default suffices, DOCUMENT that and rely on it;
+   only add a per-weapon override if the family default is wrong here.
+
+## Scope guardrails
+- Data-driven changes only: `data/weapon-concepts-300.json` per-weapon `poseLanguage` overrides + regen
+  `weapons-expansion.generated.ts`. If a family default in `pose-language.ts` needs adjusting for the
+  glove or caster family to satisfy these two orders, do that MINIMALLY and only if strictly required.
+- Do NOT re-implement B17's classifier/vocabulary/facing-side rule (they're shipped). Do NOT touch
+  combat authority, damage, cadence, projectile geometry, muzzle points, other weapons' pose language,
+  6-part manifest offsets, or pets.
+
+## Verification
+- Add a focused test: (a) Ironbrand — only one glove is `action-owned`; the other hand is
+  `authored-idle` and resolves to a facing-side target with positive world-facing margin on both
+  facings for all 3 shipped whole-art prototypes. (b) Hellmouth — same idle classification; facing-side
+  positive on both facings for all 3 protos.
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green in this worktree. LF only.
+- Include a small live-idle-parts capture pair (private ephemeral ports, never 5180/2567) for
+  Ironbrand + Hellmouth on both facings on proto-sheriff (representative). Retain under
+  `docs/owner-notes-audit-v10-evidence/b16-glove-hand/`.
+
+## Rules
+Worktree; commit on sol/b16-glove-hand; orchestrator merges. FIRST: write `docs/sol-reports/impl-b16.md`
+(understanding + plan). Append per weapon. FINAL line = verdict: Ironbrand single-glove occupancy
+proven, Hellmouth facing-side proven, evidence paths, files touched.

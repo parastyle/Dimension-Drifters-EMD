@@ -1,0 +1,60 @@
+You are Sol `b86-hud-thresholds` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b86-hud-thresholds
+(branch sol/b86-hud-thresholds). SMALL, PRECISE TUNING PASS. Autonomous.
+
+## Owner order (2026-07-27)
+> "lower the threshold for these metrics"
+
+The diagnostic HUD (`packages/client/src/dev/diagnostic-hud.ts`, F8 toggle / F9 dump) has thresholds
+set at "the system is failing". The owner is feeling jank that never lights anything up. Retune so
+**RED means "the player can feel this"**, not "something is definitively broken".
+
+## Apply these thresholds
+| Metric | Current | New AMBER | New RED |
+| --- | --- | --- | --- |
+| Frame time (current + p99) | amber 33 / red 250 ms | **> 20 ms** | **> 50 ms** |
+| Render-to-commit divergence | amber 2 / red 8 px | **> 1 px** | **> 4 px** |
+| Input latency | amber 33 / red 100 ms | **> 20 ms** | **> 50 ms** |
+| Prediction pending (depth or 10 s growth) | amber 8 / red 32 | **> 4** | **> 16** |
+| Server tick drift | amber 15 / red 50 ms | **> 8 ms** | **> 20 ms** |
+| Entity load | amber ~80% of cap | **> 60% of cap** | keep at cap violation |
+
+**Unchanged — already correctly strict:** stall count (any frame >250 ms is RED, because that is the
+`forceResync` trigger), and SELF corrections (any Smooth = AMBER, any Snap = RED per canon L10).
+
+Rationale to preserve in comments: 50 ms is three dropped frames at 60 Hz and is plainly visible;
+4 px of render/commit disagreement is a perceptible twitch at the owner's resolution; 50 ms of input
+latency is where a responsive game starts feeling soft.
+
+## Requirements
+- Thresholds must be **named constants in one place**, clearly commented with the reasoning above, so
+  the next retune is a one-line edit rather than a hunt.
+- Update `docs/sol-reports/b84-debug-hud.md`'s threshold table (or supersede it in your own report) so
+  the documentation matches the code. A stale threshold table is worse than none.
+- Update any test that pins the old numbers. Do NOT weaken what a test asserts — only the constants move.
+- **Do not make the HUD noisy for its own sake.** If a metric now sits permanently amber during
+  ordinary healthy play, that threshold is wrong and you should say so with measurements rather than
+  ship a HUD the owner learns to ignore. Report anything that looks permanently lit.
+
+## Sequencing — IMPORTANT
+`b85-hud-wire` edits this same file: it wires the HUD's per-frame sampling (it was constructed but
+never called, so every metric read 0) and reviews whether canon L10's smoothing made warping worse.
+**Rebase onto `origin/feat/v0.118-metagame` before you finish** and re-verify. If b85 renamed,
+restructured, or added metrics, apply the spirit of the table above to the new shape and say what you
+mapped.
+
+## Guardrails
+- HUD stays dev-gated, never in production, never modal, no measurable frame cost.
+- No gameplay changes of any kind. Constants and docs only.
+- Canon L09/L10 stand. Do not touch `data/weapon-concepts-300.json`, the lava dimension, or the
+  walkability painter.
+- LF endings.
+
+## Verification
+`pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green twice. If a browser is available,
+capture the HUD during ordinary healthy play and confirm it is NOT lit up everywhere — that is the
+real check on whether these numbers are right. If no browser, say so plainly.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b86-hud-thresholds.md` with
+the final table, where the constants live, and anything you found permanently lit. FINAL line =
+verdict: metrics retuned N, constants location, anything permanently amber/red, 2x test results.

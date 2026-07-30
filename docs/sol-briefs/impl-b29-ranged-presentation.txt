@@ -1,0 +1,52 @@
+You are Sol `impl-b29-ranged-presentation` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b29-ranged-presentation
+(branch sol/b29-ranged-presentation). IMPLEMENTATION — RANGED/THROWN PRESENTATION BATCH.
+Autonomous — no questions. Report incrementally. NO live-stack boot; unit + live gate on private
+ephemeral ports.
+
+## Four owner orders (verbatim from data/owner-notes.jsonl 2026-07-24, one SKIPPED older note)
+1. "shurikens and chakrams should be bigger. See if we can have cooler more engaged anatomy while
+   throwing and idle stance." → Enumerate every shuriken + chakram weapon in the catalog; increase
+   projectile + held render size meaningfully; author a more engaged throw animation (wind-up,
+   body lean/step into the throw using the whole-art parts) and a readier idle stance. Keep
+   damage/cadence unchanged.
+2. "Kunai is fine, it should be twirled pistol style by the end hook" → kunai keeps its size; add
+   a pistol-twirl flourish around the end hook (reuse the shipped pistol-twirl machinery, see
+   e2e/tests/pistol-twirl.spec.ts + its implementation) at the natural moments (draw/after-throw).
+3. "dual wield guns should have more of a vertical offset from each other while firing so users
+   can see that there are two guns" → for PRE-MADE dual gun weapons (grip "dual" gun-class),
+   separate the two gun sprites vertically while firing (clear two-gun read at combat scale;
+   muzzle points follow their sprites so shots originate correctly). NOTE: B27 (just merged)
+   removed the composed-pairing system — this applies to authored dual weapons only.
+4. SKIPPED note (2026-07-23 17:38) + today's "did we ever implement the hammer fanning animation
+   for pistols? I dont see it": "Revolvers (when 1 handed) should have the hammer pull back
+   animation on each shot. When revolvers are 2 handed they should have a tiny per revolver/hand
+   pair animation of the hand motioning a little towards the pin hammer as if they were 1 handing
+   the pistol and the pin hammer." → Implement:
+   - 1H revolvers: visible hammer pull-back beat on every shot (small rotation/offset pulse on the
+     weapon sprite at the hammer end + thumb-hand micro-motion).
+   - 2H revolver pairs: per-gun alternating micro-motion of the off/support hand toward the pin
+     hammer on each of that gun's shots (the fan-the-hammer read).
+   - `x2-twin-maw-greenerbore` (owner: "this is a pistol with fan hammer") is the reference
+     subject for the paired treatment.
+   Enumerate which weapons count as revolvers (catalog family/fiction), list them in the report.
+
+## Guardrails
+- STANDING BANS: no player auras, no chains/tassels, nothing radial/ambient.
+- Rebase on CURRENT main (B27 + B28 may have landed — reconcile, do not revert their work).
+- Do NOT touch: kung-fu, parry reactions, fans, chests/packs, characters, pets, B28's weapons.
+- Presentation only: no damage/cadence/range changes anywhere. LF endings only. Schema bumps from
+  CURRENT value + update all pins. Migrate affected tests.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green. `pnpm assets:check` green.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567) on `proto-cowboy-hidden-face`: capture
+  bigger shurikens/chakrams + the engaged throw + idle, the kunai end-hook twirl, a dual gun pair
+  with visible vertical separation while firing, a 1H revolver hammer pull-back, and the 2H pair
+  hand-to-hammer motion on Twin-Maw Greenerbore. Both facings. Evidence under
+  `docs/owner-notes-audit-v11-evidence/b29-ranged-presentation/`.
+
+## Rules
+Worktree; commit on sol/b29-ranged-presentation; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b29-ranged-presentation.md` (weapon enumerations + animation plans).
+Append per order. FINAL line = verdict: shuriken/chakram count resized + re-animated, kunai twirl,
+dual-gun offset, revolver hammer beats (1H + 2H lists), evidence path, files touched.

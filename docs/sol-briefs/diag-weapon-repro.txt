@@ -1,0 +1,38 @@
+You are Sol `diag-weapon-repro` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/diag-weapon-repro
+(branch sol/diag-weapon-repro). DIAGNOSIS. Autonomous — no questions. Report incrementally.
+
+## THE BUG (owner report, live)
+"Lots of weapons don't work anymore. MANY/MOST weapons STOP WORKING after a FEW attacks." This is a
+regression from last night's merge wave (character-render fix + note-batches B1 facing, B4 overcasters,
+B5 attack-root movement, B7 thrown conversions, B8 pose/combo, B9 size, B10 VFX/hit-envelope).
+
+## YOUR JOB — reproduce + trace the state degradation (find the ROOT CAUSE, do not fix yet)
+1. Build a deterministic GameRoom repro harness (a new test file `tests/diag-weapon-stops.test.ts` or a
+   server test). For SEVERAL representative weapons across classes — at minimum a melee cleaver
+   (`rusty-cleaver` / `gravediggers-spade`), a gun, a caster, and a thrown weapon — do: join a room,
+   enter training, equip the weapon, then send REPEATED attacks (e.g. 15-25 `attack` messages with ticks
+   between, aiming at a planted enemy), and record PER ATTACK whether it actually produced an effect
+   (damage dealt / projectile spawned / swing registered).
+2. TRACE the weapon/player state each attack to find WHAT gates it after a few hits. Capture per attack:
+   swing cooldown / effective-cooldown / swingReadyAt, the swing clock, `pendingWeaponLunges` entries
+   (do they CLEAR?), any committed/locked/dashing flag, weapon DURABILITY (melee wear) and its regen,
+   thrown CHARGES + refillSeconds, ammo, `combat` state, attackSeq. Identify the exact attack number
+   each weapon stops and the exact STATE FIELD + code path that blocks further attacks.
+3. PRIME SUSPECTS (verify against evidence, do NOT assume): B5 changed `GameRoom.resolveSwing` +
+   `stepPendingWeaponLunges` + added `impactAtDestination`/destination-dash — a pending-lunge or
+   swing-commit state that never clears would block subsequent swings for MOST melee weapons. B7 added
+   thrown `charges`/`refillSeconds` — broken refill would stop thrown weapons after N throws. Also check
+   weapon durability regen and the effective-cooldown swing clock (B8 touched combos).
+4. Once you find the terminal state + the offending code, git-blame it to the responsible commit if you
+   can.
+
+## Rules
+- DIAGNOSIS ONLY — you MAY write a repro test and instrument/log, but do NOT change production behavior
+  to "fix" it (that's a separate task). LF endings. Run your repro test to prove the failure.
+- Worktree; commit your repro + notes on sol/diag-weapon-repro. Do NOT touch main or ports 5180/2567.
+
+## Reporting
+FIRST: write `docs/sol-reports/diag-weapon-repro.md` (harness plan). Append per weapon as you trace.
+FINAL line = verdict: which weapons stop + at what attack #, the exact gating STATE FIELD + code path
+(file:line), the offending commit, and the recommended fix (described, not applied). Include the repro
+test path.

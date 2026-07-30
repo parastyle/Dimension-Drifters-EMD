@@ -1,0 +1,74 @@
+You are Sol `b88-l11-seen-hits` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b88-l11-seen-hits
+(branch sol/b88-l11-seen-hits). IMPLEMENT A NEW LOCKED LAW. Autonomous.
+
+## The law (owner ruling 2026-07-27, now canon L11 in DIMENSION_DRIFTERS_MASTER_SPEC.md)
+> "If a player doesn't see themself get hit, they should never get hit."
+
+The body drawn on the player's screen is the ONLY body that may take damage. READ L11 in the master
+spec before you start; it is locked and it governs every decision in this batch.
+
+## Why this is real, with numbers (do not re-derive it)
+- The server resolves enemy contact against ITS copy of the player: `room-combat.ts:1648` and
+  `room-enemies.ts:661/945/981/1031/1077` use `player.x/player.y` with reach
+  `PLAYER_RADIUS + ENEMY_RADIUS` = 24 + 18 = **42 px**.
+- Canon L10 makes SELF position client-authoritative, so the server's copy necessarily TRAILS the
+  drawn body by the input lead.
+- Owner captures measured that lead **above 48 px** during ordinary walking — larger than the entire
+  42 px contact reach. An enemy fully clear of the player on screen can sit inside the server hitbox.
+- A new `AUTH LEAD` row in the F8/F9 diagnostic dump measures |drawn − server self| per frame with a
+  session peak. That is your before/after instrument. USE IT.
+
+## What to build
+Incoming damage to a player resolves against the position that player's client was PRESENTING at the
+time, not a staler server copy.
+
+The straightforward shape, since L10 already states cheating is explicitly not a concern:
+- The client sends its presented self position along with the existing 20 Hz input command.
+- The server stores it per player and uses it for INCOMING resolution.
+- Still sanity-clamp the reported position to the existing B42 plausibility envelope. This is
+  robustness against a broken/desynced client, NOT anti-cheat. Say what you clamp to and why.
+
+You may choose a different mechanism (e.g. server-side rewind against a short presented-position
+history) if you can argue it serves the law better. State the choice and the reasoning.
+
+### Cover EVERY incoming path, not just contact
+Enumerate them and list them in your report. At minimum: enemy contact/melee, enemy projectiles
+(`room-combat.ts:5236`), detonations/AoE, boss mechanics including Vastaghar and the worm, ultimate
+decoy interactions, and any pit/hazard damage that tests player position. A law with holes is worse
+than no law, because the owner will hit exactly the hole.
+
+### Direction of error
+Where the server must decide alone and cannot know what the client drew, it errs toward **NOT
+hitting**. The reverse case — the player sees a hit the server does not — is the ACCEPTABLE direction
+and must not be "fixed" by making the server more aggressive.
+
+### Explicitly OUT of scope
+- The player's own attacks on enemies keep ordinary server authority. Do NOT touch outgoing hit
+  resolution. (There is a separate long-standing owner complaint about melee reach; not this batch.)
+- Do not weaken parry, dodge-roll i-frames, slide invulnerability, or pit grace. If anything, they
+  get easier to honour once the tested body is the drawn body.
+
+## Guardrails
+- Canon L09, L10, L11 all stand. Keep B42 envelope, B68/B74/B75/B76 guarantees.
+- Bump `SCHEMA_VERSION` if the wire shape changes and update EVERY test that pins it.
+- Server must stay authoritative for everything else; this is SELF DEFENCE ONLY.
+- Do not touch `data/weapon-concepts-300.json`, the lava dimension, or the walkability painter.
+- Watch the message budget — the input command is already 20 Hz; do not add a second channel.
+- LF endings.
+
+## Verification
+- `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green TWICE consecutively.
+- Rubber-band telemetry (`node node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/cli.mjs
+  tools/diag-rb-telemetry.mts`): zero requests/applications/snaps/pixels, BOTH modes.
+- **Add a test that encodes the law**: a player whose presented body is clear of an enemy takes NO
+  damage even when the server's stale copy is inside contact reach. Construct it from the real
+  numbers above (42 px reach, >48 px lead) so it would FAIL before your change.
+- Report measured phantom-hit rate before/after under a scripted walk-past-enemy, and state the
+  added bytes/sec on the wire.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b88-l11-seen-hits.md` with
+the mechanism you chose and why, the COMPLETE enumeration of incoming paths and how each now
+resolves, what you clamp and why, the wire cost, and the before/after phantom-hit numbers. FINAL
+line = verdict: mechanism, paths covered N, schema bump y/n, wire cost, phantom hits before/after,
+telemetry, 2x test results.

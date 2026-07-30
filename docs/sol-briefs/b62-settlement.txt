@@ -1,0 +1,65 @@
+You are Sol `b62-settlement` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b62-settlement
+(branch sol/b62-settlement). CRITICAL DATA-LOSS FIX. Autonomous.
+
+Read `docs/sol-reports/audit-engineering-practice.md` **F2** in full first — it has the evidence with
+file:line citations. Owner has approved adding a durable store.
+
+## The defect
+Account state, exact weapon escrow, disconnected reservations, settlement receipts, pet state, and
+"already settled" markers are all process-local maps/sets (`packages/server/src/rooms/GameRoom.ts`
+~574-589). The server package has only Colyseus/runtime deps — there is NO datastore at all. The room
+mutates memory, marks the account settled, sends messages, and then relies on the BROWSER to write
+`localStorage`.
+
+Consequence: a server crash, room crash, deploy, restart, a throw mid-settlement, socket loss during
+receipt delivery, or a blocked local write loses the result. Worse, `room-progression.ts` ~3060-3069
+deliberately settles a still-open expedition as DEFEAT on a later join, because the old settlement
+lived only in the old room — so a crash after legitimate extraction converts banked victory loot into
+a loss.
+
+**This directly violates a LOCKED design promise.** `docs/sol-reports/design-lock-b20.md` states money
+banks 100% at run end. Today it does not.
+
+## Build it
+1. **Durable store: SQLite with WAL.** Single-node solo-dev deployment; do not introduce a server or
+   network dependency. Add it to `packages/server` only.
+2. **Schema**: account snapshots and settlements. **Unique constraint on `(account_id, run_id)`** —
+   this is the idempotency key and the whole correctness argument.
+3. **Commit BEFORE acknowledging.** Outcome + account changes must be durably committed under the
+   idempotency key before the server tells the player they won. Never the other way round.
+4. **On reconnect or new join, return the COMMITTED receipt/account from storage.** Never infer defeat
+   from a stale client blob when a committed terminal record exists. This is the specific line that
+   currently turns wins into losses — fix it, do not preserve it.
+5. Re-running the same `runId` must produce ONE identical receipt and balance. Idempotent, not additive.
+
+## Prove it — this is the part that matters
+The audit's F12 says failure-boundary coverage is thin and that is exactly how this bug survived.
+- Add **failpoints after every settlement phase** and a **process-kill integration test**: kill the
+  process at each failpoint, restart, and assert the account lands in exactly one correct state with
+  no duplicate credit and no lost credit.
+- Assert the idempotency constraint actually fires — re-settle the same runId and prove one receipt.
+- A test that only exercises the happy path is a failed batch.
+
+## Related, fix while you are here
+`packages/client/src/ui/pet-select.ts` ~65-74 makes two independent `localStorage.setItem` calls,
+catches every failure, reports nothing, and still returns the in-memory advanced account — so a
+"successful" purchase can silently roll back on reload. With the server now authoritative and durable,
+make the client stop being the system of record, and surface storage failure instead of swallowing it.
+
+## Guardrails
+- Reconnection landed tonight (`cb26e9c`) and touches this area — build ON it, do not revert it.
+- **The owner is working on map art in `packages/shared/src/mapgen.ts`,
+  `packages/client/src/scenes/arena/floor-renderer.ts`, and `packages/client/public/tiles/**`.
+  DO NOT TOUCH THOSE THREE. Not even formatting.**
+- Parallel Sols own accessibility/pause UI and weapon/relic description text. Stay out.
+- Bump `SCHEMA_VERSION` if the wire shape changes; update every test that pins it. LF endings.
+
+## Verification
+`pnpm gen` + `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green including the new
+process-kill tests. Then live: complete a run, extract, kill the server process, restart, rejoin, and
+confirm the banked result survived. State exactly what you killed and what you observed.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b62-settlement.md` with the
+schema, the commit ordering, the failpoint matrix, and the live crash-recovery result. FINAL line =
+verdict: store + schema, failpoints covered, idempotency proven how, test result, live result.

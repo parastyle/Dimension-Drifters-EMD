@@ -1,0 +1,21 @@
+You are Sol `panel-netfeel-doctrine` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/panel-netfeel-doctrine
+(branch sol/panel-netfeel-doctrine). RESEARCH PANEL — no implementation. Autonomous.
+
+## Mission
+Best-practice research for NETCODE FEEL in small-scale co-op action games (2-4 friends, PvE,
+Colyseus/websocket, 20Hz tick): what the best-feeling co-op games do.
+1. Landscape: how co-op action games handle movement authority + smoothness — client-auth
+   movement patterns (Deep Rock, Valheim-class), interpolation buffers for REMOTE players,
+   local-player render paths (never interpolate self against network state), entity
+   interpolation delay vs extrapolation, tick rates chosen by comparable games, and how they
+   hide 20-30Hz sims at 60-144fps render.
+2. The canonical local-player formula: input -> immediate local sim at RENDER rate (or fixed
+   micro-step + alpha), server echo only for validation; remote players: buffered interpolation
+   ~2 ticks behind; events (hits/deaths) reconciled by effect not position.
+3. AUDIT our stack (net/prediction.ts, ArenaScene render/interp, B42 relaxed authority, B51
+   epochs) against that formula: gap table ranked by feel impact — explicitly evaluate whether
+   our SELF-render path steps at 20Hz anywhere (the "vibraty" class) and whether our remote
+   interpolation buffer follows best practice.
+4. Deliverable: docs/sol-reports/panel-netfeel-doctrine.md — doctrine, citations, gap table,
+   ordered fix plan (small independently shippable items). NO code changes.
+COMMIT the report. FINAL line = verdict: N gaps ranked, top recommendation.

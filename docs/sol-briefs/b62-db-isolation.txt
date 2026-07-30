@@ -1,0 +1,52 @@
+You are Sol `b62-db-isolation` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b62-db-isolation
+(branch sol/b62-db-isolation). SMALL PRECISE FIX. Autonomous. Do not expand scope.
+
+## The defect (diagnosed, not speculation)
+`packages/server/src/settlement-store.ts` — `defaultSettlementDatabasePath()` returns a SINGLE SHARED
+file `data/accounts.sqlite` unless `DD_ACCOUNT_DB_PATH` is set. No test sets it.
+
+Under the full parallel `pnpm test` run, multiple vitest workers therefore share ONE SQLite database.
+`packages/server/src/integration.test.ts > real Colyseus transport > terminates the socket and
+reconnects the same run without state or settlement duplication` FAILS in the full suite and PASSES
+in isolation, because it observes settlements written by other workers.
+
+Reproduce: `pnpm test` (fails) vs `npx vitest run packages/server/src/integration.test.ts` (passes).
+
+## Fix
+Give every test an isolated database. Preferred shape: a vitest setup file (or per-suite hook) that
+points `DD_ACCOUNT_DB_PATH` at a unique temp path per worker — `process.env.VITEST_WORKER_ID` and
+`mkdtemp` are both fine — and cleans it up afterwards. `:memory:` is already supported by the store
+and is acceptable where a suite does not need cross-process durability, BUT the crash/restart tests
+genuinely need a real file shared between parent and worker process, so do not blanket-force
+`:memory:` and break them.
+
+Whatever you choose, these must ALL hold afterwards:
+- Full `pnpm test` green, repeatedly. Run it at least 3 times to prove the flake is gone; a single
+  green run does not prove a race is fixed.
+- The 7 SIGKILL failpoint tests and the restart integration test still genuinely exercise a real
+  on-disk database across processes.
+- `packages/server/src/integration.test.ts` still terminates a REAL socket. Do not weaken it.
+
+## Also worth fixing while you are here
+Two dev servers started on one machine would silently share `data/accounts.sqlite` too. Consider
+whether the default path should be per-instance or whether that is acceptable for a single-node
+solo-dev deployment — make a call, implement it if cheap, and state your reasoning either way.
+Do NOT redesign the store.
+
+## Guardrails
+- Do NOT change settlement semantics, the schema, the commit ordering, or the idempotency constraint.
+  This is a TEST ISOLATION fix. The feature itself is correct and verified.
+- **The owner is working on map art in `packages/shared/src/mapgen.ts`,
+  `packages/client/src/scenes/arena/floor-renderer.ts`, and `packages/client/public/tiles/**`.
+  DO NOT TOUCH THOSE THREE.**
+- A parallel Sol owns accessibility/pause UI. Another owns Vastaghar boss code. Stay out.
+- LF endings.
+
+## Verification
+`pnpm gen:check` + `pnpm typecheck` clean. Full `pnpm test` green THREE TIMES CONSECUTIVELY.
+Report the three run results explicitly.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b62-db-isolation.md` with
+the isolation approach, why the crash tests still work, and the three run results. FINAL line =
+verdict: approach, 3-run results, dev-server default decision.

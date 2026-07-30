@@ -1,0 +1,31 @@
+You are Sol `audit-weapons`. READ-ONLY AUDIT. Do NOT edit any code or tests. Write ONLY your report
+`docs/sol-reports/audit-weapons.md`. Main tree. Autonomous.
+
+## Game: Dimension Drifters (C:/Users/Exped/DDv2)
+Top-down / belt co-op bullet-heaven, Phaser 4 + Colyseus 0.16, shared combat sim in @dd/shared. 334
+weapons across ranged/melee/caster classes; 3 active slots + bag; dual-wield for one-handed same-class;
+class set-bonuses; flourish draw/stow anims; per-weapon bespoke VFX; muzzle-in-art-space projectile
+origins; a standing "VFX-collision law".
+
+## Audit: USING WEAPONS vs BEST PRACTICE
+Trace and evaluate how weapons are wielded, aimed, and fired against genre best practice. Cover:
+- AIMING: cursor tracking, character facing vs mouse, muzzle-in-art-space affine (do projectiles truly
+  originate at the barrel across weapons?), aim assist / none, belt-mode vs top-down aiming.
+- FIRING model: cadence/cooldown, DPS model, projectile spawn/spread/cone, burst origin, beams, and
+  whether nominal DPS is preserved when orders change count/cadence.
+- HIT REGISTRATION: melee reach truth (history of edge-clip melee MISSES at the tip), point-blank
+  zero-damage guns, hitbox vs visual, server authority on hits. Is hit-reg trustworthy now?
+- WEAPON HANDLING UX: 3-slot + bag swapping, swap speed/feel, dual-wield ergonomics, class set-bonus
+  clarity, flourish (draw/stow/after-attack) interaction with firing, the VFX-collision law's effect on
+  readability.
+- Consistency across the 334-weapon catalog: is behavior data-driven and uniform, or are there
+  one-off/broken weapons? Are muzzle/pose/census guards actually protecting correctness?
+
+Find the real code (shared weapon defs + combat sim, server GameRoom weapon handling, client VFX/aim in
+ArenaScene). Cite file:line.
+
+## Deliverable
+Prioritized findings P0/P1/P2, each: file:line, the problem, the best-practice standard, and a CONCRETE
+fix recommendation. Call out the biggest correctness risk (hit-reg) and the biggest feel win separately.
+No code changes — analysis only.
+FIRST action: create the report with understanding + plan; append as you go; final line = verdict.

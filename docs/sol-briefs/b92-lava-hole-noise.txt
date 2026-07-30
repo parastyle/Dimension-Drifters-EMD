@@ -1,0 +1,54 @@
+You are Sol `b92-lava-hole-noise` in an ISOLATED WORKTREE at
+C:/Users/Exped/ddv2-wt/b92-lava-hole-noise (branch sol/b92-lava-hole-noise). OWNER-BLOCKING. Autonomous.
+
+## Owner report (2026-07-28)
+> "choppy walking is back"
+
+F9 dump evidence, ordinary walking on the new lava level:
+- `SELF corrections 6 | max 405.7px | band Snap`, `LAST SELF cause=teleport`. Previously ALWAYS 0.
+- `ROOT GAP` flat 0.00 across all 80 frames -> presentation is faithful. The SERVER is moving the player.
+- `ROOT STEPS` spikes 17.64 / 14.51 / 18.22 against a clean 2.22 baseline; `BASE STEP` shows adjacent
+  16.00 commits. Those are the teleports landing, not a prediction defect.
+
+## Cause (verified, do not re-derive)
+`glass-to-reactor-vertical-bridge` carries **21 collision holes**. Equivalent diameters, px:
+51, 51, 51, 52, 52, 52, 54, 55, 56, 56, 57, 58, 64, 66, 66, 69, 80, 91, 118, 132, 172.
+`PLAYER_RADIUS` is 24, so player diameter is 48px: every hole is technically fall-through-able and
+twelve are barely wider than the body. Crossing the bridge means clipping hole edges repeatedly, each
+one firing a pit reposition, which is a Snap-band teleport by design.
+
+This surfaced NOW because `b90` raised the hero-platform rate 17% -> 51% and the bridges ARE heroes.
+The holes pre-existed; b90 made the player meet them.
+
+## Fix
+1. **Reject sub-threshold holes at derive time.** A hole a player cannot meaningfully fall through, or
+   that reads as painted grating/detail rather than an opening, must not become collision. Pick a
+   defensible threshold (a multiple of player diameter, not a magic number) and state it. Holes that
+   ARE genuine large molten openings must survive — `broken-reactor-arena`'s single 70px hole and the
+   bridge's 118/132/172px ones are plausibly real; the 51-58px cluster is almost certainly art detail.
+   Look at the source art before deciding which are real.
+2. **Re-derive and re-measure.** Report holes per platform before/after and the walkable share (b91
+   left the five arenas at 82.3-89.1%).
+3. **Reconsider the pit reposition itself.** A 405.7px Snap teleport for a pit is violent even when the
+   pit is real. Investigate whether the reposition distance is proportionate, and whether a player
+   walking (not falling) should be repositioned at all versus blocked at the edge. State findings; fix
+   only if clearly wrong, and never by hiding a real fall.
+
+## Guardrails
+- `b90` guarantees no two platforms' collision surfaces touch and every graph edge is jumpable; `b91`
+  set `edgeInsetPx: 0` with `PLAYER_RADIUS` applied at runtime. **Re-run b90's 2000-seed sweep** —
+  filling holes changes surface area and clearance. Do NOT weaken either invariant.
+- Keep `nativeScale: 1`. Do not shrink art. Lava stays additive; other five dimensions unchanged.
+- Canon L09/L10/L11 stand. LF endings.
+
+## Verification
+- `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green TWICE.
+- b90 seed sweep (>=2000): invariants hold, zero throws; report gap min/median/max.
+- **Add a regression test**: a player traversing `glass-to-reactor-vertical-bridge` end to end along a
+  reasonable path triggers ZERO pit repositions. Must FAIL before the fix.
+- Report holes per platform before/after with sizes, and walkable share before/after.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b92-lava-hole-noise.md`.
+FINAL line = verdict: threshold chosen + why, holes before/after per platform, walkable share
+before/after, pit-reposition finding, sweep result, 2x test results.

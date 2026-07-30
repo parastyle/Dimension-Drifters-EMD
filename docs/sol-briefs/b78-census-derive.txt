@@ -1,0 +1,65 @@
+You are Sol `b78-census-derive` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b78-census-derive
+(branch sol/b78-census-derive). INTEGRATION + STOP THE RECURRENCE. Autonomous.
+
+## Immediate problem
+6 more guns merged (B63 guns 16-21). Catalog went **380 -> 385**, active **360 -> 365**, archived
+still 20. I already bumped the Drive-formula pin in `packages/shared/src/weapon-resource.ts`.
+
+`pnpm gen`, `gen:check` and `typecheck` are CLEAN. **23 tests across 19 files fail**, all census pins
+written against the previous count (e.g. `b24-radial-hunt` expects a "341-weapon resolver cohort",
+now 347).
+
+## THE REAL JOB — this is the third time
+`b69-catalog-integrate` did exactly this integration for the first 21 weapons. Now 6 more guns broke
+~23 pins again. **9 more guns and 14 more weapons are still queued** — every one of those batches
+will trip the same wall unless the pattern changes.
+
+So: fix the current failures AND remove the recurrence.
+
+### Rule for sorting each failure — unchanged and non-negotiable
+- **Legitimate count growth** → the number moves. Fine.
+- **A behavioural law over "every weapon"** (recoil coverage, pose language, limb claims, hit
+  envelopes, muzzle derivation, gun-mechanism ownership, SFX families) → **the new weapons must
+  SATISFY the law.** If one of guns 16-21 fails such a law that is a REAL DEFECT in that weapon: fix
+  the weapon's data, never widen the assertion. b69 found 6 real defects this way — missing gun SFX
+  families, missing ranged pose families, a missing manifest row, a missing VFX override, a muzzle
+  allocation. Expect more.
+- **Never** delete a test, skip a test, or loosen an assertion to turn red green.
+
+### Then: make pure-count pins DERIVE
+For every failing assertion that is a **pure catalog-size count with no other meaning**, replace the
+literal with a value derived from the catalog itself, so adding a weapon does not require editing a
+test. b69's brief already flagged this as worth doing; it is now clearly worth doing.
+
+**Do NOT blanket-derive.** A pin whose purpose is DETECTING LOSS must stay a literal — that is the
+whole point of the tripwire in `weapon-resource.ts`, and the owner has been protected by it twice
+today. Judgement per test:
+- "there are exactly N weapons in the catalog" → derive.
+- "these 4 specific weapons are archived" / "the active census moves by exactly one" / "this cohort
+  contains these ids" → KEEP LITERAL. Those encode intent, not size.
+
+State your rule in the report, list every pin you derived and every one you deliberately left literal,
+and say why. Getting this split wrong in either direction is the failure mode.
+
+## Guardrails
+- **Owner map files OFF LIMITS:** `packages/shared/src/mapgen.ts`,
+  `packages/client/src/scenes/arena/floor-renderer.ts`, `packages/client/public/tiles/**`.
+- Do NOT add, remove or rename weapons. Do NOT retune balance.
+- `data/weapon-concepts-300.json` may gain entries from parallel gun Sols — do not reformat/reorder.
+- Parallel Sols own the lava dimension, the walkability painter, and the dead-code audit. Stay out.
+- LF endings.
+
+## Verification
+`pnpm gen` + `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green **twice consecutively**.
+
+**Then prove the recurrence is gone**: simulate adding one more weapon (or reason it through
+concretely against the derived pins) and state exactly which files a future weapon batch will still
+require edits to, and why each is justified. If the answer is still "twenty test files", you have not
+finished the job.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b78-census-derive.md` with:
+failure -> kind (count growth | real defect) -> action; the full derived-vs-literal split with
+reasoning; any REAL DEFECTS found in guns 16-21 and how you fixed them; and the list of files a future
+weapon batch will still touch. FINAL line = verdict: N tests fixed, C pins derived, L pins kept
+literal, D real defects found+fixed, files a future batch still touches, 2x test results.

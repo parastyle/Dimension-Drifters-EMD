@@ -1,0 +1,47 @@
+You are Sol `impl-b44-no-weapon-drift` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b44-no-weapon-drift
+(branch sol/b44-no-weapon-drift). URGENT PLAYFEEL REGRESSION + STANDING-LAW ENFORCEMENT.
+Autonomous — no questions.
+
+## The owner's rulings (verbatim, live playtest 2026-07-24)
+1. "i am violently rubberbanding while moving and using the coyote trickster's sparkmitt"
+2. "Yeah, we don't want any drift or displacement in our weapons anymore, too much for the server
+   apparently" — NEW STANDING LAW: WEAPONS NEVER MOVE THE CHARACTER. Players move themselves.
+
+## Diagnosis context
+`x2-coyote-trickster-s-sparkmitt` carries legacy `performance.forwardDrift`; under B42's relaxed
+authority (`3a05a22`) that unclassified authored motion makes the envelope reject the client's
+positions every tick -> violent rubberband. Instead of classifying weapon drift: DELETE it.
+
+## Your job
+1. **Remove ALL weapon-attack character motion game-wide**: sweep the catalog + shared/server for
+   every weapon-driven displacement path — `performance.forwardDrift`, combo `rootMotion`
+   remnants, weapon lunges (e.g. Stormfists dash, Venomtongue lunge, bardiche front-flip travel,
+   any `performance.lunge`), and remove the CHARACTER MOVEMENT while keeping the attack visuals/
+   damage/animation (flips and spins happen in place; lunge-type weapons keep their reach via hit
+   envelope, not body travel). Enumerate every removed source in the report.
+2. **Non-weapon motion stays and must be classified** under B42's server-motion epochs: parry
+   slides/launches/brace (B26), enemy commit lunges (B33 — enemy-side, untouched), pit snap-backs,
+   elevator boarding, revive placement, dodge roll, jump, slide-hop. AUDIT these and register any
+   unclassified one as a motion epoch. Census test: zero unclassified motion sources; zero
+   weapon-attack motion sources remain.
+3. Reproduce-then-prove: unit test sparkmitt combo while moving = zero envelope rejections; same
+   for 2 other former-drift weapons.
+4. Rebalance guard: any weapon whose REACH depended on body travel keeps its effective reach via
+   envelope/range so DPS-at-range stays within ±10% (document per weapon).
+
+## Guardrails
+Parallel Sol B43 is splitting GameRoom/SpriteRig (move-only) — you merge FIRST; keep the diff
+surgical. LF endings; schema from CURRENT + pins; migrate tests (B25/B33/B36-era motion tests
+change intent — preserve their non-motion assertions).
+
+## Verification
+`pnpm gen`+`gen:check`+`typecheck`+FULL `pnpm test` green. 2-client live gate on PRIVATE
+EPHEMERAL PORTS (never 5180/2567): sparkmitt + 2 former-lunge weapons while moving = zero
+rejection corrections (B42 telemetry); parry slide + elevator still classified-clean. Evidence
+under `docs/owner-notes-audit-v11-evidence/b44-no-weapon-drift/`.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Report at
+`docs/sol-reports/impl-b44-no-weapon-drift.md` (removed-source table + kept-classified table).
+FINAL line = verdict: N weapon motion sources removed, non-weapon sources all classified,
+rubberband dead (telemetry), reach-preservation list, evidence path, files touched.

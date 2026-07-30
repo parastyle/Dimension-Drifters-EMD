@@ -1,0 +1,61 @@
+You are Sol `impl-b18-integrator` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b18-integrator
+(branch sol/b18-integrator). IMPLEMENTATION — FAN WEAPON INTEGRATOR. Autonomous — no questions.
+Report incrementally. NO live-stack boot; unit + live gate on private ephemeral ports.
+
+## Context — the owner's ask (verbatim, ledger v10 addendum B18)
+"Fans should be fanning outwards when attacking, creating tornado VFX of various elements per fan."
+
+## The 3 fan weapons (shipped in B3) and their 3 tornado art subjects (ALREADY in main)
+| Weapon | Element | Tornado subject (installed) |
+| --- | --- | --- |
+| `x2-iron-war-fan` | physical | `packages/client/public/sprites/vfx-tornado-iron-gale/part-1.png` |
+| `x2-ember-fan` | fire | `packages/client/public/sprites/vfx-tornado-ember-fire/part-1.png` |
+| `x2-storm-fan` | shock (paired fans) | `packages/client/public/sprites/vfx-tornado-storm-shock/part-1.png` |
+
+Art reports: `docs/sol-reports/impl-b18-art-tornado-{iron,ember,storm}.md`.
+READ the shipped B11 integrator (`docs/sol-reports/impl-b11-integrator.md`) — you are extending the
+same generated-image-VFX catalog pattern (`tools/artkit/weapon-vfx-overrides.json`,
+`packages/client/src/vfx/generated-image-weapon-vfx*.ts`, `build-weapon-vfx.mjs`).
+
+## Your job — two coupled treatments per fan
+1. **Fan-OUT attack motion.** The swing must READ as the fan sweeping outward/opening across the
+   arc — the spread widens through the swing instead of moving as a rigid painted plane. Use the
+   existing combo/ribbon machinery (all 3 already have authored combos with fan/dual-sweep paths);
+   adjust motion/ribbon/reveal presentation so the outward-fanning is unmistakable at combat scale.
+   Do NOT change damage, cadence, range, or knockback numbers.
+2. **Elemental tornado VFX per attack.** Each fan attack spawns its element's tornado from the
+   sweep: the tornado appears at the swept edge and travels outward a SHORT distance before
+   dissipating (readable, not screen-clutter; scale to combat size; spin via rotation/flip
+   animation of the single frame + slight scale pulse). Storm Fan is a PAIRED weapon — its
+   dual-sweep beats may alternate which fan releases the tornado.
+   - The tornado is presentation for the attack's existing damage envelope where it overlaps the
+     melee arc. If you give the traveling tornado its own damaging extent beyond the arc, the
+     server-authoritative hit-envelope MUST match its visible path (no invisible damage, no
+     undamaging visuals), and total DPS must stay within ±10% of each fan's current nominal DPS
+     (compensate by trimming arc damage if the tornado carries damage).
+3. **Bespoke SFX per element** (iron gale whoosh / fire roar / thunder crack) via the AudioBus
+   pattern B11 used.
+
+## Concrete deliverables
+- Manifest entries for the 3 `vfx-tornado-*` sprites (weapon-vfx kind; actual pixel dims).
+- Weapon-VFX catalog wiring (overrides + regenerated `weapon-vfx.generated.ts`).
+- Fan-out motion treatment per fan; tornado spawn logic; hit-envelope updates in
+  `packages/shared/src/hit-envelope.ts` if tornadoes carry damage.
+- Tests: catalog references per fan, asset gates, envelope alignment, DPS-within-band assertions.
+- Evidence under `docs/owner-notes-audit-v10-evidence/b18-fan-tornado/`.
+
+## Guardrails
+- Do NOT touch B2/B3 non-fan weapons, B11/B12/B13 surfaces, kung-fu wraps, characters, pets.
+- LF endings only. Preserve existing tests. Chain/tassel BAN irrelevant (tornado is a vortex).
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green. `pnpm assets:check` green.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567) on `proto-cowboy-hidden-face`: fire all 3
+  fans on both facings; capture the outward-fanning read + each elemental tornado + (if damaging)
+  envelope alignment. Retain evidence.
+
+## Rules
+Worktree; commit on sol/b18-integrator; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b18-integrator.md` (understanding + per-fan motion/tornado plan). Append per
+fan. FINAL line = verdict: 3 fans fanning outward, 3 elemental tornadoes live, DPS within band,
+envelope aligned, evidence path, files touched.

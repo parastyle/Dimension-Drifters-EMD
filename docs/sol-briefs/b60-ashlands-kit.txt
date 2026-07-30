@@ -1,0 +1,74 @@
+You are Sol `b60-ashlands-kit` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b60-ashlands-kit
+(branch sol/b60-ashlands-kit). ART RE-AUTHOR — ONE DIMENSION ONLY. Autonomous.
+
+Read `docs/sol-reports/spec-dimension-art-direction.md` FIRST — especially §-1 (owner rulings, which
+override everything), §1 (the 2.5D target), §2 (parity rules P1-P7), §3.1 (tile role contract),
+§3.2 (tiling constraints), §3.3 (the rim contract). It is binding.
+
+## Scope: `ashlands` ONLY. 4 floor tiles + 1 pit rim. Nothing else.
+Theme one of five. The owner gates on this before the other four are funded, so this batch IS the
+argument for the whole direction. Do not touch frostfell / verdant-ruins / neon-cyber / wild-west.
+
+## The problem you are fixing
+`tools/artkit/gen-terrain-kits.mjs` has a shared `TILE_FRAME` prompt that says "viewed from directly
+overhead", "LOW CONTRAST and MUTED", "subtle natural variation only". It produces PHOTOGRAPHIC,
+painterly, noisy floors. That is the entire defect. The tunnel is cel-shaded with drawn ink; the
+dimensions are photo mush. They cannot share a screen.
+
+## Job 1 — rewrite the shared TILE_FRAME + RIM_FRAME for cel shading
+Per §2 P1-P7. The floor stays **orthographic** (§1.3 — deliberate, mapgen is a square grid; do NOT
+add perspective or foreshortening to the floor). What changes is TREATMENT:
+- Flat colour planes with hard boundaries. NO airbrush, noise, grain, or painterly blending.
+- Deliberate drawn ink at §1.6 weights on every material boundary.
+- 4-6 colours + black ink + one accent; accent ≤ 8% of floor area.
+- One key light, NW, NO baked shadows or vignettes (§1.5).
+- Still perfectly tileable — keep every toroidal-continuity constraint from the current frame.
+- **Pristine bases** (§2 P6): no unique scuff/stain/crack-with-personality in a 512px repeat. At
+  512px the arena shows ~9x9 of them; a memorable mark becomes wallpaper instantly. Wear ships as
+  decals, which already exist and are NOT your scope.
+
+## Job 2 — the four ashlands tiles carry FIXED SEMANTIC ROLES (§3.1)
+This is now load-bearing for NAVIGATION, not just looks. Owner deleted all POI landmarks (§-1 R7),
+so the ground itself is the only thing telling a player which part of a dimension they are in.
+Author the four so they are **distinguishable at a glance in motion**:
+- tile-0 quiet bed · tile-1 worn route · tile-2 disturbed cluster · tile-3 pit approach
+Make them read as the same MATERIAL family with different HISTORY — not four different materials.
+
+## Job 3 — hit the value band. THIS IS A HARD GATE.
+Owner ruling R2: **mean greyscale 70-125, within-tile spread <= +/-18.**
+Shipped ashlands today measures tile-0 51, tile-1 40, tile-2 51, tile-3 47 — too dark — with tile-3
+spanning 9-145, which is the photographic noise. Tile-to-tile drift across the four <= +/-12.
+Rim: ground face 30-60, and the ground/void split sits at **exactly y=128** in the 1024x256 strip
+(`buildPaintedRims` depends on it — §3.3). Pit void <= 25.
+
+Ashlands becomes a **lit ash-grey field**, not a black one. That is intended and owner-approved:
+every entity in this game carries a uniform black outline, and black outlines die on a black floor.
+
+## Job 4 — ship a permanent measurement tool
+Add `tools/artkit/check-tile-values.mjs`: reads `packages/client/public/tiles/<dim>/*.png`, prints
+per-file alpha-weighted mean greyscale + min/max + within-tile spread, and EXITS NON-ZERO if any
+file violates the R2 band. Wire it so `node tools/artkit/check-tile-values.mjs ashlands` is the gate.
+This tool outlives the batch — the other four dimensions will be gated by it.
+
+## Rules of engagement for generation
+- Generate each tile as its OWN image-gen call. Never batch multiple subjects into one call — themes
+  bleed across subjects (standing project law).
+- The generator is RESUMABLE and skips renders whose raw already exists in `out/` — delete stale
+  ashlands raws before regenerating or you will "fix" nothing.
+- Keep the mirror-fold / `normalizeTileFamily` / `normalizeRim` seamlessness pipeline intact.
+- ITERATE. First render will not hit the band. Measure, adjust the prompt, re-render. Do not ship a
+  near-miss and call it done — the owner gate is a visual one and I will re-measure every file.
+
+## Verification (all must pass)
+- `node tools/artkit/check-tile-values.mjs ashlands` exits 0
+- `pnpm typecheck` clean, FULL `pnpm test` green
+- Launch the game into ashlands and CAPTURE A SCREENSHOT to
+  `docs/sol-reports/b60-evidence/ashlands-live.png`. Also capture a close crop showing an entity
+  with its black outline standing on the new floor — that outline reading clearly IS the thesis of
+  R2. Self-reported success without these captures is a failed batch.
+
+## Rules
+Worktree; LF endings; COMMIT YOUR WORK (including the PNGs); orchestrator merges. Write
+`docs/sol-reports/b60-ashlands-kit.md` with the before/after value table for all 5 files, what you
+changed in the prompt frames, and how many iterations each tile took. FINAL line = verdict:
+per-file means, band pass/fail, iterations, test result, capture paths.

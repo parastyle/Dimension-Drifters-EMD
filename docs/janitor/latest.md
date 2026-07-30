@@ -1,6 +1,6 @@
-# Janitor report — 2026-07-28T20:07:27.227Z
+# Janitor report — 2026-07-29T15:20:59.075Z
 
-**DEFERRED — repo was not quiet.** 91 uncommitted files.
+**DEFERRED — repo was not quiet.** 88 uncommitted files.
 
 Nothing was run and nothing was written. Both jobs require a quiet repo to say anything true:
 flake characterization would report in-flight edits as nondeterminism, and the drift job would

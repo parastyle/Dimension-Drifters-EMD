@@ -1,0 +1,31 @@
+You are Sol `impl-b5-attackroot` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b5-attackroot
+(branch sol/b5-attackroot). IMPLEMENTATION. Autonomous — no questions.
+
+## YOUR ORDER
+Implement BATCH B5 from the ledger. READ `docs/sol-reports/notes-ledger-v9.md` section "B5 — Weapon
+correctness: attack-authored root movement" for the FULL authoritative spec (two weapons, split policy).
+
+Summary of the two owner notes:
+- Sparkknuckle Hex-Mitt (`x2-sparkknuckle-hex-mitt`) — "there is some weird movement baked into the
+  attacks. Screws up player position during and after attacks. Please remove the weird movements.
+  Animations are good though." => DELETE the authored `forwardDrift` that GameRoom turns into a weapon
+  lunge; KEEP the glove combo animation + VFX. Authoritative start/end position must be UNCHANGED by a
+  stationary full combo, ordinary locomotion-only while moving; frames visually unchanged.
+- Thunderhead Stormfists (`x2-thunderhead-stormfists`) — "the movement should be a scripted dash, twice
+  as fast and the punch/impact at the destination." => server-authored, collision-safe dash at 2x the
+  current intended traversal speed, punch/hit/VFX resolved ONCE at the legal (collision-clamped)
+  destination, preserving its iframe contract. Not a client animation that rewrites authority.
+
+## STANDING RULES (all batches)
+- This touches `data/weapon-concepts-300.json` + regenerated `weapons-expansion.generated.ts` +
+  `GameRoom.ts` + SpriteRig/tests. Run `pnpm gen` after data edits; keep gen:check/assets:check green +
+  server booting. `pnpm typecheck` + FULL `pnpm test` GREEN in this worktree. LF endings ONLY.
+- Preserve nominal DPS unless the order changes cadence (it doesn't here). You may CREATE tests / extend a
+  unit's own test; do NOT weaken existing assertions.
+- Live dash-position gate on PRIVATE EPHEMERAL PORTS only (never 5180/2567). Retain evidence under
+  `docs/owner-notes-audit-v9-evidence/b5-attackroot/`.
+- Worktree: commit on sol/b5-attackroot; orchestrator merges. Don't touch main copy or 5180/2567.
+
+## REPORTING
+FIRST: write `docs/sol-reports/impl-b5-attackroot.md` (where the forwardDrift lunge is applied + the
+Stormfists dash plan). Append. FINAL line = verdict: per-weapon status, evidence paths, files touched.

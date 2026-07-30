@@ -1,0 +1,46 @@
+You are Sol `impl-b20-l5-tier-curve` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b20-l5-tier-curve
+(branch sol/b20-l5-tier-curve). IMPLEMENTATION — B20 LANE 5: WEAPON TIER CURVE. Autonomous — no
+questions. Report incrementally. NO live-stack boot; unit + live gate on private ephemeral ports.
+
+## Authority
+READ FIRST: `docs/sol-reports/design-lock-b20.md` + shipped lane reports L1-L4. You are the FINAL
+lane. L2 shipped a PLACEHOLDER tier (from damage budget) for chest weapon sampling — you replace
+it with the real curve.
+
+## L5 contract — time-gated weapon quality, wide variance, no strict obsolescence
+1. **Authored tier per weapon.** Assign every ACTIVE catalog weapon a `tier` (suggest 1-5) in the
+   generator input, derived from a documented POWER BUDGET formula (DPS-normalized: damage,
+   cadence, range band, AoE/behavior extras) with a manual review pass on outliers (bosses of the
+   catalog like ultimates-adjacent weapons up-tier; joke/wacky weapons stay honest). Emit via
+   `pnpm gen` into the shared catalog. Census test: tier distribution is reasonable (no tier
+   empty, no tier > 50% of the pool).
+2. **Run-clock sampling curve.** Replace L2's placeholder: chest weapon rolls (and any other
+   in-run weapon faucet, e.g. enemy drops if they roll from the pool) sample tiers as a function
+   of run minutes — early runs mostly T1-T2, late runs open T4-T5 while KEEPING low-tier
+   probability > 0 (design-lock: "later = higher budget with wider variance, never strict
+   obsolescence"). Scar-zone bias from L2 composes multiplicatively. Document the exact curve
+   table.
+3. **Rarity alignment.** L4's pack rarity mapping should agree with tiers (a T5 weapon is a
+   higher-rarity pull). Reconcile L4's mapping to read the authored tier (single source of truth)
+   instead of any duplicate budget formula.
+4. **Disassembly value alignment.** L3's disassembly curve should also read the authored tier.
+   One tier field, three consumers (chests, packs, disassembly).
+
+## Guardrails
+- Do NOT rebalance any weapon's actual stats — tiers DESCRIBE power, never change it.
+- Do NOT touch kung-fu, parry, fans, relics' rarity system, characters, pets.
+- LF endings only. Schema bumps: from CURRENT value + update every pin. Migrate affected tests.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green. `pnpm assets:check` green.
+- Unit: budget formula determinism, tier census, sampling curve (simulated clocks: minute 0/5/10/
+  15 distributions), zone composition, pack-rarity + disassembly consumers read the tier field.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567): simulate/fast-forward a run; capture
+  early vs late chest weapon tier distributions. Evidence under
+  `docs/owner-notes-audit-v11-evidence/b20-l5-tier-curve/`.
+
+## Rules
+Worktree; commit on sol/b20-l5-tier-curve; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b20-l5-tier-curve.md` (budget formula + tier census + curve table).
+Append per stage. FINAL line = verdict: N weapons tiered (distribution), curve live replacing
+placeholder, 3 consumers unified on the tier field, evidence path, files touched.

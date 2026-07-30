@@ -1,0 +1,96 @@
+You are Sol `b87-stop-pop` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b87-stop-pop
+(branch sol/b87-stop-pop). OWNER-BLOCKING FEEL BUG. Autonomous. Verify the hypothesis, then fix.
+
+## Owner report (2026-07-27, verbatim)
+> "0 metrics popped, now if I walk forward and then stop walking i warp a foot ahead"
+
+Two facts, both load-bearing:
+1. The repro is the STOP TRANSITION — hold a movement key, release it, character pops FORWARD.
+2. The diagnostic HUD lit NOTHING. SELF corrections 0, render/commit divergence 0.0px, no stalls,
+   no resync. So this is NOT a server correction and NOT the b83 tick-boundary alias.
+
+## HYPOTHESIS — strong, code-grounded. Measure it first; do not assume.
+
+`packages/client/src/net/prediction.ts:1857`:
+
+    const hasFrameSamples = this.inputSamples.length > 0;
+    const frac = hasFrameSamples
+      ? Math.min(Math.max(this.inputSampleSeconds, 0), DT)
+      : Math.min(Math.max(sinceTickSec, 0), DT);
+    this.previewCmd.dx = dx;      // <-- LIVE per-frame direction
+    this.previewCmd.dy = dy;
+
+b83 correctly made the preview DURATION come from the accumulated frame slices
+(`inputSampleSeconds`). It left the preview DIRECTION as the live `dx/dy` argument that
+`ArenaScene` passes from `this.curDx/this.curDy` (call sites `ArenaScene.ts:5659` and `:9888`).
+
+Those two agree while a key is held and disagree on exactly one frame: the release frame.
+
+Walk forward 40 ms into a 50 ms tick, then release:
+- `inputSamples` holds 40 ms of slices with dy = -1 (real, already-travelled distance).
+- `curDx/curDy` become 0 on the release frame.
+- Preview therefore simulates `frac` = 40 ms at direction ZERO -> zero travel. The rig visually
+  STOPS SHORT, dropping 40 ms of movement it had already shown.
+- At the next 50 ms boundary the commit replays the ACTUAL slices (40 ms forward + 10 ms idle),
+  so `pred` advances. The rig pops FORWARD to catch up.
+
+Worst case = `TICK_MS x MOVE_SPEED` = 0.05 x 320 = 16 px. Owner says "a foot". Consistent.
+
+This also explains the silent HUD: b85's render/commit divergence metric samples AT the tick
+boundary, where preview and commit have re-converged. The divergence exists only BETWEEN
+boundaries, so the metric is structurally blind to it.
+
+**Measure before fixing.** Instrument per-frame rendered position across a scripted
+hold-then-release, and report the peak backward dip on the release frame and the forward pop at
+the following boundary, in px. If the numbers refute the hypothesis, FOLLOW THE EVIDENCE and say
+so plainly — do not force this fix.
+
+## The fix must respect canon
+- **L09**: one constant travel speed. Feel comes from ANIMATION. Do NOT fix this by easing,
+  damping, or decelerating the stop. No stop smoothing. No "stopping distance". The character
+  stops instantly and exactly where it actually travelled to.
+- **L10**: the local player never feels lag on their own character. Do NOT fix this by delaying
+  the render until the boundary — that reintroduces up to 50 ms of input lag.
+- **B74**: constant-speed test, 8 directions, forward and backpedal, zero variance. Must stay green.
+
+The correct shape: the preview must replay the SAME sampled slice path the commit will replay,
+rather than extrapolating one constant live direction over the accumulated duration. Then releasing
+a key leaves already-travelled distance on screen, and the boundary commit changes nothing visible.
+That is the principle b83 established, applied to the direction as well as the duration.
+
+State explicitly what your fix does to input latency (target: unchanged) and whether a direction
+CHANGE mid-tick (not just a release) is also affected — walk forward, switch to strafe mid-tick,
+same class of bug. Fix that too if the measurement shows it.
+
+## Second deliverable — the metric must be able to SEE this
+b85's render/commit divergence metric read 0.0px throughout a plainly visible defect. Fix the blind
+spot: track the WORST INTRA-TICK disagreement between the rendered position and the path the commit
+will produce, not only the value at the boundary. A metric that is green during a bug the owner can
+see with their eyes is worse than no metric. Keep it cheap (no per-frame allocation) and keep the
+existing boundary number too if it is independently useful.
+
+## Existing coverage that must keep passing
+- B74 constant speed, B68 smoothness regression (BOTH top-down and belt), B76 projectile aim-lock,
+  B42 envelope + correction bands, L10 self-recovery, all of b83's alias tests.
+- ADD a test for this repro: hold a direction for a NON-MULTIPLE of TICK_MS (e.g. 40 ms, 65 ms,
+  130 ms), release, and assert the rendered position is MONOTONIC along the travel axis — no
+  backward dip on the release frame and no forward pop at the next boundary, above a stated
+  threshold. Do the same for a mid-tick direction change. These must fail before your fix.
+
+## Guardrails
+- Do not touch `data/weapon-concepts-300.json`, the lava dimension, or the walkability painter.
+- No player auras, no modal interruptions, attacks never displace the character.
+- HUD stays dev-gated. LF endings. Bump SCHEMA_VERSION only if the wire shape changes.
+
+## Verification
+- `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green TWICE consecutively.
+- `tools/diag-rb-telemetry.mts`: all scenarios, zero requests/applications/snaps/pixels, BOTH modes.
+- Report release-frame dip and boundary pop in px, BEFORE and AFTER.
+- Report input latency before/after.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b87-stop-pop.md` with the
+measurement that confirmed or refuted the hypothesis, the fix and why it respects L09/L10, the
+before/after dip+pop numbers, and what you changed about the divergence metric's blind spot. FINAL
+line = verdict: hypothesis confirmed y/n, root cause, fix, dip/pop before/after px, input latency
+before/after, metric blind-spot fix, telemetry, 2x test results.

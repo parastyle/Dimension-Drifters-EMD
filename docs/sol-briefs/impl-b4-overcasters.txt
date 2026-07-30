@@ -1,0 +1,29 @@
+You are Sol `impl-b4-overcasters` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b4-overcasters
+(branch sol/b4-overcasters). IMPLEMENTATION. Autonomous — no questions.
+
+## YOUR ORDER
+Implement BATCH B4 from the ledger. READ `docs/sol-reports/notes-ledger-v9.md` section "B4 — Weapon
+correctness: Galvanic Overcasters moving-fire regression" for the FULL authoritative spec. Also READ
+`docs/sol-reports/v8-overcasters-redo.md` (it records the character-side gates as RED, e.g. a rig/authority
+delta around 444 > 80, and marks the character half NOT SHIPPED).
+
+Summary: owner note — Galvanic Overcasters "character movement and bullet origins go crazy when you
+continuously fire and walk at the same time". The projectile-only fix (`a1ed5cb`) is CORRECT — preserve
+it. The client recoil/prediction character portion was reverted (`324a240`). Isolate predicted recoil
+from authoritative locomotion / remote interpolation so continuous burst fire never displaces or vibrates
+the character and never causes later muzzle samples to detach. AVOID catalog changes unless a recoil
+datum is truly required (prove it).
+
+## STANDING RULES (all batches)
+- `pnpm typecheck` + FULL `pnpm test` GREEN in this worktree before finishing. If you touch
+  data/manifests run `pnpm gen` and keep gen:check/assets:check green + server booting. LF endings ONLY.
+- You may CREATE tests / extend a unit's own test; do NOT weaken existing assertions. Make the RED
+  character-side Overcasters gates in the redo report GREEN (both walk directions, sustained bursts, no
+  one-frame snap/vibration, correct moving muzzle; test low AND induced-latency).
+- Live gate on PRIVATE EPHEMERAL PORTS only (never 5180/2567). Retain evidence under
+  `docs/owner-notes-audit-v9-evidence/b4-overcasters/`.
+- Worktree: commit on sol/b4-overcasters; orchestrator merges. Don't touch main copy or 5180/2567.
+
+## REPORTING
+FIRST: write `docs/sol-reports/impl-b4-overcasters.md` (understanding of the prediction/authority seam +
+plan). Append. FINAL line = verdict: gate thresholds before/after, files touched, evidence paths.

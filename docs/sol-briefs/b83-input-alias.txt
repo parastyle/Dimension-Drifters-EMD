@@ -1,0 +1,74 @@
+You are Sol `b83-input-alias` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b83-input-alias
+(branch sol/b83-input-alias). OWNER-BLOCKING. Autonomous. Read the hypothesis, then VERIFY it before fixing.
+
+## Owner report (2026-07-27, verbatim)
+> "character is still teleporting one virtual foot every couple seconds, spamming WASDWASDWASDWASD
+> makes my character jank as fuck"
+
+Clarified: NOT time-bound (not a warmup effect). It is INPUT-DRIVEN — rapid direction mashing triggers it.
+This survives L10, so it is NOT the stall/resync path.
+
+## HYPOTHESIS — verify or refute with measurement first, do not assume
+Movement input is committed to the simulation at TICK_MS (20 Hz, 50 ms):
+`ArenaScene.ts:15394` — `while (this.inputAccMs >= TICK_MS) { ... }`, and the command built there is
+both `predictor.tick(cmd)` and `room.send("input", cmd)`.
+
+But the RENDER position extrapolates from the LIVE per-frame direction:
+`ArenaScene.ts:5647` and `:9875` — `this.predictor.renderPos(this.curDx, this.curDy, this.inputAccMs / 1000)`
+
+`curDx/curDy` update every FRAME (60–144 Hz). So between tick boundaries the renderer moves the
+character along a direction the simulation may never commit. At the boundary the position rebases to
+the committed command and the difference pops.
+
+Worst case is `TICK_MS × MOVE_SPEED` = 0.05 s × 320 px/s = **16 px** — consistent with the owner's
+"one virtual foot". Mashing WASD faster than 50 ms per change maximises the disagreement, which is
+exactly the reported repro.
+
+**Measure this first.** Instrument the per-frame delta between (a) the extrapolated render position and
+(b) the position the committed command actually produces, while driving synthetic input that flips
+direction FASTER than the tick (e.g. every 16–30 ms). Report the observed magnitude. If the numbers do
+not support the hypothesis, say so and follow the evidence instead — do not force this fix.
+
+## If confirmed — the fix must respect canon
+- **L09**: movement is one constant speed. Feel comes from ANIMATION, never from modulating speed.
+  Do NOT solve this by damping, easing, or slowing direction changes. No turn weight. No acceleration.
+- **L10**: the local player never feels lag on their own character. The fix must not add input latency.
+  Do NOT solve it by making the renderer wait for the tick — that would add up to 50 ms of input delay
+  and trade one bad feel for a worse one.
+
+The correct shape is to make render extrapolation and simulation commit AGREE about direction, without
+delaying either. Options to weigh and justify:
+- extrapolate from the direction that WILL be committed (the same sampled value), not the live one;
+- sample/commit input at frame rate into the pending window while keeping the 20 Hz SEND rate;
+- carry sub-tick direction changes into the committed command so the server sees the same path.
+
+Pick one, state why, and state explicitly what it does to input latency (target: unchanged or better).
+
+## Existing coverage that must keep passing
+- B74's constant-speed test: 8 directions, forward and backpedal, zero variance.
+- B68's smoothness regression test, BOTH top-down and belt.
+- B76's projectile aim-lock (aim snapshot at trigger).
+- The harness scenario `rapid-flip-attack` currently reports ZERO corrections — note that it likely
+  flips at a tick-aligned cadence, which would NOT reproduce this. **Add a scenario that flips FASTER
+  than the tick**, since that is the owner's actual input pattern, and assert the rendered path has no
+  discontinuity above a stated threshold.
+
+## Guardrails
+- Do not touch `data/weapon-concepts-300.json`, the lava dimension, or the walkability painter.
+- Keep B42 envelope, B68/B74/B75/B76 guarantees, and the L10 instrumentation intact.
+- No player auras, no modal interruptions, attacks never displace the character.
+- LF endings. Bump `SCHEMA_VERSION` if the wire shape changes; update every test pinning it.
+
+## Verification
+- `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green TWICE consecutively.
+- `tools/diag-rb-telemetry.mts`: all scenarios, zero requests/applications/snaps/pixels, BOTH modes.
+- Report measured worst-case render/commit divergence in px, BEFORE and AFTER, under
+  faster-than-tick direction mashing.
+- State measured input latency before and after.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b83-input-alias.md` with the
+measurement that confirmed or refuted the hypothesis, the fix and why it respects L09 and L10, the
+before/after divergence numbers, and the input-latency impact. FINAL line = verdict: hypothesis
+confirmed y/n, root cause, fix, divergence before/after px, input latency before/after, telemetry,
+2x test results.

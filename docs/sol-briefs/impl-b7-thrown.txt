@@ -1,0 +1,32 @@
+You are Sol `impl-b7-thrown` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b7-thrown
+(branch sol/b7-thrown). IMPLEMENTATION. Autonomous — no questions.
+
+## YOUR ORDER
+Implement BATCH B7 from the ledger. READ `docs/sol-reports/notes-ledger-v9.md` section "B7 — Weapon
+conversions: thrown classification and release language" for the FULL authoritative spec.
+
+Summary — three weapons:
+- Sidewinder Spontoon (`x2-sidewinder-spontoon`) — still catalogued as `edge`; convert to authoritative
+  OWN-SPRITE thrown behavior. "Thrown weapon."
+- Stormcrow Twin-Hatchets (`x2-stormcrow-twin-hatchets`) — still `chainLightning`; convert to
+  authoritative own-sprite thrown behavior. "these are throwing weapons." Preserve intended effects.
+- Boothook Harpoon (`x2-boothook-harpoon`) — already thrown; ADD an explicit over-the-shoulder wind-up/
+  release pose. Preserve its earlier NO-SPIN projectile requirement and current speed. "throw over the
+  shoulder."
+Reuse each weapon's EXISTING held art as its projectile subject (no new art generation).
+
+## STANDING RULES (all batches)
+- Touches `data/weapon-concepts-300.json`, `weapons-expansion.generated.ts`, thrown types in
+  `packages/shared/src/weapons.ts`, `GameRoom.ts`, `SpriteRig.ts`, `projectile-factory.ts`,
+  `projectile-manifest.ts`. Run `pnpm gen`; keep gen:check/assets:check green + server booting.
+  `pnpm typecheck` + FULL `pnpm test` GREEN in this worktree. LF endings ONLY. Preserve nominal DPS.
+- You may CREATE tests; do NOT weaken existing assertions.
+- Live gate on PRIVATE EPHEMERAL PORTS only (never 5180/2567): the actual Spontoon + both actual hatchets
+  leave the hand and deal projectile damage; Boothook releases from over the shoulder, flies point-forward
+  WITHOUT spin; remote clients see the same. Retain evidence under
+  `docs/owner-notes-audit-v9-evidence/b7-thrown/`.
+- Worktree: commit on sol/b7-thrown; orchestrator merges. Don't touch main copy or ports 5180/2567.
+
+## REPORTING
+FIRST: write `docs/sol-reports/impl-b7-thrown.md` (thrown-behavior system + plan). Append. FINAL line =
+verdict: per-weapon status, evidence paths, files touched.

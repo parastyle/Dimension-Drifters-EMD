@@ -1,0 +1,79 @@
+You are Sol `b91-lava-walkable-truth` in an ISOLATED WORKTREE at
+C:/Users/Exped/ddv2-wt/b91-lava-walkable-truth (branch sol/b91-lava-walkable-truth).
+THREE OWNER-BLOCKING PLAYTEST BUGS. Autonomous.
+
+## Owner report (2026-07-27, verbatim)
+> "many of jump attempts last for about .1 second and then im grounded again."
+> "the new lava level often hurts me before I leave the platform, and midjump across a platform will
+> hurt me and push me back to the original platform"
+
+## Root cause is already measured — do not re-derive it
+
+The Lava Foundry walkable polygon is FAR smaller than the drawn platform. Measured walkable share of
+the visible silhouette:
+
+    broken-glass-observatory        30.8%
+    broken-turntable-arena          34.5%
+    broken-lavafall-overlook        35.5%
+    broken-reactor-arena            36.5%
+    broken-security-gate-platform   45.0%
+
+The trace itself is GOOD — `derived-alpha-v1`, alpha threshold 40, 12px cell, 64-263 polygon points
+per platform, holes cut out. The floor is lost AFTER tracing, to two settings in the collision
+provenance:
+
+    edgeInsetPx: 48            // walkable edge pulled 48px inside the silhouette, every side
+    bottomTrimFraction: 0.13   // bottom 13% of the silhouette discarded outright
+
+So the simulation believes the player is over lava while they are standing on plainly drawn floor.
+That is bug 2 (hurt before the edge) and bug 3 (hurt mid-gap, then knocked back by the pit impulse).
+Bug 1 is very likely the same cause: a jump that starts from inside-the-art-but-outside-the-polygon
+fails its ground test and resolves immediately, which reads as a ~0.1s hop. `JUMP_AIRTIME` is 0.55s
+and `DIST_JUMP_AIRTIME` is 0.6s, so 0.1s is an abort, not a tuning value.
+
+VERIFY that chain before fixing. If bug 1 turns out to be independent of the polygon, follow the
+evidence and say so.
+
+## Fix
+
+1. **Re-derive collision with a defensible inset.** 48px is arbitrary. The only physical reason a body
+   cannot stand at the very edge is its own radius, `PLAYER_RADIUS` = 24. Prefer inset 0 in the stored
+   polygon and apply the radius at TEST time (so the same art serves any future body size); if you keep
+   a baked inset, justify the number.
+2. **Justify or delete `bottomTrimFraction`.** If it exists to stop actors standing on a painted
+   under-hang that reads as wall rather than floor, keep it and say which platforms need it and why.
+   If it is a blanket 13% haircut, delete it.
+3. **Fix the jump abort** so a jump always runs its authored airtime unless something real interrupts
+   it (landing on geometry, damage, parry, pit). A jump must never be cancelled by the takeoff tile
+   test alone.
+4. Re-measure walkable share after the change and report it per platform. Target is the drawn floor
+   being walkable — expect ~80-90%, not 100% (holes and real edges are legitimate).
+
+## Guardrails
+- b90 JUST LANDED in `packages/shared/src/lava-dimension.ts` (commit 8824484c). It guarantees two
+  invariants: no two platforms' collision surfaces touch (min clearance), and every graph edge is
+  within the jump budget. Re-run its 2000-seed property sweep after your change — enlarging the
+  walkable polygons CHANGES CLEARANCE, so you may push platforms into contact. If that happens, the
+  spacing constants must absorb it; do NOT weaken b90's invariants or re-introduce an overlap
+  tolerance.
+- Keep `nativeScale: 1`. Do not shrink art to make anything fit.
+- The lava dimension stays additive: the five pre-existing dimensions keep working unchanged.
+- Do not touch `data/weapon-concepts-300.json` or the walkability painter.
+- Canon L09/L10/L11 stand. LF endings.
+
+## Verification
+- `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green TWICE.
+- Re-run b90's seed sweep (>=2000): invariants still hold, generation still never throws. Report the
+  new gap min/median/max, since bigger platforms mean less room.
+- **Add a regression test for each bug**: (a) a jump from a legitimate standing position runs its full
+  authored airtime; (b) a player standing anywhere inside the drawn floor takes no pit damage;
+  (c) a jump between two connected platforms takes no pit damage at any point along the arc. All three
+  must FAIL before your fix.
+- Report walkable-share per platform before and after.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b91-lava-walkable-truth.md`
+with the verified cause of each of the three bugs, what you changed about inset/trim and why, the
+before/after walkable shares, and the re-run sweep numbers. FINAL line = verdict: bug1 cause+fix,
+bug2/3 cause+fix, inset before/after, trim kept y/n, walkable share before/after, sweep result,
+2x test results.

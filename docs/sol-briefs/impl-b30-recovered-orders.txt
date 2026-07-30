@@ -1,0 +1,70 @@
+You are Sol `impl-b30-recovered-orders` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b30-recovered-orders
+(branch sol/b30-recovered-orders). IMPLEMENTATION — RECOVERED SKIPPED-WINDOW ORDERS. Autonomous —
+no questions. Report incrementally. NO live-stack boot; unit + live gate on private ephemeral ports.
+
+## Context
+These owner notes (data/owner-notes.jsonl, 2026-07-23 17:37 → 2026-07-24 03:06) fell between
+ledger runs and were NEVER processed. Later notes supersede earlier ones where they conflict —
+the resolution below is authoritative. Where a note was already covered by a shipped batch it is
+NOT listed here.
+
+## The 19 orders
+1. `x2-quicksilver-streetsweeper` — semi-auto GRENADE LAUNCHER, not a shotgun: lobbed grenade
+   projectiles with explosion (model on `x2-graveshot-grenade-gun`'s arc/explode contract but
+   semi-auto cadence; keep DPS within ±10% of current). Remove any pump animation; support hand
+   PLANTED motionless on the horizontal foregrip under the barrel (same class of fix as the
+   Dustdevil Riotgun de-pump in cf238ec).
+2. ARCHIVE: `x2-hollowmother-spore-totem`, `x2-codex-of-forked-tongues` (confirmed twice),
+   `x2-voltscript-codicil` (confirmed twice), `x2-bonepicker-coachgun` (the 19:56 archive note
+   supersedes its earlier hold-fix notes). Established archive pattern; out of active + pack pools.
+3. `x2-frostgig-harpoon` — held ABOVE the shoulder.
+4. `x2-fool-s-gold-revolver` — hand at the handle/trigger midpoint.
+5. `x2-sunbreaker-railgun` — stock rests near the shoulder; gun placed more forward.
+6. `x2-buckshot-briar` — 25% bigger.
+7. `x2-cinderfang-derringer` — 20% bigger.
+8. `x2-hailshard-resonator` — remove the rogue swinging VFX (separate from the ice particles);
+   the owner reports it causes "wild hitbox registry" — verify the hit envelope matches only the
+   intended ice attack after removal.
+9. `tombstone-greatsword` — the owner asks: its VFX was expunged but the HITBOX may still use the
+   old VFX extent. AUDIT + FIX: assert its hit envelope matches current visuals. THEN generalize:
+   sweep every weapon whose VFX was removed by B15/B24/B28 and assert visible-extent == damaging-
+   extent (add a batch test using the hit-envelope law machinery). Fix any offenders found; list
+   them in the report.
+10. `x2-coyote-trickster-s-sparkmitt` — remove its VFX entirely; the animation carries it.
+    (A flame-fist SIBLING weapon is a separate art batch — not yours.)
+11. `x2-saintspar-lochaber` — UP motion shows blade facing up; DOWN motion blade facing down.
+12. `x2-quarry-splitter-bardiche` — 20% smaller; attack becomes a single front flip ending in a
+    slam (reuse flip machinery; envelope follows the visible arc + slam).
+13. `x2-choir-iron-greataxe` — VFX becomes FLAME, not holy.
+14. `gravediggers-spade` — character currently flips the WRONG way: fix direction; make it 3x
+    faster; the attack is a forward JUMP with at least 6 full spins before landing.
+15. `x2-sanctified-headsman` — combo = overhead chop FIRST, then the existing slash.
+16. `x2-brimstone-falcata` — becomes a PRE-MADE dual-wield weapon (mirror the existing sprite for
+    the off-side; no new art): whirlwind attack, Garen-style spin with one sword outstretched to
+    each side (full-revolution swept damage matching visuals; DPS within ±10% of current).
+17. `x2-rimebound-folio` — the 17:37 archive note is SUPERSEDED by 03:06: keep the weapon; the
+    book OPENS and icicles shoot out. If no open-frame art exists, implement the open state
+    procedurally (rotate/splay the existing sprite) OR flag an art order in the report and wire
+    the icicle volley now (ice projectiles, envelope-true).
+
+## Guardrails
+- STANDING BANS: no player auras, no chains/tassels, nothing radial/ambient.
+- Parallel Sol B29 owns shurikens/chakrams/kunai/dual-gun-offset/revolver-HAMMER-anim surfaces —
+  your `fool-s-gold-revolver` change is GRIP DATA only (no animation code); rebase onto main if
+  B29 lands first and reconcile.
+- Sizes are render metadata, not PNG edits. LF endings only. Schema bumps from CURRENT value +
+  update all pins. Migrate affected tests; document deletions.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green. `pnpm assets:check` green.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567) on `proto-cowboy-hidden-face`: capture
+  each surviving weapon's order satisfied both facings (streetsweeper lobbing grenades with
+  planted hand, harpoon overhead, falcata whirlwind, bardiche front-flip slam, spade jump-spins,
+  folio icicles, etc). Archives absent from pools. Evidence under
+  `docs/owner-notes-audit-v11-evidence/b30-recovered-orders/`.
+
+## Rules
+Worktree; commit on sol/b30-recovered-orders; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b30-recovered-orders.md` (per-order plan + the tombstone/expunged-VFX audit
+approach). Append per order. FINAL line = verdict: 19 orders done, 4 archived, expunged-VFX audit
+offender list, evidence path, files touched.

@@ -1,0 +1,61 @@
+You are Sol `impl-b34-l2-elevator-loop` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b34-l2-elevator-loop
+(branch sol/b34-l2-elevator-loop). IMPLEMENTATION — B34 LANE 2: ELEVATOR LOOP + LENGTH VARIANTS.
+Autonomous — no questions. Report incrementally. NO live-stack boot; unit + live gate on private
+ephemeral ports.
+
+## Context — L1 shipped (READ docs/sol-reports/impl-b34-l1-ldtk-pipeline.md; merged + gate-passed)
+3 corporate floors render + play in belt mode (`?belt=corporate-grid[...]`). Elevators are
+currently PLACEHOLDER orange marker tiles (visible in
+docs/owner-notes-audit-v11-evidence/b34-l1-ldtk-pipeline/orchestrator-*.png) — replace them.
+
+## OWNER-LOCKED rules
+- RIGHT elevator = the floor's EXIT. Left + mid elevators are DORMANT this version (future secret
+  floors) — render them as closed doors, non-interactive.
+- Floors loop INFINITELY: Red_Carpet -> Portrait_Hall -> Marble -> Red_Carpet -> ... The floors
+  are deliberately ambiguous so the loop reads as an endless tower. Depth increments per floor.
+- LENGTH VARIANTS: floors must not always be full 5160px. Derive short/standard/long variants by
+  cropping at 60px module boundaries (the halls are homogeneous corridors): pick sensible spans
+  (e.g. ~60%, 100%, and full-with-densified-waves for "long"), reposition the right-exit elevator
+  + EndWall + camera bounds at the cropped end, keep spawn anchors inside the span. Variant choice
+  is seeded/deterministic per depth so co-op clients agree.
+- Deeper floors escalate: drive L1's existing depth param (waves shift from right-only to BOTH
+  sides; wave size/tier pressure scales with the shipped run-clock/tier machinery — do not invent
+  a new difficulty system; reuse belt depth + B20 tier sampling).
+
+## The elevator flow
+1. Render real elevator doors from the tileset's door tiles at all 3 marker positions (closed).
+2. The RIGHT elevator becomes INTERACTIVE when the floor's wave requirement clears (reuse the
+   belt room-clear gating that exists; if none fits, gate on "all live enemies dead + N waves
+   emitted"). Visual affordance: doors light/open slightly + the existing interact hint (E).
+3. On interact (server-authoritative): doors OPEN (slide animation from door tiles or a simple
+   two-frame slide), party steps in (brief fade to black), floor increments, next floor + variant
+   loads, doors CLOSE behind the players at the new floor's LEFT elevator (arrival read).
+   All players in the room transition together (co-op: the interacting player triggers it; a
+   short 3s countdown toast lets others reach the doors; stragglers teleport in — never leave
+   someone behind).
+4. Floor counter on the HUD (small "F<депth>" chip in the existing HUD idiom).
+5. SFX: elevator ding + door slide from shipped families (generate max 2 clips via soundkit only
+   if nothing fits).
+
+## Guardrails
+- BELT MODE ONLY; arena/training untouched; game playable after your change alone.
+- STANDING BANS: no player auras, no chains, nothing radial. LF endings. Schema bumps from
+  CURRENT value + update every pin. Migrate affected tests.
+- Money/chests/relics (B20) run normally across floors; banked-on-death flow untouched.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green. `pnpm assets:check` green.
+- Unit: loop order + variant determinism per depth, crop repositioning (exit/endwall/camera/
+  anchors inside span), depth escalation params, co-op transition (all players move, straggler
+  teleport).
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567) on `proto-cowboy-hidden-face`: clear
+  floor 1, capture the right elevator opening, the transition, arrival on floor 2 (different
+  material), floor counter incrementing, and one SHORT variant floor (visibly shorter hall).
+  Also extend `e2e/tests/orchestrator-b34-visual-probe.spec.ts` (the orchestrator's gate) with a
+  floor-transition capture. Evidence under `docs/owner-notes-audit-v11-evidence/b34-l2-elevator-loop/`.
+
+## Rules
+Worktree; COMMIT YOUR WORK on sol/b34-l2-elevator-loop; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b34-l2-elevator-loop.md` (variant spans + transition state machine + door
+tile plan). Append per stage. FINAL line = verdict: loop live, 3 length variants, doors animated,
+co-op transition, depth escalation, floor counter, evidence path, files touched.

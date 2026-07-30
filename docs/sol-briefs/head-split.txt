@@ -1,0 +1,66 @@
+You are Sol `char-head-split` in C:/Users/Exped/DDv2 on branch feat/v0.118-metagame.
+IMPLEMENTATION order. Reuse the EXISTING character art pipeline. Do NOT invent a new one.
+
+## THE ACTUAL TASK (read carefully — a prior attempt got this catastrophically wrong)
+
+The game's characters are Madness-flash FLOATING PILL figures: a `body` sprite (pill/bust, e.g. see
+`packages/client/public/sprites/drifter/body.png` and `cc-gravewake/body.png`) plus floating STUB
+sprites `hand-l`, `hand-r`, `foot-l`, `foot-r`. The head is currently baked into `body`.
+
+The ONLY change the owner wants: characters should ALSO have the HEAD as its own separate sprite,
+generated the SAME way the hands are already "detached" in the prompt, so the head can float slightly
+above the body and bob like a hand/foot. Each character becomes max 6 parts: body, head, hand-l,
+hand-r, foot-l, foot-r. EVERYTHING ELSE STAYS: same pill art style, same body, same hands, same feet,
+same rig, same animations. You are ADDING one floating part (head), nothing else.
+
+DO NOT: generate a detailed anatomical standing figure, invent a new house style, butcher/chop an
+existing body.png into a collage, or change the pill art style. The correct output looks like the
+existing pill characters, just with the head as its own sprite.
+
+## Reuse the existing pipeline
+
+1. The image prompt is the `artBrief` in `data/character-concepts.json`. Read the Drifter's / Cordell's
+   entry — e.g. "...wide-brim slouch hat tilted low over a shadowed face, ONE DETACHED HAND hanging
+   loose..., the other resting flat. Flat hand-painted CEL art, bold readable outline, side-profile
+   facing right...". The DETACHED HANDS in the prompt are why hands become separate sprites.
+2. The generation + slicing pipeline lives in `tools/artkit/` (`gen-character-roster.mjs`,
+   `harvest-install.mjs`, the slicer `tools/artkit/guards/slice.mjs`). Study exactly how a character
+   render becomes `body/hand-l/hand-r/foot-l/foot-r` parts (`out/<id>/parts/parts.json`).
+
+## What to change (minimal, surgical)
+
+- **Prompt:** modify the character artBrief prompt so it ALSO renders a clearly DETACHED HEAD floating
+  slightly above the shoulders/body — mirror the exact language that already detaches the hands
+  ("one detached hand hanging..."). The head keeps the character's face-concealment (shadowed hat brim,
+  hood, mask — NO visible biological face, consistent with the existing pill characters).
+- **Slicer:** the slicer currently classifies detached components as body/hand/foot and would
+  misclassify a detached head as a hand. Add a `head` role: the top-most detached component above the
+  body becomes `head`. Emit `head.png` as a real part in `parts.json` and the SpriteManifest.
+- **Rig:** add the head as a floating part ABOVE the body, reusing the EXISTING floating-part
+  mechanism (the same float/bob the hands/feet already use, and the head-spring work from chars-3 if
+  present). The head floats slightly above the body and bobs. Do NOT rewrite the rig; add the head part
+  to the existing part-rendering path in `packages/client/src/entities/SpriteRig.ts`.
+
+## PROVE IT on ONE character first: the DRIFTER
+
+Regenerate ONLY the `drifter` through the modified pipeline so it produces body + head + hands + feet,
+then rig the floating head. Launch the drifter in the running-style ephemeral stack (NOT ports
+5180/2567 — the owner's game is live there) and CAPTURE A SCREENSHOT / frames showing the pill drifter
+with its head floating above the body and bobbing. Retain the before (current baked-head body) and
+after (separated floating head) art + capture under `docs/owner-notes-audit-v8-evidence/head-split/`.
+The proof bar: it must still look like the same pill drifter — same body, same style — just with the
+head now a floating separate sprite. If it looks like a collage or off-style, it FAILED; iterate the
+prompt/slice until the separated head reads as native.
+
+## Rules
+- ONE image subject per agent applies: you regenerate ONLY the drifter here. (The rest of the roster
+  is a follow-up once the owner approves this proof.)
+- Owner's live game on 5180/2567 is UNTOUCHABLE. Ephemeral private ports only.
+- Run `pnpm gen`/`gen:check`/`assets:check` if you touch generated manifests; typecheck; keep the
+  server booting (census). LF line endings.
+
+## Reporting
+FIRST action: write `docs/sol-reports/char-head-split.md` (understanding + plan) before any edit.
+Append as you go. Final line: verdict — drifter regenerated as body+head+hands+feet, head floats above
+body, still on-style pill (not a collage, not a figure), with the evidence screenshot path. Work
+autonomously; record assumptions; do not ask.

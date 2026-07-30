@@ -1,0 +1,46 @@
+You are Sol `impl-b45-gun-recoil` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b45-gun-recoil
+(branch sol/b45-gun-recoil). FEATURE — REAL GUN RECOIL KNOCKBACK. Autonomous — no questions.
+
+## The owner's order (verbatim, 2026-07-24)
+"Sorry, I forgot about guns. When guns fire their knockback should be real"
+Context: the same-day standing law says MELEE weapons never move the character (B44 removed all
+melee drift/lunges). GUNS are the sanctioned exception: firing physically pushes the shooter
+BACK along the aim vector.
+
+## The contract
+1. **Recoil impulse per shot**, opposite the aim direction, scaled by weapon heft. Derive a
+   per-weapon recoil budget from the catalog (damage per shot + family/size; document the
+   formula): pistols = small nudge, shotguns/hand-cannons = solid shove, heavy
+   cannons/railguns/launchers = big push, rapid-fire = tiny per-bullet ticks that sum under
+   sustained fire. Author a `recoil` field via the generator so it's tunable per weapon.
+2. **Classified from day one**: the recoil impulse registers under B44's motion-source
+   classification (server-motion epoch or envelope budget) so it can NEVER rubberband under the
+   relaxed authority model (B42). Add it to the motion-source census test as a sanctioned
+   weapon-fire source (distinct from the banned melee class).
+3. **Feel rules**: impulse decays fast (crisp shove, not slide — reuse the impulse machinery);
+   composes with player input (you can lean into it by walking forward); belt-mode X-bounds and
+   nav clamps respected; airborne shots push too (fun with jump). No screen-shake changes.
+4. **Interactions**: firing near pits can push you in (intended — skill); parry/dodge unaffected;
+   dual guns alternate small per-hand impulses; beams apply a gentle sustained push while
+   channeling (owner fiction: "lasers are faster than light" — keep beam push subtle).
+
+## Guardrails
+- Melee/caster stay motionless (B44 law). Do NOT touch B43's file moves (you run AFTER B43
+  merges — the code lives in the new rig/ + room/ modules; read the post-split layout first).
+- DPS unchanged; recoil is movement, not damage. LF endings; schema from CURRENT + pins;
+  migrate tests.
+
+## Verification
+- `pnpm gen`+`gen:check`+`typecheck`+FULL `pnpm test` green.
+- Unit: recoil formula table (spot-check 6 weapons across heft classes), classification census,
+  impulse decay within N ticks, input composition.
+- 2-client live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567): fire a pistol (nudge), a
+  shotgun (shove), a heavy cannon (push), sustained gatling (creep-back) — zero envelope
+  rejections (B42 telemetry), observer sees the same motion. Evidence under
+  `docs/owner-notes-audit-v11-evidence/b45-gun-recoil/`.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Report at
+`docs/sol-reports/impl-b45-gun-recoil.md` (recoil formula + per-class table). FINAL line =
+verdict: N guns reciled across classes, classification clean, zero rejections, evidence path,
+files touched.

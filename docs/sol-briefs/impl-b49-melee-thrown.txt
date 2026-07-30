@@ -1,0 +1,43 @@
+You are Sol `impl-b49-melee-thrown` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b49-melee-thrown
+(branch sol/b49-melee-thrown). MELEE/THROWN CORRECTIONS (owner notes 2026-07-24/25). Autonomous.
+
+## 13 orders (verbatim-condensed)
+1. `x2-hailshard-resonator` — REGRESSION: "it used to be swung in a circle while emitting ice
+   everywhere 360" — restore the 360 circular swing + omnidirectional ice (diagnose which batch
+   dropped it — likely B30's rogue-VFX removal overcut; name the culprit in the report).
+2. `gravediggers-spade` — halve the spin rate; verify/remove any residual displacement (B44
+   claimed in-place); DAMAGE NUMBER on EVERY spin hit — currently visually ~10 rot/s but damage
+   1/s; make the damage cadence match visible revolutions (keep total DPS within ±10% by
+   splitting per-hit damage).
+3. `x2-cinderbrand-cleaver` — verify/remove residual displacement (owner still sees it).
+4. `x2-brimstone-doubleheader` — SKIPPED NOTE (2026-07-24 03:07, missed twice): "attack
+   whirlwind spinning style, no VFX just one arm outstretched in each direction spinning garen
+   LoL style, continuously as held." Spin in place (no displacement), continuous while held,
+   swept damage matches visuals, damage numbers per revolution hit.
+5. `x2-hollowmoon-reaver` — axe held upright slightly forward; author a cool combo; play with
+   both hands' positioning.
+6. `x2-frostfang-rakes` — pose fine; hands move FORWARD a lot.
+7. `x2-gallows-splitter` — thrown with BOTH hands from behind the head (proper axe throw).
+8. `x2-saloon-tomahawk` — same over-the-shoulder 2-hand axe throw.
+9. `x2-reverent-broadsword` — slow the flip down.
+10. `x2-emberfist-wraps` — fists way too big; punches reach farther.
+11. `x2-void-throwing-star` — dual wield; thrown in opposite curving paths forming a HELIX.
+12. `x2-frostknuckle-rimewrap` — currently punches with both hands but has one glove: make a
+    second glove (mirror the sprite; no new art) + they shoot weaponized snowflake projectiles
+    (use existing ice particle/star assets; envelope-true).
+13. `x2-cinderpalm-brand-glove` — dual wield; fire comes from the FIST, not the character (no
+    body aura — fist-anchored flame, Emberfist part-2 overlay pattern is precedent).
+
+## Guardrails
+STANDING LAWS: no melee displacement (spins/throws in place), no player auras, no chains.
+Post-B43: melee combat in rig-combat.ts + room-combat.ts. DPS within ±10% everywhere. Parallel
+B48/B50 — no overlap. LF endings; schema from CURRENT + pins; migrate tests.
+
+## Verification
+gen/gen:check/typecheck/FULL test green. Live gate (private ports): each order both facings;
+gravedigger + doubleheader damage-number cadence visible; helix stars captured. Evidence under
+docs/owner-notes-audit-v12-evidence/b49-melee-thrown/.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Report docs/sol-reports/impl-b49-melee-thrown.md.
+FINAL line = verdict: 13 orders done (hailshard culprit named), evidence path, files touched.

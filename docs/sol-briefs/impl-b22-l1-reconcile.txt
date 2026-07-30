@@ -1,0 +1,46 @@
+You are Sol `impl-b22-l1-reconcile` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b22-l1-reconcile
+(branch sol/b22-l1-reconcile). DIAGNOSIS + FIX. Autonomous — no questions. Report incrementally.
+
+## The regression
+`e2e/tests/b22-fan-tornado-v2-live-gate.spec.ts` ("B22 fan tornadoes are player-height upright
+traveling sole VFX with moving damage") PASSED on the B22 branch pre-merge, and now FAILS
+deterministically (twice) on the current tree at line ~880:
+  expect(proof.pathLateralDistanceToTarget).toBeLessThanOrEqual(72)   // FAILS
+The tree since then merged B20-L1 (`839a89e` — core stat/level teardown: scalingGrades +
+requirements stripped from every weapon def, heldDamageMult stat-scaling collapsed, XP orbs →
+money drops, crit flattened). The tornado path no longer aligns with the spawned target.
+
+## Hypotheses to check (in order)
+1. L1's catalog strip changed fan def resolution (e.g., tornado projectile speed/range/aim derived
+   from a field the strip removed or a generator default that shifted when scalingGrades vanished).
+2. RNG-stream shift: money-drop reroute or removed XP spawns consume a different number of
+   Math.random draws server-side, shifting the gate's target spawn/drift so the tornado's authored
+   aim no longer intersects it (then the GATE needs to pin its target deterministically, not the
+   game code).
+3. The gate's own harness assumptions (e.g., it read XP/level state that no longer exists and
+   silently mis-positions its probe).
+
+## Your job
+Diagnose the actual cause, then fix at the ROOT:
+- If game behavior regressed (tornado aim/speed/range wrong post-L1) → fix the game code so
+  tornadoes fly exactly as B22 shipped (player-height, upright, non-spinning, forward, moving
+  authoritative damage matching the visual).
+- If the gate is environmentally sensitive → make the gate deterministic (pin spawn positions /
+  seed) WITHOUT weakening its assertions (the 72px lateral bound and tick bounds stay).
+Never loosen assertion tolerances to pass.
+
+## Guardrails
+- Do NOT touch: kung-fu wraps, B24's radial-particle surfaces (parallel Sol), characters, pets,
+  the B20 design (stats stay dead). LF endings only.
+
+## Verification
+- `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green.
+- The B22 live gate passes 2x consecutively: `npx playwright test e2e/tests/b22-fan-tornado-v2-live-gate.spec.ts`
+  (private ephemeral ports; never 5180/2567). Also rerun `e2e/tests/black-screen.smoke.spec.ts` +
+  `e2e/tests/b23-kungfu-v2-live-gate.spec.ts` to prove no cross-regression.
+- Evidence under `docs/owner-notes-audit-v11-evidence/b22-l1-reconcile/`.
+
+## Rules
+Worktree; commit on sol/b22-l1-reconcile; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b22-l1-reconcile.md` (diagnosis with proof, then fix plan). FINAL line =
+verdict: root cause named (game vs gate), fix summary, gates 2x green, evidence path, files touched.

@@ -1,0 +1,28 @@
+You are Sol `diag-weapon-audit`. READ-ONLY CODE AUDIT. Do NOT edit code/tests. Write ONLY
+`docs/sol-reports/diag-weapon-audit.md`. Main tree. Autonomous — no questions.
+
+## THE BUG
+"MOST weapons STOP WORKING after a FEW attacks" — regression from last night's merge wave (B1 facing,
+B4 overcasters, B5 attack-root movement, B7 thrown, B8 pose/combo, B9 size, B10 vfx/hit-envelope).
+
+## YOUR JOB — find the root cause by INSPECTION (complement the repro/bisect Sols)
+Read the full weapon ATTACK LIFECYCLE on the server + how last night's diffs changed it, and identify the
+state that fails to reset so a weapon stops after a few attacks. Focus:
+1. `packages/server/src/rooms/GameRoom.ts` — `resolveSwing`, `stepPendingWeaponLunges`,
+   `pendingWeaponLunges` map (added/changed by B5's attack-root work + `impactAtDestination` dash): does a
+   pending-lunge / swing-commit / dash entry ever fail to clear, so subsequent `attack` messages are
+   rejected or the swing never re-arms? Trace the accept->resolve->clear cycle for repeated attacks.
+2. The swing/effective-cooldown clock + weapon DURABILITY (melee wear) regen, and thrown CHARGES /
+   refillSeconds (B7): does durability hit 0 without regen, or do charges not refill?
+3. `packages/shared/src/weapons.ts` — any per-run/per-swing state, `suppressSwing`, `collisionLength`
+   (B9 added — does it break reach/hit so nothing connects?), combo progression (B8).
+4. Cross-reference with `git show` on the wave commits (fc702b2/179c721 B5, c4c6066 B7, 5c8173d B8,
+   8116f00 B9, a87f465 B10) restricted to GameRoom.ts + weapons.ts + hit-envelope.
+
+Produce a ranked root-cause hypothesis (most-likely first) with exact file:line, the mechanism ("after N
+attacks, field X stays Y so the swing is gated"), the offending commit, and the minimal fix.
+
+## Rules
+READ-ONLY. Your report is the only artifact. LF endings. Cite file:line + commit for each claim.
+FIRST: create the report with your reading map. FINAL line = verdict: the single most-likely root cause
+(file:line + commit) + the minimal fix + a confidence level.

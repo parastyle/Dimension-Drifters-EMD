@@ -1,0 +1,57 @@
+You are Sol `impl-b35-gun-corrections` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b35-gun-corrections
+(branch sol/b35-gun-corrections). IMPLEMENTATION — GUN PRESENTATION CORRECTIONS. Autonomous — no
+questions. Report incrementally. NO live-stack boot; unit + live gate on private ephemeral ports.
+
+## 18 owner orders (verbatim-condensed from data/owner-notes.jsonl 2026-07-24 14:42-16:21)
+1. `x2-riftglass-prism-lantern` — weapon -50% size; each beam +20% size.
+2. **STRAY-HAND BUG CLASS**: `x2-cinderpalm-brand-glove` "hands floating arbitrarily behind the
+   player during 1 handed weapon use" + `x-gun-gatling` "this is 2 handed, Im seeing a stray hand
+   on the other side" — ROOT-CAUSE the off-hand render bug (suspect B27 composed-dual removal
+   residue or idle-hand pose fallback). Fix the CLASS, then verify both weapons + sweep other 1H
+   weapons for strays in the live gate.
+3. `x2-voltvein-conductors` — glove guns: one hand outstretches after the other, shot by shot
+   (alternating firing hands).
+4. `x2-voidgrasp-null-gauntlet` — base beam width = the cannon mouth's width.
+5. `x2-prismhex-diffraction-gauntlet` — mirrored on the WRONG axis (currently upside down +
+   backwards). Mirror on the correct axis.
+6. `x2-iron-vow-bearded-axe` — +35% size.
+7. `x2-permafrost-bardiche` — one hand holds the blue gem near the middle.
+8. **LASER LAW (game-wide)**: "Lasers should always be fixed orientation with their weapons
+   direction, they should not lag behind...lasers are faster than light." Beams render rigidly
+   locked to the weapon's current aim — remove any smoothing/lag/interpolation on beam angle.
+9. `x2-cinderbore-longrifle` — needs a real bullet projectile.
+10. `x2-voltcaster-machine-pistol` — laser-beam EFFECT but semi-automatic discrete shots
+    (magazine fiction).
+11. `x2-coyote-stinger` — bullets must originate from the BARREL muzzle, not the hands.
+12. `x2-ghostwind-spectre-rail` — purple chain lightning on hit.
+13. `x2-quicksilver-fanner` — earlier ask was misinterpreted: ONE attack press / energy drain
+    plays SIX fast sequential shots (fanning animation), not a cone volley.
+14. `x2-fool-s-gold-revolver` — hand ON the handle (supersedes B30's handle/trigger midpoint).
+15. `x2-mauler-slug-thrower` — better fire effects (muzzle + impact; use shipped families).
+16. `x2-hexbore-voidmaw` — hand on the handle; gun -13% size.
+17. `x2-tesla-faradayer` — projectiles PURPLE, very large energy blasts.
+18. **GUN STANCE (game-wide)**: guns rise to SHOULDER level and the head nods down slightly to
+    meet them halfway ("how soldiers do it irl"). Adjust the gun-hold pose baseline + a small
+    head-tilt offset while a gun is held. Both facings; no clipping into the head.
+
+## Guardrails
+- STANDING BANS: no player auras, no chains, nothing radial. Sizes = render metadata, not PNG
+  edits. DPS unchanged everywhere except where an order implies presentation-only change.
+- Parallel Sols: B34-L2 (belt/elevators), B36 (melee/martial corrections — do not touch kung-fu
+  wraps/broadsword/wyrmskull), art Sols (do not touch buffalo-gun/present-lobber/streetsweeper
+  ART; streetsweeper BEHAVIOR is yours only if listed — it is NOT). Rebase onto main at merge.
+- LF endings. Schema bumps from CURRENT value + update all pins. Migrate affected tests.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green. `pnpm assets:check` green.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567) on `proto-cowboy-hidden-face`: capture
+  every order satisfied both facings; dedicated captures for the stray-hand fix (cinderpalm +
+  gatling + 2 random 1H weapons clean), the laser rigid-lock while swinging aim fast, the
+  6-shot fanner sequence, and the shoulder-level stance with head nod. Evidence under
+  `docs/owner-notes-audit-v11-evidence/b35-gun-corrections/`.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b35-gun-corrections.md` (stray-hand root-cause hypothesis + per-order
+plan). Append per order. FINAL line = verdict: 18 orders done, stray-hand root cause named,
+laser law enforced, stance shipped, evidence path, files touched.

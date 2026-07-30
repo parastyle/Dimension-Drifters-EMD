@@ -1,0 +1,60 @@
+You are Sol `char-proto` working in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/char-proto
+(branch sol/char-proto). Everything you edit is isolated; the orchestrator merges you back.
+IMPLEMENTATION order.
+
+## What this is
+The OWNER hand-made 3 prototype characters in a GREEN-CHROMA template, already laid out in the exact
+6-part configuration the game uses. They are at `data/character-proto-intake/`:
+- `proto-sheriff.png`  — lawman drifter: star-badge cowboy hat + red bandana + shadow face w/ one
+  glowing eye (head, top), body pill w/ belt+badge (middle), 2 hand-mitts (sides), 2 boots (bottom).
+- `proto-samurai.png`  — horned kabuto helmet + oni menpo face (head), lamellar barrel body + blue
+  sash, 2 stone mitts, 2 boots.
+- `proto-witch.png`    — sigil witch hat + shadow face w/ one glowing eye (head), purple robe body +
+  belt satchel, 2 purple mitts, 2 boots.
+
+Each image is one character on a solid GREEN background, with the six parts already positioned:
+HEAD floating up top, BODY pill in the middle, two HANDS at the sides, two FEET at the bottom.
+
+## THE JOB: key + slice + install these AS-AUTHORED. Do NOT regenerate or restyle.
+This is the OWNER'S art. You do NOT generate anything. You:
+1. CHROMA-KEY the green to transparency for each image. REUSE the existing keying step the character
+   pipeline already uses (the head-split run did "chroma-key with soft matte + despill" — find that
+   code in `tools/artkit/` and reuse it; do not invent a new keyer). Green must be fully removed with
+   a clean soft matte + despill (no green fringe on edges).
+2. SLICE each keyed image into the 6 parts using the existing slicer `tools/artkit/guards/slice.mjs`
+   (it now has a `head` role from the head-split work): head, body, hand-l, hand-r, foot-l, foot-r.
+   The classifier: top-most detached component above the body = head; largest central = body; the two
+   mid-height side components = hands; the two bottom components = feet. PRESERVE each part's authored
+   relative POSITION (the head's float height above the body, hand/foot placement) so the assembled
+   character matches the owner's layout.
+3. NORMALIZE to the game's character scale exactly like existing characters (body-height normalization,
+   same as cc-* / drifter — 76px body unit). All 3 same size as the roster.
+4. INSTALL as 3 new PROTOTYPE characters with ids `proto-sheriff`, `proto-samurai`, `proto-witch`:
+   write their sprite parts to `packages/client/public/sprites/<id>/` (body/head/hand-l/hand-r/
+   foot-l/foot-r .png), register them in the SpriteManifest (`kind: character`, with the `head` part),
+   and add them to the character roster so they are SELECTABLE/launchable in the game (mirror how the
+   existing cc-* characters + the drifter are registered — characters.ts / gen-character-roster /
+   whatever the real path is; follow it, don't fork).
+5. RIG THE FLOATING HEAD: these use the same floating-head rig the drifter head-split added
+   (FLOATING_HEAD_SPRING_TUNING + the head part in SpriteRig). Their heads are already TALL, so they
+   should sit and bob correctly. Confirm the head anchor/overlap works for all 3.
+
+## PROVE IT (in-game)
+Launch each of the 3 prototypes in the ephemeral stack (NOT ports 5180/2567 — owner's live game).
+Capture an in-game frame of each assembled character (pill body + floating head + hands + feet) plus
+a bob frame, and confirm: green fully removed (no fringe), all 6 parts present and correctly placed,
+head floats/bobs without a decapitated gap, reads on-style. Retain captures under
+`docs/owner-notes-audit-v8-evidence/char-proto/`.
+
+## Rules
+- These are the owner's authored characters — faithful key+slice+install ONLY. No regeneration, no
+  recolor, no restyle. If a part is ambiguous to classify, record the assumption in your report.
+- Run `pnpm gen`/`gen:check`/`assets:check` if you touch manifests/roster; `pnpm typecheck`; keep the
+  server booting (character census). Run FULL `pnpm test`. LF endings.
+- You are in a worktree — commit is optional; leaving a clean verified tree is fine, the orchestrator
+  merges. Do NOT touch ports 5180/2567.
+
+## Reporting
+FIRST action: write `docs/sol-reports/char-proto.md` (understanding + plan). Append as you go. Final
+line: verdict — the 3 prototypes installed + selectable, per-character part list, green-removal
+confirmation, in-game capture paths, and any classification assumptions. Work autonomously; do not ask.

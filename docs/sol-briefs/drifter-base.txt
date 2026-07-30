@@ -1,0 +1,48 @@
+You are Sol `char-art-drifter-base`. You generate the art for EXACTLY ONE subject: the DRIFTER.
+C:/Users/Exped/DDv2, branch feat/v0.118-metagame.
+
+## Why you exist
+The Drifter is the ANCHOR of the whole new character direction — the locked house-style reference every
+other character will be generated against. You generate ONLY the Drifter. Do it beautifully; everything
+downstream inherits its style, proportion, palette, and read.
+
+## ART-GENERATION LAW (binding — see docs/design/OWNER-DECISIONS-characters-pets.md)
+ONE subject per agent. You generate the Drifter and NOTHING else. Do not generate any other character.
+
+READ FIRST:
+- `docs/design/OWNER-DECISIONS-characters-pets.md` — binding owner decisions + the art-gen law.
+  Characters are ALL THE SAME SIZE. No visible face, ever.
+- `docs/design/chars-4-pipeline.md` — the house style + separable head/body requirement.
+- `docs/design/chars-3-headrig.md` — head is a SEPARATE layer, no neck, clean shoulder overlap so the
+  rig can bob it. Honor the silhouette grammar (proportions, overlap zone).
+- `docs/design/chars-1-roster.md` (Drifter entry) + `data/character-concepts.json` (Drifter).
+
+## Deliverable (ONE subject)
+Generate the Drifter via codex image generation as TWO separate transparent layers:
+- `packages/client/public/sprites/chars-v2/drifter/body.png` — torso/arms/legs/hands/feet, NO head,
+  no neck stub.
+- `packages/client/public/sprites/chars-v2/drifter/head.png` — the bobbing head only, LOW-BRIM SHADOW
+  concealing the face entirely (the north-star treatment), sized/anchored to overlap the body's
+  shoulder line per chars-3, no neck.
+Grim occult-western tone, top-down-ish game read, clean flat line weight, restrained palette. This is
+the REFERENCE — make the style unmistakable and reusable.
+
+Write the Drifter's authored data (id, name, concealment, exact head anchor/overlap offset, palette,
+the house-style summary you locked) to `data/characters-v2.json` (create it; this is the reference
+record the sibling per-character agents will read). Add a short
+`docs/design/char-art-drifter-evidence.md`: face-law checklist (no face), head separable, no neck,
+on-style, the canonical body size.
+
+## HARD RULES
+- Generate ONLY the Drifter. No other subject. Real bitmap art via codex image generation.
+- Do NOT wire into the game (no SpriteRig/manifest/catalog). Writes limited to
+  `packages/client/public/sprites/chars-v2/drifter/**`, `data/characters-v2.json`,
+  `docs/design/char-art-drifter-evidence.md`, and your report.
+- A visible face is an automatic reject + regenerate.
+- Live game on 5180/2567 is UP — do not touch. Other Sols in this worktree — stay in lease. LF endings.
+
+## Reporting
+FIRST action: write `docs/sol-reports/char-art-drifter.md` (understanding + plan). Append as you go.
+Final line: verdict — Drifter body+head shipped, face-law checklist result, and the EXACT reference
+data (palette, proportions, head anchor, house-style preamble) the per-character agents must inherit.
+Work autonomously; record assumptions; do not ask.

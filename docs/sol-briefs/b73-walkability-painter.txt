@@ -1,0 +1,62 @@
+You are Sol `b73-walkability-painter` in an ISOLATED WORKTREE at
+C:/Users/Exped/ddv2-wt/b73-walkability-painter (branch sol/b73-walkability-painter). NEW TOOL. Autonomous.
+
+## Owner order (verbatim, 2026-07-26)
+> "We'll need better hitmap on these though Codex wasn't able to make things very walkable, you can
+> design me a way to draw out what parts a player is able to walk on that'd be great"
+
+Build the owner a tool where they **draw the walkable surface directly onto the platform art** and it
+saves as collision data the game consumes.
+
+## Precedent — do not invent a new pattern
+This project already has a working authoring tool: the **Pose Studio**
+(`tools/weaponsmith/server.mjs`, launched by `pnpm pose-studio`, with a `/api/pose-studio` proxy).
+It is drag-and-drop with move/rotate/scale gizmos and it saves back to repo data. **Follow that
+pattern**: a small local server + a browser UI + writes to a data file in the repo. Read it before
+designing anything.
+
+## What it must do
+1. **Load platform art** — the prefabs from the lava package (a parallel Sol `b72-lava-dimension` is
+   importing them) and, ideally, any dimension prop art. Show the sprite at native size, 1:1.
+2. **Draw the walkable surface on top of it.** Painting is the point. Support at minimum:
+   - a polygon tool (click vertices, close the shape), and/or
+   - a brush that paints a walkable mask
+   Whichever you choose, the owner must be able to trace an irregular top surface quickly and
+   correct mistakes. Undo is required. Snapping/nudging is welcome.
+3. **Show what the game will actually do.** Overlay the resulting collision on the art in a colour,
+   and provide a "can the player stand here?" read. The owner's complaint is that walkability did not
+   match the art — this preview is the whole value.
+4. **Save to the repo** as collision data keyed by prefab id, in the format
+   `b72-lava-dimension` consumes. Coordinate: read that Sol's report
+   (`docs/sol-reports/b72-lava-dimension.md`) if present; if it is not yet written, define a clean
+   format yourself, DOCUMENT IT PROMINENTLY in your report, and keep it dead simple — an array of
+   polygons in prefab-local pixel coordinates.
+5. **Seed from automatic derivation.** Do not start every prefab from a blank canvas: pre-fill from
+   the art's alpha/visible bounds so the owner is correcting a good guess, not tracing from scratch.
+
+## Quality bar
+- The owner is the only user. Optimise for speed of authoring, not for features.
+- Keyboard shortcuts for the common actions. Say what they are in your report.
+- It must be obvious at a glance which prefabs are done and which are untouched.
+- Never silently discard work — saving must be explicit and confirmed.
+
+## Guardrails
+- Tool + data only. Do **NOT** change gameplay, movement, or collision resolution in the game itself.
+  `b72` owns the runtime consumption of this data.
+- Parallel Sols own: the lava dimension import, guns 16-30
+  (`data/weapon-concepts-300.json` — do not touch), and the movement/rig fix. Stay out of all three.
+- Add it to `package.json` scripts alongside `pose-studio` so it launches the same way.
+- LF endings. Disk is tight — do not copy large asset folders.
+
+## Verification
+`pnpm typecheck` clean, FULL `pnpm test` green. Then RUN THE TOOL: load a real platform PNG from the
+lava package, trace a walkable surface, save it, and reload to prove it round-trips. Capture
+`docs/sol-reports/b73-evidence/painter-ui.png` and `painter-saved-overlay.png`.
+If no browser is available, say so plainly rather than fabricating captures — but still prove the
+round-trip with a written test over the save/load path.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b73-walkability-painter.md`
+with the launch command, the keyboard shortcuts, **the collision data format in full**, and how it
+seeds from the art. FINAL line = verdict: launch command, tools provided, format, round-trip proven
+how, capture paths.

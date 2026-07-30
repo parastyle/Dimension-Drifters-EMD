@@ -1,0 +1,62 @@
+You are Sol `impl-b11-integrator` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b11-integrator
+(branch sol/b11-integrator). IMPLEMENTATION — VFX INTEGRATOR. Autonomous — no questions. Report
+incrementally. NO live-stack boot; unit + live gate on private ephemeral ports is the acceptance.
+
+## Context — the 3 owner VFX orders (from v9 ledger B11)
+- **Dustreaper Zweihander** (`x2-dustreaper-zweihander`): "Fire dragon VFX"
+- **Mesa-Heart Geodes** (`x2-mesa-heart-geodes`): "lots of purple crystal VFX everywhere"
+- **Arcanist's Lance** (`x-staff-arcane-lance`): "needs image VFX to replace current VFX"
+
+## The 3 B11 art assets are ALREADY installed in main
+- `packages/client/public/sprites/vfx-fire-dragon/part-1.png` (readable serpentine dragon sweep)
+- `packages/client/public/sprites/vfx-purple-crystal-family/part-1.png` (dense radial cluster of geode shards)
+- `packages/client/public/sprites/vfx-arcanist-lance/part-1.png` (arcane-blue runic lance projectile)
+
+READ the SHIPPED B2 integrator (`docs/sol-reports/impl-b2-integrator.md` = c65dea1) VFX-recipe pattern
+for the rainbow-beam / present-lobber / bubble-caster etc. — extend the same catalog + gen pattern.
+Also READ ledger v9 B11 for the FULL acceptance criteria (linked in `docs/sol-reports/notes-ledger-v9.md`).
+
+## Your job — replace 3 existing procedural VFX with generated-image treatments
+For each of the 3 weapons: **the new art REPLACES the existing procedural recipe** (do not stack the new
+art invisibly beneath the old procedural layers — remove the displaced procedural layers).
+
+1. **Dustreaper Zweihander** — bespoke fire-dragon SWEEP treatment. The dragon animates across the swing
+   arc; the damaging hit-envelope must MATCH the dragon's visible extent (dragon head at the leading
+   edge). Bespoke SFX (a low draconic roar or fire-whoosh).
+2. **Mesa-Heart Geodes** — dense purple-crystal bursts/fragments scattered per attack. NO simple
+   circles. Controlled pooling around the target/aim. Bespoke crystalline SFX (glass-crack + hum).
+3. **Arcanist's Lance** — replace the current procedural staff-cast projectile with the generated-image
+   lance projectile. Preserve existing firing CADENCE + PROJECTILE COUNT (do not rebalance).
+   Authoritative hit-envelope must match the lance's visible tip.
+
+## Concrete deliverables
+1. **VFX recipes** in `packages/client/src/vfx/*` (patterns: shipped `weapon-vfx-suite.ts`,
+   `weapon-vfx.generated.ts`, `weapon-effect-recipes.ts`) — one per weapon; distinct per subject.
+2. **Weapon-VFX overrides** in `tools/artkit/weapon-vfx-overrides.json` if the generator needs to know
+   these subjects are the authoritative recipe for those 3 weapon ids.
+3. **Hit-envelope updates** in `packages/shared/src/hit-envelope.ts` where visual damage extends
+   beyond the base weapon (dragon reach for Dustreaper; purple-crystal fragment radius for Mesa-Heart).
+   Authoritative hit-envelope MUST match visible damaging extent — no invisible damage outside the art.
+4. **Removed procedural layers** — do NOT leave the old procedural VFX firing under the new art.
+5. Catalog + VFX tests: each of the 3 references its new subject, no procedural fallback resolves,
+   asset gates pass.
+
+## Guardrails
+- Do NOT change any weapon's damage/cadence/range/DPS. Purely visual replacements.
+- STANDING chain/tassel/rope BAN + no-thumbs — irrelevant here (VFX only, no character art).
+- Do NOT touch B2/B3/B14 weapons, whole-art characters (proto-*), or pets.
+- LF endings only. Preserve existing tests.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green in this worktree.
+- `pnpm assets:check` green.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567): fire each of the 3 weapons on both facings
+  on `proto-cowboy-hidden-face`. Capture: (a) new subject clearly visible at combat scale,
+  (b) old procedural layers absent, (c) authoritative hit-envelope covers every damaging visible lobe
+  without granting invisible damage outside the art. Retain evidence under
+  `docs/owner-notes-audit-v10-evidence/b11-vfx/`.
+
+## Rules
+Worktree; commit on sol/b11-integrator; orchestrator merges. FIRST: write `docs/sol-reports/impl-b11-integrator.md`
+(understanding + per-weapon replacement plan). Append per weapon. FINAL line = verdict: 3 replaced, old
+procedural absent, hit-envelope aligned, evidence path, files touched.

@@ -1,0 +1,55 @@
+You are Sol `impl-b23-kungfu-v2` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b23-kungfu-v2
+(branch sol/b23-kungfu-v2). IMPLEMENTATION — KUNG-FU CORRECTIONS. Autonomous — no questions.
+Report incrementally. NO live-stack boot; unit + live gate on private ephemeral ports.
+
+## Context — the owner PLAYED the B19 ship tonight and rejected parts of it (verbatim)
+"All the new martial art weapons have player aura. Get that shit out, never again. Also most of
+the new wrapped fists are the size of the entire character. And the martial arts are way too slow,
+and they attack way too close to the person. they are also definitely not animated enough. I need
+to see at least one round house kick. and one back flip head kick. I dont even see a praying
+mantis pose or crane pose..."
+
+Subjects: `x2-muay-thai-wraps`, `x2-wing-chun-wraps`, `x2-drunken-fist-wraps`, `x2-iron-palm-wraps`.
+READ `docs/sol-reports/impl-b19-integrator.md` (what shipped) before planning.
+
+## The five corrections
+1. **KILL the player auras — permanent ban.** Remove every aura/glow layer that renders around
+   the player character from all 4 wrap VFX recipes (and any other weapon recipe that snuck one
+   in). Impact flashes, strike trails, foot/hand-anchored effects stay. This is now a STANDING
+   LAW like the chain ban: weapon VFX never wraps the character in an aura.
+2. **Fist/foot scale.** The wraps currently render near character-size. Wrapped hands must render
+   at the character's HAND scale (slightly larger than the bare mitt is fine — they're wrapped —
+   but proportionate; reference the whole-art character hand sprite size on screen). Feet same
+   treatment. Fix the render scale (SpriteRig wrap sizing), NOT the art.
+3. **Speed up.** All 4 styles attack noticeably faster: reduce beat durations/cooldowns per style
+   while preserving the requested cadence ORDER (wing chun fastest ... iron palm heaviest) and
+   holding each wrap's DPS within ±10% of nominal 20 (trim per-hit damage to compensate).
+4. **Reach.** Strikes land too close to the body. Extend strike reach so punches/kicks visibly
+   extend AWAY from the character (limb travel + hit envelope move together — the envelope must
+   match the visible strike extent).
+5. **Real choreography.** The combos must showcase the martial arts:
+   - At least one ROUNDHOUSE KICK (big sweeping arc kick — give it to Muay Thai or Drunken).
+   - At least one BACKFLIP HEAD KICK (character does a backflip, foot arcs overhead — give it to
+     Wing Chun or Drunken; reuse the existing flip animation machinery from the movement kit).
+   - PRAYING MANTIS pose and CRANE pose: distinctive martial-art STANCES held between combo beats
+     or at combo idle (hands/feet posed in the recognizable silhouettes — mantis hooked hands,
+     crane one-leg raised guard). Wire via the pose-language/idle-stance machinery.
+   Keep the punch/kick limb mix and server-authoritative displacement from B19.
+
+## Guardrails
+- Do NOT touch wrap ART (PNGs are final). Do NOT touch fans (parallel Sol), B20 surfaces,
+  characters' base sprites, pets. STANDING BANS: no chains/tassels, no thumbs, and now NO PLAYER
+  AURAS. LF endings only. Migrate B19's tests to the new contract.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green. `pnpm assets:check` green.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567) on `proto-cowboy-hidden-face`: run all 4
+  full combos both facings; capture (a) zero auras, (b) hand-scale fists/feet, (c) faster cadence,
+  (d) extended reach, (e) the roundhouse, the backflip head kick, the mantis pose, the crane pose.
+  Evidence under `docs/owner-notes-audit-v11-evidence/b23-kungfu-v2/`.
+
+## Rules
+Worktree; commit on sol/b23-kungfu-v2; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b23-kungfu-v2.md` (understanding + per-style correction plan + which style
+gets which showcase move). Append per style. FINAL line = verdict: auras gone, scale fixed, speed
+up, reach out, roundhouse + backflip + mantis + crane live, DPS bands, evidence path, files touched.

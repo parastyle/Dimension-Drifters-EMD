@@ -1,0 +1,50 @@
+You are Sol `impl-b27-premade-duals` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b27-premade-duals
+(branch sol/b27-premade-duals). IMPLEMENTATION — RETIRE PLAYER-COMPOSED DUAL WIELD. Autonomous —
+no questions. Report incrementally. NO live-stack boot; unit + live gate on private ephemeral ports.
+
+## Context — the owner's direction (verbatim, 2026-07-24)
+"do we still have a make your own dual wield system? The better direction is weapons come pre-made
+either dual wield or not"
+
+## Current state (orchestrator-verified)
+- The COMPOSED system (task #55) is live: `DualWieldState` fields on PlayerState (offhandSlot,
+  pairBaseSeq, offCharges/offMaxCharges...), server pairing logic in GameRoom, SpriteRig off-hand
+  rendering for composed pairs, and pairing UI in `packages/client/src/ui/loadout-entry-view.ts`.
+- 22 weapons are ALREADY authored as pre-made duals (`"grip": "dual"` in the catalog) with their
+  own render/combo machinery (e.g. glove pairs, storm fan, wakizashi pair). These STAY.
+
+## CRITICAL LANDMINE — the dualWield row is a compat container
+`player.dualWield` nests UNRELATED live systems: `relics` (B20 L2), `gearUpper`/`gearLower`,
+`prestige`, `weaponResource`. Strip ONLY the pairing-specific fields; the row and its non-pairing
+tenants must survive byte-compatible. Read `packages/shared/src/state.ts` lines ~219-250 first.
+If you bump SCHEMA_VERSION (from its CURRENT value), update every test pin.
+
+## Your job
+1. Remove the composed-pairing mechanics: server pairing/offhand-attack logic, pairing state
+   fields, client off-hand composed rendering path, and the pairing affordance in the loadout UI.
+   A player equips ONE weapon per slot, period; dual-ness comes from the weapon def.
+2. Pre-made duals keep working IDENTICALLY (all 22 `grip: "dual"` weapons: both sprites render,
+   combos unchanged) — census test asserting each still resolves its pair render.
+3. Sweep for orphans: any UI copy, tutorials/hints, tests, or dev-portal pages that reference
+   composing/pairing weapons. Remove or migrate.
+4. If any composed-pair-only balance hooks exist (e.g. set-bonus logic keyed on composed pairs),
+   collapse them safely (document each).
+
+## Guardrails
+- Do NOT touch relics/gear/prestige/weaponResource plumbing beyond leaving it intact.
+- Do NOT rebalance any weapon. Do NOT touch kung-fu, parry, fans, chests, packs, characters, pets.
+- LF endings only. Migrate affected tests; document deletions.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green. `pnpm assets:check` green.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567) on `proto-cowboy-hidden-face`: equip a
+  pre-made dual (both sprites render, combo fires), equip two 1H same-class weapons in separate
+  slots and confirm NO pairing occurs (each slot independent), relic pickup still applies (compat
+  container intact). Evidence under `docs/owner-notes-audit-v11-evidence/b27-premade-duals/`.
+
+## Rules
+Worktree; commit on sol/b27-premade-duals; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b27-premade-duals.md` (inventory of every composed-pairing touchpoint +
+the compat-container plan). Append per stage. FINAL line = verdict: composed pairing removed,
+22 pre-made duals intact, compat container untouched, orphan sweep count, evidence path, files
+touched.

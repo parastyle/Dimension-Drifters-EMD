@@ -1,0 +1,74 @@
+You are Sol `char-rig-render` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/char-rig-render
+(branch sol/char-rig-render). IMPLEMENTATION order. Work autonomously; do not ask questions.
+
+## THE BUG (fully diagnosed — do not re-litigate, build the fix)
+The owner authored 3 whole-art prototype characters (proto-sheriff, proto-samurai, proto-witch). Their
+art is ON DISK and IN THE MANIFEST, but they DO NOT RENDER in-game — every player, proto or not, draws
+the single `boilerplate` base body + gear-bake overlays (the "wardrobe base model"). The owner's art
+never paints. This is the #1 thing to fix.
+
+EVIDENCE (captured live from the running client via the Phaser texture manager):
+- `game.textures.getTextureKeys().filter(/proto-|sheriff|samurai|witch/)` === `[]`
+  => NONE of the proto part textures are ever loaded into Phaser. This is the core gap.
+- The local player's rig body display object is textured:
+  `gear-bake:2:GEAR_REPLACEMENT_V2:...:body:boilerplate@...#__BASE`
+  => even when `charOf` (the rig's char id) reports `proto-sheriff`, the RIG BODY is still the
+     gear-baked BOILERPLATE. There is no code path that loads a character's OWN 6-part art and uses it
+     as the six rig parts. The renderer only knows: boilerplate base + gear overlays.
+- Art exists: `packages/client/public/sprites/proto-sheriff/{body,head,hand-l,hand-r,foot-l,foot-r}.png`
+  (same for proto-samurai, proto-witch). All 6 parts each, green already keyed to transparency.
+- Manifest already has the geometry: `packages/client/src/sprites/manifest.ts` line ~4377
+  `"proto-sheriff": { id, kind:"character", parts... }` with per-part cx/cy/ox/oy offsets.
+
+A partial (insufficient) client edit already exists in `packages/client/src/scenes/ArenaScene.ts`:
+`isWholeArtCharacter = player.character?.startsWith("proto-")`, `useGear = gearSynced && !isWholeArtCharacter`,
+`rigSpriteId = useGear ? PLAYER_SPRITE : charId`, and it rebuilds the rig on character change. That flips
+the rig's TARGET id to the char but there is still NO loaded proto texture to draw, so SpriteRig falls
+back to the boilerplate bake. Keep/extend this; the missing half is the LOAD + RENDER path.
+
+## THE JOB: make whole-art characters render their OWN 6-part art as the rig
+1. FIND the loader that creates the `boilerplate:body` / `boilerplate:head` / `boilerplate:hand-*` /
+   `boilerplate:foot-*` Phaser textures (grep `boilerplate:` in packages/client/src — start at
+   `sprites/gear-parts.ts`, `sprites/gear-texture-baker.ts`, the ArenaScene/BootScene preload, and
+   wherever SpriteRig resolves part texture keys). Understand exactly how the six boilerplate part
+   textures get into `game.textures` and how SpriteRig picks them per part.
+2. ADD a parallel path: for a WHOLE-ART character (a manifest entry `kind:"character"` that ships its own
+   `public/sprites/<id>/{body,head,hand-l,hand-r,foot-l,foot-r}.png`), LOAD those 6 PNGs into Phaser
+   textures (keys like `char:<id>:body` etc. — pick a scheme consistent with existing naming) and make
+   SpriteRig use them as the six parts INSTEAD of boilerplate + gear-bake. Use the manifest's per-part
+   cx/cy/ox/oy offsets for placement so the assembled character matches the authored layout. The head
+   must still use the FLOATING-HEAD rig (FLOATING_HEAD_SPRING_TUNING / bobbing) that already exists.
+3. Do NOT break the legacy path: the drifter + gear-synced wardrobe players must render EXACTLY as before
+   (boilerplate base + gear bake). Branch strictly on "is this a whole-art character" — generalize beyond
+   the `proto-` prefix if you can key off the manifest (`kind:"character"` with own parts) but proto-* is
+   the concrete acceptance set.
+4. Async load hygiene: those PNGs may not be loaded when addBlob runs. Handle the load→ready→(re)build
+   ordering so the character appears without a manual reload (load on demand + rebuild the rig on
+   texture-ready, or preload known characters). No flicker of the boilerplate before the real art.
+
+## PROVE IT — live, in-game, and RETAINED (owner was burned by a false "it works")
+Boot the real stack on PRIVATE EPHEMERAL PORTS (NOT 5180/2567 — owner's live game). Deep-link
+`?dev=char:proto-sheriff` (then proto-samurai, proto-witch). For EACH of the 3, prove via the Phaser
+texture manager + rig introspection:
+- `game.textures.getTextureKeys()` now CONTAINS the character's 6 part textures (proof they loaded).
+- the local rig's body/head/hand-l/hand-r/foot-l/foot-r display objects are textured with the
+  character's OWN textures (NOT `gear-bake:...boilerplate...`).
+- capture an in-game screenshot (or canvas readback) of each assembled character + a bob frame showing
+  the head floating/bobbing with no decapitation gap and no face shown.
+Retain all captures + the texture-key/rig-part JSON under
+`docs/owner-notes-audit-v8-evidence/char-rig-render/`. A green internal id is NOT acceptance — the
+LOADED TEXTURE + the RIG PART TEXTURE KEY is.
+
+## Rules
+- Whole-art characters render their own art; wardrobe/gear legacy path unchanged. No face on proto chars
+  (owner's art handles it — never add one).
+- Run `pnpm gen`/`gen:check`/`assets:check` if you touch manifests/roster; `pnpm typecheck`; FULL
+  `pnpm test`. LF endings (this repo is LF; do not introduce CRLF). Keep the server booting (census).
+- You are in a worktree; committing on sol/char-rig-render is fine, the orchestrator merges. Do NOT touch
+  ports 5180/2567 or the main working copy.
+
+## Reporting (durable, incremental — NEVER only final stdout)
+FIRST action: write `docs/sol-reports/char-rig-render.md` (understanding + the loader path you found +
+your plan). Append sections as you complete them. FINAL line: verdict — the load+render path built, the
+3 protos rendering their own art (with texture-key + rig-part-texture proof per char), capture paths,
+files touched, and any follow-ups. Work autonomously; do not ask.

@@ -1,0 +1,35 @@
+You are Sol `impl-b37-integrator` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b37-integrator
+(branch sol/b37-integrator). ART INTEGRATOR. Autonomous — no questions. NO live-stack boot; unit +
+live gate on private ephemeral ports.
+
+## Four harvested art sets to wire (in main; reports at docs/sol-reports/impl-b37-art-*.md)
+1. `x2-ironhide-buffalo-gun` — part-1.png REDRAWN flat side-profile: re-measure manifest dims +
+   re-derive muzzle; verify grips land on the new art.
+2. `x2-exploding-present-lobber` — `vfx-present-variants/part-1..5.png`: thrown presents pick a
+   random variant per shot (seeded server roll synced to clients); part-5 is the BIG PAYLOAD —
+   make it a rare roll (~1 in 8) with a proportionally bigger explosion radius+damage, total DPS
+   within ±10% of current.
+3. `x2-quicksilver-streetsweeper` — `vfx-streetsweeper-grenade/part-1.png` (shell) + part-2.png
+   (explosion): replace the placeholder grenade projectile + explosion presentation from B30's
+   conversion. Envelope matches the visible explosion.
+4. Fan tornadoes — `vfx-tornado-{iron-gale,ember-fire,storm-shock}/part-1..3.png`: cycle the 3
+   frames on the traveling tornado projectiles (~10-12 fps cycle, deterministic from tick) so the
+   vortices read as spinning WITHOUT rotating the sprite (owner: upright, no rotation — the
+   frames ARE the spin).
+
+## Guardrails
+STANDING BANS (no auras/chains/radial). No DPS changes beyond the stated present-payload split.
+Parallel Sol B42 owns movement/netcode — no overlap expected. LF endings; schema from CURRENT +
+pins; migrate tests.
+
+## Verification
+`pnpm gen`+`gen:check`+`typecheck`+FULL `pnpm test` green; `assets:check` green. Live gate on
+PRIVATE EPHEMERAL PORTS (never 5180/2567): buffalo held/fired both facings; presents rolling
+varied skins incl. one big payload; streetsweeper grenade arc + explosion; all 3 tornadoes
+visibly frame-cycling while traveling. Evidence under
+`docs/owner-notes-audit-v11-evidence/b37-integrator/`.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Report at
+`docs/sol-reports/impl-b37-integrator.md`. FINAL line = verdict: 4 sets wired, payload odds,
+tornado fps, evidence path, files touched.

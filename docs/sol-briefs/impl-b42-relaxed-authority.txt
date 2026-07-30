@@ -1,0 +1,54 @@
+You are Sol `impl-b42-relaxed-authority` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b42-relaxed-authority
+(branch sol/b42-relaxed-authority). NETCODE FEEL — RELAXED MOVEMENT AUTHORITY. Autonomous — no
+questions. Report incrementally. NO live-stack boot; unit + live gate on private ephemeral ports.
+
+## Owner-locked design (chat, 2026-07-24)
+"This isnt PvP, if you want to cheat while playing with friends go for it. Lets relax the
+authority as well." Movement FEEL is the product; PvE co-op; move-hacking among friends is
+accepted. Damage, loot, chests, relics, enemies, bosses stay FULLY server-authoritative.
+
+## The two tiers to implement (READ docs/sol-reports/impl-b41-ice-slide.md first — B41's parity
+fix just landed; build on it, don't revert it)
+1. **Client-authoritative SELF movement within a server plausibility envelope.**
+   - The client reports its position/velocity per input tick (extend the existing input message).
+   - The server ACCEPTS the client position as truth when it passes the envelope: (a) speed within
+     max movement envelope (walk/dash/dodge/lunge budgets + a small tolerance; authored root
+     motions and knockbacks widen the envelope for their window), (b) nav-valid (no wall/POI/pit
+     clip, belt X/lane bounds), (c) displacement continuity (no teleports beyond envelope).
+   - On acceptance the server ADOPTS the client position (remote players + enemies target it).
+     No correction is ever sent to the owning client in this case — self-position corrections
+     simply stop existing in normal play.
+   - On VIOLATION the server rejects, keeps its own sim position, and sends a correction.
+   - Server-driven displacement (parry slides/launches, elevator boarding, pit snap-backs,
+     revive placement) OVERRIDES client reports for its window (flagged server-motion epochs —
+     reuse the machinery from parry/lunge/elevator work).
+2. **Banded correction policy** (for violations + server-motion overrides + spectated remotes):
+   - error < ~3px: silent snap.
+   - medium: smooth with a HARD CAP of 140ms — never longer.
+   - large (teleport/lag): instant snap.
+   Replace the current uncapped smoothing path with this policy everywhere self-correction
+   remains possible.
+
+## Guardrails
+- Co-op integrity: hit registration vs enemies uses the server-adopted positions; enemy commit
+  lunges (B33) target adopted positions. Verify the parry/dodge verbs still evade correctly.
+- Anti-grief floor: the envelope prevents NaN/infinite positions and out-of-world states.
+- Keep B41's parity tests green (the shared sim still validates the envelope + drives remotes).
+- LF endings; schema bumps from CURRENT + update pins; migrate tests (prediction/reconciliation
+  suites will change meaningfully — preserve their intent, not their letter).
+
+## Verification
+- `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green.
+- Unit: envelope accept/reject matrix (speed, nav, continuity, root-motion windows), correction
+  bands incl. the 140ms cap, server-motion override epochs.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567), TWO clients: (a) mover client shows
+  ZERO self-corrections during aggressive attack-move-stop patterns (telemetry counter), (b)
+  observer client sees the mover smoothly, (c) a forced violation (debug teleport) snaps per
+  policy, (d) parry slide + elevator boarding still position correctly on both clients.
+  Evidence under `docs/owner-notes-audit-v11-evidence/b42-relaxed-authority/`.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Report at
+`docs/sol-reports/impl-b42-relaxed-authority.md` (envelope table + adoption flow + correction
+bands). FINAL line = verdict: self-corrections zero in normal play (telemetry), envelope matrix,
+cap ms, co-op verified 2-client, evidence path, files touched.

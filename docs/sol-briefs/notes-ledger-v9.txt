@@ -1,0 +1,44 @@
+You are Sol `notes-ledger-v9`. READ-ONLY LEDGER/PLANNER. Do NOT edit code, data, or tests. Write ONLY
+your report `docs/sol-reports/notes-ledger-v9.md`. Main tree. Autonomous. No questions.
+
+## Game: Dimension Drifters (C:/Users/Exped/DDv2)
+Owner records in-game notes (G/T keys) appended to `data/owner-notes.jsonl` (403 notes, type "weapon" or
+"game", 2026-07-20 .. 2026-07-23). MANY are already implemented via prior work; your job is to separate
+OUTSTANDING from DONE and produce an implementation-ready, prioritized, BATCHED ledger.
+
+## THE JOB
+1. Parse ALL of `data/owner-notes.jsonl`. Notes can repeat/supersede each other — a later note about the
+   same weaponId/topic overrides an earlier one; collapse duplicates to the owner's LATEST intent.
+2. For EACH distinct outstanding intent, determine if it is ALREADY DONE by cross-referencing:
+   - `git log --oneline` (search commit subjects/bodies for the weapon/topic),
+   - `docs/sol-reports/*.md` (esp. the ranged/melee/katana/thrown/chakram/beam reports),
+   - `docs/owner-notes-audit-*.md` and `docs/owner-notes-audit-2026-07-23-WEAPON-BACKLOG.md`,
+   - the ACTUAL current data/code: weapon defs (`data/weapon-concepts-300.json`,
+     `packages/shared/src/weapons*.ts` + `*.generated.ts`), muzzle/pose/VFX configs, and any relevant
+     client behavior. If the current state already satisfies the note, mark it DONE (cite the evidence).
+   Be CONSERVATIVE: if you cannot confirm it's done, mark it OUTSTANDING (or NEEDS-VERIFY), never drop it.
+3. Produce the ledger `docs/sol-reports/notes-ledger-v9.md`:
+   - Section A — DONE/SKIP: outstanding-looking notes that are already satisfied, each with the evidence
+     (commit hash / report / file) proving it. (So the orchestrator can trust the dedup.)
+   - Section B — OUTSTANDING, GAME notes FIRST (all 34 game-type intents that aren't done), THEN weapon
+     intents. Group into IMPLEMENTATION BATCHES by subsystem so a single Sol can own a batch without
+     colliding with another batch's files. Good batch axes: damage-number/sprite facing & orientation
+     bugs; beam anchoring; new "wacky" weapon families (unicorn rainbow beam + ~7 staples, fan
+     melee/projectile hybrids); grip/hand-position fixes; weapon size changes; throwing-weapon
+     conversions; per-weapon VFX add/remove; weapon second-frame art (mouth-open etc.); movement baked
+     into attacks (e.g. Sparkknuckle Hex-Mitt screws up player position — a movement/anim bug).
+   - For EACH batch: list the exact notes (ts + weaponName + verbatim intent), the concrete change, the
+     files/systems likely involved, whether it needs GENERATED ART (flag it — standing law is ONE image
+     SUBJECT PER AGENT), and an acceptance signal (what proves it done, ideally a live gate).
+   - Order Section B by: game-correctness bugs (facing/orientation, beam anchor, baked-in movement)
+     first, then new weapon families, then per-weapon tweaks. Weapons LAST per owner's standing order.
+4. Give a recommended Sol fan-out: how many implementation Sols, which batch each owns, and a safe
+   SERIAL-merge order (batches touching the shared weapon catalog/manifest must merge one at a time).
+
+## Rules
+- READ-ONLY. No code/data/test edits. Your report is the only artifact. LF endings.
+- Cite evidence for every DONE call. Verbatim-quote each outstanding note (ts + weaponName).
+- Assume the orchestrator will hand each batch to a worktree implementation Sol, so make batches
+  self-contained and file-disjoint where possible.
+FIRST action: create the report with your method + plan; append per section; final line = verdict
+(counts: total intents, done, outstanding game, outstanding weapon, #batches, recommended Sol fan-out).

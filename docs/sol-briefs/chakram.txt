@@ -1,0 +1,35 @@
+You are Sol `v8-chakram` in C:/Users/Exped/DDv2 on branch feat/v0.118-metagame. IMPLEMENTATION order.
+
+## Owner order: ricocheting chakrams
+Build ricocheting chakrams as a thrown weapon whose projectile RICOCHETS/bounces between targets.
+
+## Reuse existing mechanics (do NOT invent)
+- RICOCHET already exists: `ricochetHops`, `ricochetRange`, `bounces` in the catalog; see
+  `x-gun-ricochet-pistol`, `x2-ricochet-roulette`. Study how they configure bounce.
+- THROWN delivery already exists (`throw`/`throw-release`/`thrown`); the stars/kunai just shipped
+  using it (see `docs/sol-reports/v8-thrown-and-sniper.md`). Reuse it.
+- So a chakram = thrown delivery + ricochet config. Compose them.
+
+## Deliverable
+Add chakram weapon(s) to the catalog (start with 1-2: e.g. a base iron chakram, optionally an
+elemental variant) with thrown delivery + ricochet (a few hops between nearby enemies). GENERATE the
+chakram art via codex image generation — ONE SUBJECT PER AGENT (the chakram is one subject; do NOT
+batch it with anything else — see docs/design/OWNER-DECISIONS-characters-pets.md art-gen law).
+Sane DPS band for a thrown ricochet weapon; document it. Card + sprite + projectile art.
+
+## HARD LAWS
+- CENSUS: adding weapons changes counts. Update EVERY pinned guard/count/test together
+  (`weapon-resource.ts`, count tests, portal) so the server still boots. The current census is
+  342 durable / 333 active (from the just-shipped stars/kunai/M-50). Run `pnpm gen` -> `pnpm gen:check`
+  -> `pnpm assets:check` -> focused tests -> typecheck. Never hand-edit generated output.
+- Owner live game on 5180/2567 is UP — do not touch. Ephemeral private ports for gates.
+- LF line endings. Run FULL `pnpm test` + typecheck before declaring done.
+
+## PROOF
+Permanent live gate: the chakram throws from the throw origin AND ricochets (assert >=1 bounce to a
+second target). Retain evidence under `docs/owner-notes-audit-v8-evidence/chakram/`.
+
+## Reporting
+FIRST action: write `docs/sol-reports/v8-chakram.md` (understanding + plan). Append as you go. Final
+line: verdict — chakram(s) shipped, ricochet proven, census updated, server boots, gate thresholds.
+Work autonomously; record assumptions; do not ask.

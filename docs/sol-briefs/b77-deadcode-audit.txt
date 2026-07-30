@@ -1,0 +1,62 @@
+You are Sol `b77-deadcode-audit` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b77-deadcode-audit
+(branch sol/b77-deadcode-audit). AUDIT — REPORT FIRST, DELETE NOTHING RISKY. Autonomous.
+
+## Owner order (verbatim, 2026-07-26)
+> "put some Sol's on auditing the codebase for deadcode, unneeded systems stuff like that. write up
+> the report."
+
+## Context — why there is likely a lot
+This project moved extremely fast with many parallel agents, and several systems were built and then
+superseded by owner rulings. Known examples to check first:
+
+- **Stats / levelling / XP** — DELETED by B20. Any residue?
+- **Shopkeeper economy** — REMOVED by B20 L3.
+- **Weapon `scalingGrades` / `requirements`** — deleted by B20 L1.
+- **Ultimates** — switched OFF by B55 (`ULTIMATES_ENABLED`). Whole subsystems may be unreachable.
+  Note: the owner said "until further notice", so ultimates are DORMANT, not dead. Flag, do not delete.
+- **POI landmarks** — deleted from dimensions (`48f8f7f`), which also removed the wear-route system.
+  `zoneVariants` now yields three roles, not four, so **ashlands `tile-1` is authored but never
+  renders**. Check for more orphans like that.
+- **Turn-hitch / accel-decel movement model** — deleted by B74 (`34095d94`) per canon L09. Residue?
+- **Belt mode** — B57 L1 plans to collapse it, but it is NOT collapsed yet. Do not treat as dead.
+- **Wardrobe** — retired in favour of whole-art characters.
+- **`sol/b59-spec-reconcile`, `sol/diag-rb-*`** — unmerged branches carrying superseded work.
+
+## What to produce
+`docs/sol-reports/b77-deadcode-audit.md`, structured so the owner can act on it in one pass:
+
+1. **Confidently dead** — unreachable, unreferenced, or superseded by a locked ruling. For each: what
+   it is, why it is dead (cite the ruling/commit), size (lines/files), and the risk of removing it.
+2. **Orphaned assets** — art, audio, data authored but never loaded or rendered. The ashlands `tile-1`
+   case is the template: authored, shipped, wired to nothing. Search the PNG/asset trees against
+   actual load paths and manifests.
+3. **Dormant, not dead** — gated off by an owner ruling and expected to return (ultimates). Keep,
+   but list so nobody deletes it by accident.
+4. **Duplicated / superseded systems** — two ways to do one thing, where one is the survivor.
+5. **Dead tests** — tests asserting behaviour that no longer exists, or that pass vacuously.
+6. **Unused dependencies** in any `package.json`.
+
+Rank everything by **payoff ÷ risk**. The owner wants to know what to cut, not a raw inventory.
+
+## Rules of engagement — IMPORTANT
+- **This is primarily a REPORT.** Do not perform large deletions.
+- You MAY delete things that are provably, trivially dead AND covered by tests — unreferenced private
+  helpers, unreachable branches, unused imports, dead local constants. Keep such deletions small and
+  list every one in the report.
+- **Do NOT delete** anything owner-facing, anything gated by a feature flag, anything in a system the
+  owner has said is coming back, any asset you are not certain is unreferenced, or anything on the
+  B57 roadmap. When unsure: REPORT, do not cut.
+- Beware of dynamic references: assets loaded by string key, codegen inputs, LDtk/manifest-driven
+  paths, and `?dev=` deep links. A grep miss is how you delete something that is actually live.
+- Do not touch `data/weapon-concepts-300.json` — parallel gun Sols are appending to it.
+- Other parallel Sols own: the lava dimension, the walkability painter, the skate/pit fix, and the
+  reverse-bullet hunt. Stay out of those files.
+
+## Verification
+`pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green twice consecutively (if you deleted
+anything at all). If you deleted nothing, still run the suite once to confirm you left the tree clean.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. FINAL line = verdict: N confidently-dead items
+(total lines), N orphaned assets, N dormant, N duplicated systems, N dead tests, N unused deps,
+what you actually deleted, test result.

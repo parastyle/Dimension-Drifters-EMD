@@ -1,0 +1,61 @@
+You are Sol `ranged-orders` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/ranged-orders
+(branch sol/ranged-orders). Isolated from main + the live game; the orchestrator merges you back.
+IMPLEMENTATION order. This clears owner weapon notes that were never implemented.
+
+READ FIRST: `docs/owner-notes-audit-2026-07-23-WEAPON-BACKLOG.md` — you own **BATCH R (ranged)**. Also
+read `docs/sol-reports/v8-bolt-action.md` and `docs/sol-reports/v8-thrown-and-sniper.md` for the
+muzzle/thrown/census idioms, and `docs/sol-reports/README.md` (durable reporting).
+
+## AUDIT FIRST, then implement
+For EACH Batch R order, first inspect the current WeaponDef (from the built `@dd/shared`) and STATE in
+your report whether it is already satisfied. Implement ONLY the ones that are not. Record the before
+value and the change. This avoids redoing done work (e.g. Hailwidow, stars are done elsewhere).
+
+## The Batch R orders (from the backlog ledger — the important ones)
+- Gravelthroat Repeater: spread must be constrained to the muzzle CONE, not 360. It is currently
+  `gun.randomPellets.directions:"radial"` (=360). Change to a forward CONE about the aim direction
+  (add/........use a cone half-angle; keep the 1-10 random pellet count). THIS IS THE OWNER'S CITED EXAMPLE.
+- Plaguespitter Flak Gun: more green projectiles at once, random WITHIN A CONE (not 360).
+- Brimstone Gallows-Rifle: tiny FLAMING CROSS projectiles (generated art), barrel-aligned.
+- Brimstone Rocket Tube: one hand on trigger; gun slightly more forward; bigger explosion.
+- Mesa Hand-Cannon: explosion on detonation; +0.5s between shots (redistribute DPS to hold aggregate).
+- Tesla Faradayer: generated (hand-drawn) projectile art.
+- Sanctus Siege Bombard: 5x player knockback.
+- Stormcaller Tesla Gatling: 6 beams visible, barrel-aligned (AUDIT vs beam-structures first; if already 6, skip).
+- Sidewinder Spitfire: two parallel bullets.
+- Gravelung Punt-Rifle: bullet 2x size.
+- Ironhide Buffalo Gun: anti-tank 50-cal shell/shots.
+- Galvanic Coachgun: blue electrical bullets.
+- Ricochet Pistol: icicle shots.
+- Hailspitter Pepperbox: 7 tight parallel shots spanning barrel width.
+- Dustline Lever-Action: gun +60% size.
+- Hexbore Voidmaw: -20% size, one-handed pistol; re-render art COMPLETELY FLAT side profile (keep VFX).
+- Tesla Drumbore: shoots electric particles.
+- Frostfang Speargun: shoots its pictured harpoon (generated).
+- Thunderhead Lever-Gun: blue HELIX shots.
+- Thunderhead Repeater Cannon: circle energy "smoke-ring" shots.
+- Ironhail Pepperbox: hand on the trigger.
+- Hailstorm Coilgun: grip fix — stock UNDER the shoulder (not held); stock hand FORWARD of barrels as support.
+
+## HARD LAWS
+- Generated bitmap art for new VFX (flaming crosses, Faradayer projectile, harpoon, blue helix,
+  smoke-ring, electric particles, icicle) — ONE SUBJECT PER AGENT is a standing law, but you are ONE
+  agent: generate each NEW art subject in a SEPARATE codex image-generation call, never batch multiple
+  distinct subjects into one generation (that bleeds themes). Reuse existing generated particles where
+  they already express the order.
+- Preserve nominal DPS unless an order changes cadence/count; then redistribute per-hit and document.
+- Muzzle-in-art-space affine for all projectile origins (see the shipped muzzle law).
+- Update EVERY census guard so the server boots. Run pnpm gen -> gen:check -> assets:check -> focused
+  tests -> typecheck. Never hand-edit generated output. Run FULL `pnpm test`.
+- Owner live game on 5180/2567 is UP — do NOT touch. Ephemeral private ports for gates.
+- LF endings. You are in a worktree; commit optional, leave a clean verified tree.
+
+## PROOF
+Live gate proving the headline visual orders (cone spread actually constrained, 6 beams, parallel shot
+counts, new projectile art firing barrel-aligned) with retained evidence under
+`docs/owner-notes-audit-v8-evidence/ranged-orders/`.
+
+## Reporting
+FIRST action: write `docs/sol-reports/ranged-orders.md` with the audit table (each order: current state
+-> done/needs-work) then implement. Append as you go. Final verdict: per-order done/skipped-already-done,
+census updated, gate thresholds, server boots. Work autonomously; do not ask.

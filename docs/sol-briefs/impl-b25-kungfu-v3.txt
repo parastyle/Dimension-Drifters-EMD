@@ -1,0 +1,61 @@
+You are Sol `impl-b25-kungfu-v3` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b25-kungfu-v3
+(branch sol/b25-kungfu-v3). IMPLEMENTATION — THEATRICAL MARTIAL ARTS. Autonomous — no questions.
+Report incrementally. NO live-stack boot; unit + live gate on private ephemeral ports.
+
+## Context — the owner inspected B23's ship and ordered v3 (verbatim, 2026-07-24)
+"The Wing Chun is good, because its fast and simple and it fits a role we have as a baseline for
+the other kung fu weapons. (Ensure it doesn't displace the user.) The other three are too slow,
+their movement displacement is barely felt; and there is no cool martial art pose fantasy or wild
+stretch attacks, the front flips I mentioned, the poses I mentioned...They are incredibly lame and
+do not utilize the body/hands/feet in a way that really brings a badass fantasy alive. When I talk
+body displacement, I mean to say it should shoot forward with a dragon kick. A roundhouse kick
+should see the entire character's body do the paper-rotate effect...Go wild on this"
+
+READ `docs/sol-reports/impl-b23-integrator.md` + `impl-b23-kungfu-v2.md` (current state).
+
+## The contract
+1. **Wing Chun (`x2-wing-chun-wraps`) — LOCKED BASELINE.** Fast + simple is its role. ONE change:
+   remove ALL character displacement from its combo (zero root motion). Nothing else moves.
+2. **Muay Thai, Drunken Fist, Iron Palm — THEATRICAL REBUILD.** For each:
+   - **Much faster.** The owner called them "too slow" twice now. Beat durations drop hard;
+     these should feel like action-movie choreography, not turn-based strikes. Keep the relative
+     order (iron palm heaviest) but compress the whole scale.
+   - **VIOLENT displacement.** A dragon kick SHOOTS the body forward (big server-authoritative
+     lunge using the weapon-lunge machinery — think Stormfists' 480px dash scaled to taste,
+     nav-validated). Drunken weaves throw the body sideways visibly. Iron palm stomps advance
+     with weight. Displacement must be FELT — multiples of what B23 shipped.
+   - **Whole-body animation.** Roundhouse kick = the ENTIRE character does the paper-rotate
+     (mirror-turn) effect through the kick. Front flips: at least one style gets a full front-flip
+     attack (reuse the flip machinery from the movement kit). Wild stretch attacks: exaggerated
+     limb extension on signature strikes (scale/stretch the hand/foot sprites through the strike
+     arc — cartoon reach, then snap back).
+   - **Pose fantasy.** The mantis/crane stances from B23 must be VISIBLE and held with intent
+     between beats (readable silhouette pauses), plus each style ends its combo in a signature
+     finisher pose held for a beat.
+   Suggested showcase mapping (you may improve, must not shrink): Muay Thai = dragon-kick forward
+   rocket + spinning back-elbow paper-rotate; Drunken = staggering weave + front-flip heel drop +
+   crane one-leg finisher; Iron Palm = stomp advance + full paper-rotate roundhouse + mantis
+   double-hook finisher with stretch.
+3. **DPS bands hold**: each wrap stays within ±10% of nominal 20 (per-hit damage rebalances
+   against the faster cadence). Server-authoritative displacement, nav-validated, reconciled
+   without teleport pops; remote players see identical motion.
+
+## Guardrails
+- STANDING BANS: no player auras, no chains/tassels, no thumbs. Wrap ART is final (no PNG edits).
+- Do NOT touch: fans/tornadoes, B24 radial surfaces (parallel Sol), parry system (parallel Sol
+  B26 owns SpriteRig parry paths — coordinate by NOT editing parry-related code), characters'
+  base sprites, pets, B20 surfaces. LF endings only. Migrate B23 tests to the v3 contract.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green. `pnpm assets:check` green.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567) on `proto-cowboy-hidden-face`: full combo
+  per wrap, both facings. Capture: wing chun zero-displacement; dragon-kick forward rocket;
+  full-body paper-rotate roundhouse; a front flip; stretch attacks; held stances + finisher poses.
+  Evidence under `docs/owner-notes-audit-v11-evidence/b25-kungfu-v3/`.
+
+## Rules
+Worktree; commit on sol/b25-kungfu-v3; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b25-kungfu-v3.md` (per-style beat chart with displacement magnitudes +
+showcase moves). Append per style. FINAL line = verdict: wing chun pinned baseline zero-drift,
+3 styles theatrical (speeds, displacement px, showcase moves listed), DPS bands, evidence path,
+files touched.

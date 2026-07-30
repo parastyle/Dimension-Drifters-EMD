@@ -1,0 +1,52 @@
+You are Sol `notes-ledger-v10`. READ-ONLY LEDGER UPDATE. Do NOT edit code/data/tests. Write ONLY
+`docs/sol-reports/notes-ledger-v10.md`. Main tree. Autonomous — no questions.
+
+## Context
+`data/owner-notes.jsonl` now has 413 rows (was 403 at v9). READ the shipped v9 ledger
+`docs/sol-reports/notes-ledger-v9.md` for how batches B1-B13 were framed. Since v9 shipped,
+7 of the 8 MECHANICAL batches landed (B1 facing, B4 overcasters, B5 attack-root, B6 archives, B7 thrown,
+B8 pose, B9 size, B10 vfx). Also shipped since v9: whole-art character render pipeline, whole-art size
+correction, DEFAULT_CHARACTER=proto-sheriff on the server, wardrobe render disconnect, character-select
+menu tab, and the weapon-stall regression fix (client prediction gate + Drive precheck expansion).
+
+## THE JOB — v10 update
+1. Parse the 10 NEW notes (rows 404-413, all 2026-07-23). At minimum:
+   - `rusty-cleaver`: "remove VFX"
+   - `tombstone-greatsword`: "remove vfx"
+   - GAME: kung-fu wraps as weapons, animate hands+feet different per weapon (Rumble Fighter scrolls
+     idiom) — this is a NEW WEAPON FAMILY request analogous to B2/B3.
+   - `x2-ironbrand-heatfist`: seeing two hands punching even though it's a 1-glove weapon.
+   - GAME: many hands are placed correctly but their ORIENTATION doesn't match thumb direction — general
+     hand-rotation problem.
+   - `x2-hellmouth-palmcaster`: one-handed weapons leave the unused hand on the WRONG side of the
+     character orientation. Owner explicitly asks for a Sol team to understand when characters have
+     dead/unused body parts and what they should be doing. (This is being handled in parallel by
+     `dead-parts-panel`; cite it in your v10 ledger, don't try to design it.)
+   - Include every remaining new note verbatim with ts + subject.
+2. For EACH new note, mark DONE (with commit/report evidence — some VFX-removal notes may collide with
+   B10 which removed Headsman VFX + Tombstone bone particles; check what's already stripped) or
+   OUTSTANDING.
+3. Update the standing batch view:
+   - Confirm which B1-B10 batches shipped (cite commit hashes: e.g. B1 09d7eaa/42fe52f, B4 b930931/
+     fa6deb7, B5 fc702b2, B6 7a8eef4, B7 c4c6066/b54f602, B8 5c8173d/8bff040, B9 8116f00/eaa45e2,
+     B10 a87f465/237080f).
+   - Note B2 (7 wacky weapons) + B3 (fan hybrids) + B11/B12/B13 (art batches) as still OUTSTANDING.
+4. Add NEW batches for the v10-introduced work:
+   - **B14 — Kung fu wraps** (new weapon family, needs generated art + distinct per-weapon
+     hand/foot animations). Batch it with a count, initial subjects, and the "one image subject per
+     agent" law applied (each kung-fu wrap animation is its own subject).
+   - **B15 — Small VFX removals** (rusty-cleaver + tombstone-greatsword: quick data-only edits;
+     data-consistency + weapon-vfx.generated.ts).
+   - **B16 — One-handed pose fix** (Ironbrand Heatfist "two hands punching" for a 1-glove weapon) —
+     data + SpriteRig pose fix (may extend to a systemic rule the dead-parts-panel will inform).
+   - **B17 — Hand rotation vs painted thumb** — general grip-orientation systemic fix (waits on the
+     dead-parts-panel to inform the systemic answer).
+5. Recommend a SERIAL merge order for outstanding batches (catalog-touching batches must serialize),
+   and flag which need generated art (one subject per art Sol).
+
+## Rules
+READ-ONLY. Your report is the only artifact. LF endings. Cite ts + verbatim quote for every new note.
+For DONE calls, cite commit/report evidence.
+FIRST: create the report with your method + plan. Append per section. FINAL line = verdict: total v10
+intents, done vs outstanding for the 10 new notes, batch count post-update, recommended Sol fan-out for
+the new work, and any interactions with in-flight work (dead-parts-panel, char-rig-batch2).

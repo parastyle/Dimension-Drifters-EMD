@@ -1,0 +1,49 @@
+You are Sol `impl-b53-flip-warp` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b53-flip-warp
+(branch sol/b53-flip-warp). RENDER BUG — DIAGNOSE THEN FIX. Autonomous.
+
+## The owner's report (verbatim, 2026-07-25, AFTER the netcode fixes landed)
+"ok so some of this isn't the netcode. I'm definitely warping while switching movement
+directions. Something that we fixed for before."
+
+## Orchestrator's findings so far (verify, extend, do not assume)
+- The SIM side is INTACT: the v0.111 pivot/turn-hitch tuning is unchanged
+  (`MOVE_HITCH_DIP = 0.042` -> a full reversal retains 95.8% speed; MOVE_HITCH_MIN_ANGLE PI/4).
+  So this is NOT the old "direction-switch movement penalty" (task #4) regressing in the sim, and
+  B51/B52 already proved the correction path is clean (43/43 scenarios, 0 corrections).
+- PRIME SUSPECT — the RENDER-side facing flip: the actor root applies facing as a discrete
+  horizontal scale sign (`this.facing * this.baseScale`, rig-core.ts ~2852 and the animate path).
+  Any child part, authored offset (ox/oy), pose offset, B39 head-nod drop, B47 element transform,
+  or weapon mount that is NOT symmetric about the root pivot TRANSLATES BY 2x ITS OFFSET at the
+  instant the sign flips -> a visible positional pop on every direction change. The paper-flip
+  progress/lift path (rig-pose.ts ~1200-1215) is a second candidate: check whether flipProgress
+  restarts/jumps when a new flip interrupts an in-flight one (A/D tapping interrupts constantly).
+
+## Your job
+1. PROVE IT FIRST with a headless per-frame probe (follow the B52 probe pattern —
+   e2e + tools trace; B52's probe is on main): walk a character right, then flip to left, and
+   record per-frame WORLD positions of the root AND every part (head, hands, feet, weapon) plus
+   flipProgress. Assert no frame-to-frame world-space jump exceeds a small threshold (a few px)
+   for any part during the flip. Quantify the pop in px per part. Then repeat with rapid A/D
+   tapping (the owner's ADADAD repro) so interrupted flips are covered.
+2. ROOT-CAUSE and FIX so a facing change is positionally continuous: mirror offsets about the
+   correct pivot (or apply facing as a mirrored-layout transform rather than a raw sign flip on a
+   pivot-offset container), and make an interrupted flip resume continuously from its current
+   visual state rather than restarting.
+3. Keep the probe as a permanent regression gate (like B52's) with the smoothness assertion,
+   swept across: 3 characters x {unarmed, 1H gun held, 2H melee held, mid-combo} x {single flip,
+   rapid ADADAD}.
+4. Do NOT change movement feel/tuning (turn-hitch constants stay), do NOT touch netcode.
+
+## Guardrails
+Post-B43 layout: rig-core/rig-pose/rig-gear under packages/client/src/entities/rig/. Queue is
+otherwise empty — no parallel Sols. LF endings; migrate tests.
+
+## Verification
+typecheck + FULL `pnpm test` green; probe green across the full sweep; before/after per-frame
+traces (JSON) + a couple of screenshots at the flip instant under
+docs/owner-notes-audit-v12-evidence/b53-flip-warp/.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Report docs/sol-reports/impl-b53-flip-warp.md.
+FINAL line = verdict: cause named, max part pop before/after (px), sweep results, evidence path,
+files touched.

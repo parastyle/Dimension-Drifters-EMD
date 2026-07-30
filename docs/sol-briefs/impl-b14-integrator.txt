@@ -1,0 +1,74 @@
+You are Sol `impl-b14-integrator` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b14-integrator
+(branch sol/b14-integrator). IMPLEMENTATION — CATALOG INTEGRATOR. Autonomous — no questions. Report
+incrementally. NO live-stack boot; unit + catalog census + live gate on private ephemeral ports.
+
+## Context — the owner's ask (verbatim, ledger v10 row 410)
+"we want a few different kung fu wraps as weapons, animates hands and feet in different types of kung
+fu per weapon. kinda like how the old game rumble fighter had scrolls with wildly different animations."
+
+## The 4 B14 art assets are ALREADY installed in main
+- `packages/client/public/sprites/x2-muay-thai-wraps/part-1.png`
+- `packages/client/public/sprites/x2-wing-chun-wraps/part-1.png` (has part-2.png too — pair sprite)
+- `packages/client/public/sprites/x2-drunken-fist-wraps/part-1.png` (has part-2.png too — pair sprite)
+- `packages/client/public/sprites/x2-iron-palm-wraps/part-1.png` (has part-2.png too — pair sprite)
+
+Per-Sol reports at `docs/sol-reports/impl-b14-art-<slug>.md` (Muay Thai's report may be missing;
+read the sprite dir + intake if so). Also READ the SHIPPED B2/B3 integrator patterns
+(`docs/sol-reports/impl-b2-integrator.md` = c65dea1, `impl-b3-integrator.md` = 0712b7b) for the
+catalog integration approach — you're extending the same catalog + gen + VFX + tests + live-gate
+pattern.
+
+## Your job — wire 4 kung-fu wrap weapons with DISTINCT hand/foot combo animations
+Each of the 4 must feel MECHANICALLY + VISUALLY distinct (per the Rumble Fighter scroll idiom the
+owner cited). Behavior guidance per style:
+
+1. **Muay Thai Wraps** (`x2-muay-thai-wraps`) — brutal, heavy strikes. Combo integrates ELBOWS and
+   KNEES (utilize the foot rig for kicks). Slower cadence, big single hits. Close range.
+
+2. **Wing Chun Wraps** (`x2-wing-chun-wraps`) — CHAIN-PUNCH cadence. 3-hit blitz combos with very
+   fast cadence + low damage per hit + high total DPS. Straight-line hits, precise, ultra-short
+   reach.
+
+3. **Drunken Fist Wraps** (`x2-drunken-fist-wraps`) — unpredictable SWAY combo. Duck/weave micro-
+   movement between hits (small forward-drift baked into the animation), medium damage + medium
+   cadence, wine-gourd wrist prop lends occasional wide-swing haymakers.
+
+4. **Iron Palm Wraps** (`x2-iron-palm-wraps`) — heavy IRON-KNUCKLE strikes. Slowest cadence, highest
+   per-hit damage, iron-plate impact SFX. Uses the iron knuckle-spikes as visible damage.
+
+## Concrete deliverables
+1. **Concept entries** in `data/weapon-concepts-300.json` — one per wrap, GRIP (all 4 dual-hand/dual-
+   wield-equivalent), size/rangeBand (close for all), stats matching per-style character above.
+2. **Manifest entries** in `packages/client/src/sprites/manifest.ts` — respect any pair (part-1 +
+   part-2) art authored by the art Sols; use actual pixel dims from the PNGs.
+3. **Muzzle definitions** — the "muzzle" for a wrap weapon is the striking-hand centroid at the impact
+   frame. Author in the generator input.
+4. **Shared/server MELEE COMBO definitions** in `packages/shared/src/weapons.ts` +
+   `packages/server/src/rooms/GameRoom.ts` — each wrap gets its OWN distinct combo signature per the
+   4 styles above. Reuse the existing glove-pair pose language (see `x2-coyote-trickster-s-sparkmitt`
+   and `x2-sparkknuckle-hex-mitt` for precedent). B17's pose-language `idle-hand` = `mirror-guard` for
+   the passive hand between combo beats.
+5. **VFX recipes** in `packages/client/src/vfx/*` — distinct per style: Muay Thai = heavy dust-cloud
+   impact + red aura; Wing Chun = precise white-flash rapid-fire; Drunken = misty-purple haze + wide
+   sweep; Iron Palm = clanging iron-strike sparks + shockwave.
+6. Catalog + census + integration tests: 4 new expansion rows, distinct combo signatures, textures
+   exist with visible alpha bounds. Nominal DPS ballpark 18-22 range per style.
+
+## Guardrails
+- STANDING chain/tassel/rope BAN — none of the 4 wraps have dangling art (each art Sol enforced this).
+- STANDING no-thumbs-on-characters rule — this is about weapon art, not character hands. Skip.
+- Do NOT touch: whole-art characters (proto-*), B17's pose-language schema (only USE it), B2/B3
+  weapons, pets. Do NOT modify existing weapons' combos.
+- LF endings only. Preserve existing tests.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green in this worktree.
+- `pnpm assets:check` green.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567): fire each of the 4 wraps on both facings on
+  a whole-art character (proto-cowboy-hidden-face is the new default); capture the DISTINCT combo
+  cadence + VFX. Retain evidence under `docs/owner-notes-audit-v10-evidence/b14-kungfu/`.
+
+## Rules
+Worktree; commit on sol/b14-integrator; orchestrator merges. FIRST: write `docs/sol-reports/impl-b14-integrator.md`
+(understanding + per-wrap combo signature + plan). Append per weapon. FINAL line = verdict: 4 wired,
+4 distinct combo signatures, DPS ballpark, evidence path, files touched, weapon-count census.

@@ -1,0 +1,54 @@
+You are Sol `impl-b28-weapon-orders` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b28-weapon-orders
+(branch sol/b28-weapon-orders). IMPLEMENTATION — OWNER WEAPON-ORDERS BATCH. Autonomous — no
+questions. Report incrementally. NO live-stack boot; unit + live gate on private ephemeral ports.
+
+## Ten owner orders (verbatim from data/owner-notes.jsonl; items marked SKIPPED are older notes
+that fell between ledger runs and were never processed — treat them as first-class orders)
+1. `drift-greatkatana-tempest-regent` — "lot of different VFX patterns on this one. none of them
+   add to the weapon." → Strip to ONE coherent treatment that serves the tempest fiction; remove
+   the rest. Document what was removed.
+2. `drift-nodachi-gatebreaker` — "this weapon has two sets of VFX? just needs 1" → keep the
+   stronger set, remove the other.
+3. `twin-bowie-fangs` — SKIPPED (2026-07-23 22:28): "double weapon size" + today: "pretty sure i
+   asked for these to be bigger" → DOUBLE the render size.
+4. `x2-thunderhead-voulge` — SKIPPED (2026-07-23 17:38): "remove the big VFX blue thing, keep the
+   electricity" → remove the large blue image VFX layer; the electricity VFX stays.
+5. `x2-sidewinder-spontoon` — "thrown projectile should spin on the other axis, kept straight but
+   spin like barrel-roll. Use paper effect" → in flight the spear stays pointing along its path
+   and BARREL-ROLLS around its long axis via the paper-flip (mirror-turn) effect.
+6. `x2-venomtongue-trident` — "longer lunge x2" → double the lunge distance (nav-validated;
+   hit-envelope follows the visible lunge).
+7. `x2-squeaky-mallet` — "make weapon 33% bigger, hands on handle" → +33% render size, grip
+   points pinned on the painted handle.
+8. `x2-boomerang-boot` — SKIPPED (2026-07-24 00:32) + today: "i thought i asked for this
+   problematic dildo to be taken out of the game" → ARCHIVE it (established archive pattern,
+   see notes-quickfix cf238ec). Out of the active pool + pack pool.
+9. `x2-dustreaper-zweihander` — "fire should perfectly overlay the sword, just like the extendo
+   blade, but not extending just overlaying" → re-register the fire-dragon art to hug the blade
+   silhouette exactly (use the blade-extension registration machinery's held-blade affine, with
+   length multiplier ~1 = overlay, no reach change; hit envelope unchanged from base sword).
+10. `x2-buckshot-bramble-bow` — "this should shoot 3 at a time like the weapon suggests" →
+    3-projectile volley per shot; keep total DPS within ±10% (split damage per arrow).
+
+## Guardrails
+- STANDING BANS: no player auras, no chains/tassels, no reintroduction of radial fallback
+  particles (B24 removed them — add nothing ambient).
+- Do NOT touch: dual-wield/composed-pairing surfaces (parallel Sol B27 owns SpriteRig off-hand
+  paths), shurikens/chakrams/kunai/revolver-hammer surfaces (B29 owns those next), kung-fu,
+  parry, fans, chests/packs, characters, pets.
+- Size changes are render metadata (displayLength/scale), never PNG edits. LF endings only.
+  Schema bumps from CURRENT value + update all pins. Migrate affected tests.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green. `pnpm assets:check` green.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567) on `proto-cowboy-hidden-face`: fire all
+  9 surviving weapons both facings; capture each order's before-intent satisfied (single VFX sets,
+  fangs doubled, voulge electric-only, spontoon barrel-roll, trident 2x lunge, mallet bigger with
+  handle grip, zweihander fire overlay hugging the blade, bramble triple volley); boot absent from
+  pools. Evidence under `docs/owner-notes-audit-v11-evidence/b28-weapon-orders/`.
+
+## Rules
+Worktree; commit on sol/b28-weapon-orders; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b28-weapon-orders.md` (per-order plan incl. what VFX layers exist on items
+1/2/4 before you cut). Append per order. FINAL line = verdict: 10 orders done (list), boot
+archived, evidence path, files touched.

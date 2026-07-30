@@ -1,0 +1,35 @@
+You are Sol `diag-weapon-bisect` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/diag-weapon-bisect
+(branch sol/diag-weapon-bisect). DIAGNOSIS. Autonomous — no questions. Report incrementally.
+
+## THE BUG
+"MOST weapons STOP WORKING after a FEW attacks" — a regression introduced by last night's merge wave.
+Your job: ATTRIBUTE it to the exact first-bad commit.
+
+## Recent commits (HEAD is BAD; the wave):
+3ed60d8 plan doc · d3aa8c3/b54f602/c4c6066 B7 thrown · 5c8173d/8bff040 B8 pose/combo ·
+237080f/a87f465 B10 vfx/hit-envelope · 4f1f523/1a00481 RNG-seed tests · 8116f00 B9 size(collisionLength) ·
+fa6deb7/b930931 B4 overcasters · 42fe52f/09d7eaa B1 facing · and earlier: B5 attack-root (resolveSwing +
+pendingWeaponLunges + impactAtDestination) merged around commit `fc702b2`/`179c721`; ranged-orders/chakram
+before that.
+
+## YOUR JOB
+1. Write a SMALL deterministic repro assertion (reuse or mirror the harness the `diag-weapon-repro` Sol is
+   building if available, else your own): equip a representative MELEE weapon (e.g. `gravediggers-spade`
+   or `rusty-cleaver`), send ~15 attacks with ticks at a planted enemy, and assert the weapon KEEPS
+   dealing damage (i.e. it must NOT stop after a few attacks). This assertion must FAIL at HEAD.
+2. Establish a KNOWN-GOOD baseline: `git checkout` progressively older commits (start well before the
+   weapon-touching merges — e.g. the ranged-orders era or earlier) and run your repro until it PASSES.
+   Then `git bisect` (good=that commit, bad=HEAD) driving it with your repro as the test, to find the
+   FIRST BAD COMMIT. (You are in an isolated worktree — checking out commits here is safe.)
+3. Report the culprit commit hash + subject + which batch it belongs to (B5/B7/B8/etc.), and a summary of
+   the specific diff hunk that plausibly causes "stops after a few attacks" (e.g. a swing/lunge/cooldown/
+   charge/durability state that never resets).
+
+## Rules
+- DIAGNOSIS ONLY — do NOT fix. After bisecting, `git checkout` back to the branch tip. LF endings.
+- Worktree; keep notes on sol/diag-weapon-bisect. Do NOT touch main or ports 5180/2567.
+
+## Reporting
+FIRST: write `docs/sol-reports/diag-weapon-bisect.md` (repro + baseline plan). Append bisect steps.
+FINAL line = verdict: the FIRST BAD COMMIT (hash + subject + batch), the suspect diff hunk (file:line),
+and whether a straight revert of that commit is a viable fix or if it entangles other wanted changes.

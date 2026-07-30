@@ -1,0 +1,46 @@
+You are Sol `impl-b22-fan-tornado-v2` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b22-fan-tornado-v2
+(branch sol/b22-fan-tornado-v2). IMPLEMENTATION — FAN TORNADO CORRECTIONS. Autonomous — no
+questions. Report incrementally. NO live-stack boot; unit + live gate on private ephemeral ports.
+
+## Context — the owner PLAYED the B18 ship tonight and ordered corrections (verbatim)
+"Tornados should be as big as the player character. They should travel forward as a projectile.
+They should remain upright and not spin. They should be the only VFX of the fans."
+
+## What B18 shipped (you are correcting it — read `docs/sol-reports/impl-b18-integrator.md`)
+The 3 fans (`x2-iron-war-fan`, `x2-ember-fan`, `x2-storm-fan`) spawn elemental tornadoes
+(`vfx-tornado-iron-gale`, `vfx-tornado-ember-fire`, `vfx-tornado-storm-shock`) with spin
+animation + other fan VFX layers (ribbons/sweep effects).
+
+## The four corrections
+1. **Size**: each tornado renders as big as the player character (match the whole-art character
+   visual envelope height — see the 76px body-height unit; the tornado should read player-height
+   at combat scale).
+2. **Projectile**: the tornado TRAVELS FORWARD from the attack as a projectile (server-owned
+   projectile with speed/range; pick a fitting speed ~existing slow projectile families; range
+   moderate). Damage moves WITH it — server-authoritative moving hit-envelope matching the visible
+   funnel (no invisible damage). Total per-attack DPS stays within ±10% of current; rebalance arc
+   vs tornado damage if needed.
+3. **Upright + no spin**: the funnel stays vertical and does NOT rotate. Motion reads from travel
+   + subtle scale pulse only (no rotation animation, no flipping while traveling; mirror-flip at
+   spawn per facing is fine).
+4. **Only VFX**: remove ALL other fan VFX layers (ribbons, sweep glows, extra recipes) from the 3
+   fans — the traveling tornado is the fan's entire visual signature. The fan-out swing MOTION
+   (weapon sprite movement) from B18 stays; its extra VFX layers go.
+
+## Guardrails
+- STANDING BANS: no player auras, no chains/tassels. Do NOT touch non-fan weapons, kung-fu wraps
+  (parallel Sol), B20 surfaces, characters, pets. LF endings only. Migrate B18's tests to the new
+  contract (do not delete coverage wholesale).
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green. `pnpm assets:check` green.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567) on `proto-cowboy-hidden-face`: fire all
+  3 fans both facings; capture player-height upright non-spinning tornadoes traveling forward, no
+  other fan VFX visible, moving damage matches funnel. Evidence under
+  `docs/owner-notes-audit-v11-evidence/b22-fan-tornado-v2/`.
+
+## Rules
+Worktree; commit on sol/b22-fan-tornado-v2; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b22-fan-tornado-v2.md` (understanding + plan). Append per fan. FINAL line =
+verdict: 3 tornadoes player-sized/upright/non-spinning/traveling, sole fan VFX, DPS band, evidence
+path, files touched.

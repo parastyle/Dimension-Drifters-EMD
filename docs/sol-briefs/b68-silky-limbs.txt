@@ -1,0 +1,92 @@
+You are Sol `b68-silky-limbs` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b68-silky-limbs
+(branch sol/b68-silky-limbs). THE OWNER'S TOP PRIORITY. Autonomous. Do this properly.
+
+## Owner order (verbatim, 2026-07-26)
+> "And for the love of god, fix the animation to be silky no matter what. Every limb should know its
+> own priority to stay smooth. Look into best practice"
+
+and, diagnosing it himself earlier the same night:
+
+> "i think the biggest issue is player walking animation is creating jank, warpy on its own"
+
+That last line is the key evidence. Treat it as the STARTING PREMISE, not a hypothesis to rediscover.
+
+## What is already RULED OUT — do not re-investigate
+I ran `tools/diag-rb-telemetry.mts` on HEAD. **Every scenario: `applications=0 requests=0
+sumPx=0.000 maxPx=0.000`.** Zero server corrections, zero warp pixels, zero snaps. B42 relaxed
+authority is holding perfectly.
+
+That is the whole point: **the rig warps with the network in perfect agreement.** The server never
+disagreed with anything, so there is nothing for corrections to report. The character's RENDERED
+pose is fighting its SIMULATED position, entirely client-side. Also ruled out: synchronous SQLite on
+the tick (join/settlement paths only) and the reconnection batch (DOM overlay code only).
+
+Read `docs/sol-reports/b64-movement-jank.md` — a parallel Sol measured this before you. Build on its
+findings; do not redo its measurements.
+
+## The structural fix — B54-L1, specced and never built
+The project already diagnosed this class of bug and wrote the answer, then never implemented it.
+Read `docs/sol-reports/design-lock-b57-dimension-loop.md`, the B54 doctrine panels
+(`docs/sol-reports/panel-anim-doctrine.md`, `panel-netfeel-doctrine.md`), and note commit `7baf405`
+"fix: unify self rig locomotion clock" — a NARROW patch to the exact class of bug you are now fixing
+STRUCTURALLY. That narrow patch is evidence this keeps recurring.
+
+Required shape:
+1. **ONE `PresentedActorState` per render frame.** Every visual consumer reads that single snapshot.
+   Today different parts of the rig sample different sources at different times, which is how a limb
+   ends up disagreeing with the root.
+2. **The ROOT is isolated from corrections.** Position correction must never leak directly into pose.
+3. **ONE MONOTONIC CLOCK.** The walk cycle, the jiggle springs, and root motion must all advance on
+   the same timebase. Separate clocks that drift is the most likely direct cause of "warpy on its
+   own". Audit every place time is sampled in `packages/client/src/entities/rig/*` — there are six
+   modules (rig-core, rig-pose, rig-combat, rig-gun-mechanisms, rig-flourish, rig-gear) — and prove
+   they share one clock.
+
+## "Every limb should know its own priority" — the owner's second requirement
+B54-L2 already shipped LIMB CLAIMS: 338 weapons inferred, and 1,070 of 1,078 actions leave at least
+four of six limb channels free. That is WHICH limb an action owns. It is NOT priority.
+
+Build the priority layer on top: when more than one system wants a limb in the same frame —
+locomotion, an attack, a flourish, gun mechanism, a spring — there must be a **declared, total
+ordering** that resolves it, and the loser must **blend out smoothly rather than being cut off**. A
+hard hand-off between systems is a visible pop, and the owner will read that as jank.
+
+Every limb resolves every frame to exactly one owner plus a blend weight. No limb may ever be driven
+by two systems at once with no arbitration.
+
+## "Look into best practice" — the owner asked for it, so do it
+Research how comparable games solve this before you design: animation layering with weights, additive
+vs override blending, blend-in/blend-out windows, priority stacks, dead-zone/hysteresis on gait state
+changes, decoupling animation time from physics time, and critically-damped springs for secondary
+motion. Write a short findings section in your report and say which practices you adopted and which
+you rejected and why. Do not cargo-cult — justify against OUR rig.
+
+## Standing laws — breaking any of these fails the batch
+- **Weapon attacks NEVER displace the character.** Gun recoil is the one sanctioned exception.
+- **No player auras.**
+- Springs default; animations claim only the limbs they need (B54-L2 doctrine, already shipped).
+- Never interrupt gameplay with a modal.
+
+## Verification — the bar is high because this has been "fixed" before
+- `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green.
+- `tools/diag-rb-telemetry.mts` runs to COMPLETION with corrections still at ZERO. You must not buy
+  smoothness by reintroducing correction traffic.
+- **Add a smoothness regression test.** Sample the rendered root and each limb over a run of frames
+  and assert no discontinuity above a stated threshold — walking straight, on a hard direction
+  reversal, while attacking, and during the owner's known repro: **tapping ADADADADA while moving and
+  attacking**. `walk-smoothness` and `rapid-flip-attack` scenarios already exist in the harness. A fix
+  with no regression test is a fix that will silently rot again.
+- Capture before/after frame-delta numbers. State them.
+
+## Guardrails
+- **Owner map files OFF LIMITS: `packages/shared/src/mapgen.ts`,
+  `packages/client/src/scenes/arena/floor-renderer.ts`, `packages/client/public/tiles/**`.**
+- `data/weapon-concepts-300.json` is being appended to by parallel gun Sols — do not touch.
+- Parallel Sols own the subclass taxonomy and the light/laser system. Stay out.
+- Bump `SCHEMA_VERSION` if wire shape changes; update every test pinning it. LF endings.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b68-silky-limbs.md` with the
+best-practice findings, the single-clock audit (every time source you found and unified), the priority
+ordering table, the blend policy, and before/after numbers. FINAL line = verdict: root cause, clocks
+unified N->1, priority layers, regression test added, telemetry corrections, test result.

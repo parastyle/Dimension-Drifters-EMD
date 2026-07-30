@@ -1,0 +1,55 @@
+You are Sol `impl-b20-l4-booster-meta` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b20-l4-booster-meta
+(branch sol/b20-l4-booster-meta). IMPLEMENTATION — B20 LANE 4: BOOSTER-PACK META. Autonomous — no
+questions. Report incrementally. NO live-stack boot; unit + live gate on private ephemeral ports.
+
+## Authority
+READ FIRST: `docs/sol-reports/design-lock-b20.md` + shipped lane reports (L1 teardown, L2
+chests/relics, L3 economy — banking is live via the meta account). You are Lane L4 ONLY — do NOT
+build L5 (in-run weapon tier curve).
+
+## L4 contract — the bank buys booster packs outside runs
+1. **Pack shop as a MENU TAB** ("Packs") beside the existing Characters/Armory tabs in MenuScene.
+   Shows the banked money balance + purchasable pack types. Keyboard + click grammar consistent
+   with the existing tabs.
+2. **Pack types + pools** (tunable constants, documented):
+   - WEAPON PACK: pulls unlock weapons into the run drop/chest pool. Pool = all active catalog
+     weapons NOT yet unlocked. Seed a sensible STARTER-UNLOCKED subset (e.g. every weapon the
+     current default loadouts already use + a spread across families, ~60-80 weapons) so runs
+     work out of the box; everything else is pack-chase.
+   - PET PACK: pulls unlock pets from the existing pet roster.
+   - CHARACTER PACK: pulls unlock playable characters from `WHOLE_ART_CHARACTERS`. Seed
+     `proto-cowboy-hidden-face` + a handful as starter-unlocked; the character-select tab shows
+     locked characters greyed with a lock badge.
+3. **Rarity + pricing.** Each pullable item gets a rarity derived from its power budget/kind
+   (document the mapping). Pack open = N pulls (e.g. 3) rolled by rarity weights, seeded RNG.
+4. **LOCKED dupe rule:** a duplicate pull refunds 50% of the item's cost weighted by rarity, and
+   the refund is shown ON the card flip in the pack-open moment ("duplicate -> +X money"), never
+   silently.
+5. **Pack-open ceremony.** Card-flip reveal in the menu (existing menu art language; punchy but
+   quick, skippable with a key). No modal during runs — this is all menu-side.
+6. **Persistence.** Unlocks + balance persist in the existing meta-account storage (same place L3
+   banks money). Chest/drop weapon rolls (L2) and enemy weapon drops respect the unlocked pool
+   (locked weapons never drop in-run).
+
+## Guardrails
+- LOCKED LAWS: never interrupt gameplay; no player auras; no chains/tassels. Do NOT touch in-run
+  systems beyond filtering droppable pools by unlocks. Do NOT rebalance weapons.
+- Co-op: unlocks are per-account (each player's own pool governs their own drops/chest rolls —
+  L2's per-player instancing already supports this).
+- LF endings only. If schema fields are added, bump SCHEMA_VERSION from its CURRENT value and
+  update every test pin. Migrate affected tests.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green. `pnpm assets:check` green.
+- Unit: rarity mapping, pull rolls (seeded), dupe refund math (50% rarity-weighted), pool
+  filtering (locked weapons never in chest/drop rolls), persistence round-trip, starter set.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567): open the menu Packs tab, buy + open a
+  pack (deterministic seed), capture the card flip incl. a dupe refund line, then start a run and
+  verify a locked weapon cannot drop. Evidence under
+  `docs/owner-notes-audit-v11-evidence/b20-l4-booster-meta/`.
+
+## Rules
+Worktree; commit on sol/b20-l4-booster-meta; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b20-l4-booster-meta.md` (pool/rarity/pricing tables + starter set + UI
+plan). Append per system. FINAL line = verdict: packs tab live, 3 pack types, dupe refund on-flip,
+pool filtering enforced, starter set size, evidence path, files touched.

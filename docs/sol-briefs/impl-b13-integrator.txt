@@ -1,0 +1,55 @@
+You are Sol `impl-b13-integrator` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b13-integrator
+(branch sol/b13-integrator). IMPLEMENTATION — TWO-FRAME FIRING ANIMATION INTEGRATOR. Autonomous —
+no questions. Report incrementally. NO live-stack boot; unit + live gate on private ephemeral ports.
+
+## Context — the owner's ask (verbatim, ledger v9 B13)
+Wyrmskull Reliquary (`x2-wyrmskull-reliquary`): "Use this weapon as a reference image to make a
+second frame of this weapon with its mouth open. Use in the firing animation."
+
+## The B13 art asset is ALREADY installed in main
+- `packages/client/public/sprites/x2-wyrmskull-reliquary/part-1.png` — CLOSED-mouth base frame (shipped).
+- `packages/client/public/sprites/x2-wyrmskull-reliquary-open/part-1.png` — the new OPEN-mouth frame,
+  generated same-registration from the closed reference (art Sol delivered; read
+  `docs/sol-reports/impl-b13-art-wyrmskull-mouth.md` if present for registration notes).
+
+## Your job — closed at idle, open during the firing release window, deterministic return
+1. **Frame metadata** — register `x2-wyrmskull-reliquary-open` as the firing frame of
+   `x2-wyrmskull-reliquary` (manifest + whatever catalog animation/frame metadata shape fits; if no
+   two-frame weapon precedent exists, author the minimal clean schema — e.g. a `firingFrame` field on
+   the weapon def or a manifest-level frame variant — do NOT bolt on a one-off hack in ArenaScene).
+2. **SpriteRig swap** — the held weapon texture switches to the open frame ONLY during the firing
+   release window of the attack clock, then returns to closed deterministically (never sticks open,
+   never flickers at idle). Same registration: no pop/drift in position, scale, rotation, or muzzle
+   anchor when swapping. Both facings.
+3. **Muzzle registration** — the muzzle anchor must remain valid on the open frame (projectiles spawn
+   from the open mouth). Verify against `data/weapon-muzzle-overrides.json` conventions.
+4. **Determinism** — frame choice derives from the authoritative attack clock (server-owned timing),
+   not from client-local wall time; remote players see the same open/close cycle.
+
+## Concrete deliverables
+- Manifest + frame metadata for the open frame.
+- SpriteRig (or the appropriate render-path module) firing-window frame swap.
+- Firing-clock unit tests: closed at idle, open exactly within the release window, closed after; no
+  swap for weapons without a registered firing frame.
+- Live gate: local/remote left/right shots showing the open frame at release. Evidence under
+  `docs/owner-notes-audit-v10-evidence/b13-wyrmskull/`.
+
+## Guardrails
+- Do NOT change Wyrmskull's damage/cadence/range/DPS or its `wyrmskull-spear-jabs` combo variant.
+- Do NOT touch other weapons' render paths, whole-art characters, or pets.
+- Preserve silhouette/palette/grip/scale registration — if the open frame's registration is off,
+  fix by adjusting offsets in metadata, NOT by editing the PNG.
+- LF endings only. Preserve existing tests.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green in this worktree.
+- `pnpm assets:check` green.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567) on `proto-cowboy-hidden-face`: fire
+  Wyrmskull both facings; capture closed-idle, open-at-release, closed-after. Retain evidence under
+  `docs/owner-notes-audit-v10-evidence/b13-wyrmskull/`.
+
+## Rules
+Worktree; commit on sol/b13-integrator; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b13-integrator.md` (understanding + frame-metadata schema decision + plan).
+Append per stage. FINAL line = verdict: two-frame firing cycle wired, registration drift-free,
+deterministic return, evidence path, files touched.

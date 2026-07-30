@@ -1,0 +1,56 @@
+You are Sol `wa-char-menu` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/wa-char-menu
+(branch sol/wa-char-menu). IMPLEMENTATION. Autonomous — no questions. Report incrementally. NO
+live-stack boot (it has hung Sols); a unit/behavioral test is the gate — the ORCHESTRATOR does the live
+visual check.
+
+## YOUR ORDER — Wave 4, Sol 4 of the wardrobe-retirement plan
+READ `docs/sol-reports/plan-wardrobe-retire.md` — implement the section "Sol 4 — `character-menu`" EXACTLY
+(its Scoped file partition, Outline steps 1-8, Risk note, and Verification). That section is your
+authoritative spec.
+
+Summary of intent: replace the visible `wardrobe` tab in the menu with a **Characters** tab, so players
+can pick their whole-art character. Steps:
+1. Small pure selection model with a versioned local key (e.g. `dd.character.selected.v1`); sanitize stored
+   values against the shared `WHOLE_ART_CHARACTERS`; missing/corrupt/legacy => `DEFAULT_CHARACTER`. Do NOT
+   change MetaAccount V4.
+2. Replace the visible `wardrobe` tab descriptor with `characters`; default the menu to Characters; follow
+   the existing `makeMenuChip -> build root -> setMenuTab -> layout` pattern.
+3. Build cards for every shared whole-art id (currently the 3 protos): readable name, selected state,
+   whole-art preview/portrait. Load ONLY the six-part textures needed for this small roster; do NOT
+   preload the boilerplate or the gear manifest.
+4. Save on selection; include `selectedCharacterId` in the `scene.start("arena", ...)` payload. Server
+   validation remains authoritative (Sol 1 already gates it).
+5. Stop building/showing the Wardrobe workspace + remove Wardrobe keyboard routing from normal play.
+   RETAIN Wardrobe modules/methods/preset storage as dormant archive code unless cleanup can remove dead
+   methods without widening risk; NO hard delete required.
+6. Keep `ARMORY / CARRY` visible + functional. Keep the companion selector active on the Characters tab so
+   pet selection is unchanged.
+7. Relocate existing prestige/World Tier transaction to a neutral Destinations control/drawer and remove
+   "hat tier/tower grows" copy. Do NOT change the server transaction or World Tier semantics.
+8. Update title/subtitle/copy that says "GEAR IS WHO YOU ARE" or "drifters" where it would falsely present
+   retired Wardrobe identity.
+
+## Scope guardrails
+- Stay within Sol 4's file partition (`MenuScene.ts`, `MenuScene.dev-links.test.ts` only if dev archive
+  labelling changes; NEW `packages/client/src/ui/character-select.ts` + test; new preview helper under
+  `packages/client/src/ui/characters/` if needed; a focused new `MenuScene.character-tab.test.ts` if
+  Phaser-facing tab behavior needs a separate fixture). Do NOT touch server (Sol 1), scale (Sol 2), or
+  Arena runtime (Sol 3) files.
+- PETS ARE OUT OF SCOPE (except keeping the companion selector visible/working). Preserve weapon Armory /
+  Carry. Do NOT delete `armory-ui` tokens or the Armory root.
+- The RISK the plan flags: `MenuScene.ts` is large and Wardrobe currently OWNS companion visibility +
+  prestige UI; hiding only the tab would accidentally hide pets and strand prestige. Test both preserved
+  behaviors EXPLICITLY.
+
+## Verification (this Sol)
+- `pnpm typecheck` + FULL `pnpm test` GREEN in this worktree. LF endings ONLY. NO live-stack boot.
+- Unit/behavioral tests: Characters is the initial tab; exactly the shared whole-art roster appears;
+  keyboard/pointer selection works; refresh persists; Armory/Carry + Destinations remain reachable;
+  companions still select/save; eligible prestige remains reachable outside Wardrobe; no active copy
+  promises hat rewards.
+
+## Rules
+Worktree; commit on sol/wa-char-menu; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-wa-char-menu.md` (menu tab system + your plan). Append. FINAL line = verdict:
+Characters is the initial tab + persisted selection + Armory/Destinations/pets/prestige preserved, files
+touched, and the passing tests.

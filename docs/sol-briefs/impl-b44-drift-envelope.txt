@@ -1,0 +1,40 @@
+You are Sol `impl-b44-drift-envelope` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b44-drift-envelope
+(branch sol/b44-drift-envelope). URGENT PLAYFEEL REGRESSION. Autonomous — no questions.
+
+## The owner's report (verbatim, live playtest)
+"i am violently rubberbanding while moving and using the coyote trickster's sparkmitt"
+
+## Orchestrator diagnosis (verify, then fix the CLASS)
+`x2-coyote-trickster-s-sparkmitt` has `performance.forwardDrift` — a legacy authored-drift path
+B36's displacement removal did not touch. B42 (`3a05a22`, relaxed authority) classifies authored
+motion via server-motion epochs (`serverMotionUntilTick` / `serverMotionEpoch`); the forwardDrift
+path is apparently NOT registered as an epoch, so during drift the client's reported positions
+fail the envelope every tick -> constant rejection corrections -> violent rubberband.
+
+## Your job
+1. Reproduce: unit test driving the sparkmitt combo while moving under the B42 authority model;
+   assert zero rejections expected-case.
+2. Fix the CLASS: every authored-motion source (forwardDrift, combo rootMotion remnants, lunges,
+   knockbacks, parry slides, pit snap-backs, elevator boarding) must either (a) register a
+   server-motion epoch for its window, or (b) widen the envelope by its authored budget. AUDIT
+   the full list of motion sources and enumerate them in the report with their classification —
+   no motion source may be unclassified.
+3. Sweep the catalog for every weapon with forwardDrift or similar performance motion; add a
+   census test asserting each resolves to a classified motion source under the authority model.
+4. Decide + document: does sparkmitt's drift SURVIVE (flagged as epoch) or die like the kung-fu
+   displacement (B36 precedent: players move themselves)? DEFAULT: keep the drift but classified
+   — it is presentation the owner liked; do not delete behavior without need.
+
+## Guardrails
+Parallel Sol B43 is splitting GameRoom/SpriteRig (move-only) — you merge FIRST; keep your diff
+minimal and surgical to ease B43's rebase. LF endings; schema from CURRENT + pins; migrate tests.
+
+## Verification
+`pnpm typecheck` + FULL `pnpm test` green; 2-client live gate on PRIVATE EPHEMERAL PORTS (never
+5180/2567): sparkmitt combo while moving = zero rejection corrections (B42's telemetry counter),
+plus one other drift-class weapon. Evidence under `docs/owner-notes-audit-v11-evidence/b44-drift-envelope/`.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Report at
+`docs/sol-reports/impl-b44-drift-envelope.md`. FINAL line = verdict: motion-source audit table
+size, unclassified count = 0, sparkmitt rubberband dead (telemetry), evidence path, files touched.

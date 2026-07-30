@@ -1,0 +1,37 @@
+You are Sol `wa-size` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/wa-size
+(branch sol/wa-size). IMPLEMENTATION. Autonomous — no questions. Report incrementally. NO live-stack boot
+(it has hung Sols) — a DETERMINISTIC unit test is your gate; the ORCHESTRATOR will do the live visual
+before/after check.
+
+## YOUR ORDER — Wave 2, Sol 2 of the wardrobe-retirement plan
+READ `docs/sol-reports/plan-wardrobe-retire.md` — implement the section "Sol 2 — `whole-art-size`" EXACTLY
+(its Scoped file partition, Outline steps 1-4, Risk note). That section is your authoritative spec.
+
+Summary of intent: the whole-art characters (proto-sheriff/samurai/witch) render WAY TOO BIG in-game — the
+sheriff dwarfs the enemies and the legacy dummy. Add a CLIENT-ONLY whole-art visual-envelope scale so a
+whole-art rig's full rendered height matches the legacy Drifter/boilerplate reference envelope. Initial
+geometry targets from the plan: Samurai ~`0.847`, Sheriff ~`0.730`, Witch ~`0.739` (derive deterministically
+from full-part-height vs the retained Drifter reference; bounded explicit overrides allowed only if art-
+direction tuning is needed). Compose the multiplier inside `SpriteRig`'s rig-scale application, NOT shared
+`characterScale` — do NOT change server characterScale, collision radius, attack reach, or authority
+geometry (this is a VISUAL-ONLY size task).
+
+## Scope guardrails
+- Stay within the plan's Sol-2 file partition (`whole-art-character.ts` + its test, `SpriteRig.ts` +
+  `SpriteRig.boilerplate.test.ts`). Do NOT touch server/menu/roster files (other Sols own them).
+- Root scaling also affects child shadows/VFX while weapon code counter-scales held assets — keep the
+  rig-scale application coherent so weapon counter-scaling, WYSIWYG effects, animation math, the "you"
+  marker, and ground shadow use one final transform. Do not detach hands/feet/weapons/head-spring.
+
+## Verification (this Sol)
+- `pnpm typecheck` + FULL `pnpm test` green in this worktree. LF endings ONLY.
+- Add a DETERMINISTIC test: every whole-art id has a bounded non-1 scale correction; the sheriff's rendered
+  static full-height lands near the Drifter reference; legacy (drifter/boilerplate) rigs remain scale 1; all
+  six whole-art part textures + head mount still survive construction. NO live-gate boot — leave the live
+  before/after visual confirmation to the orchestrator.
+
+## Rules
+Worktree; commit on sol/wa-size; orchestrator merges. FIRST: write `docs/sol-reports/impl-wa-size.md`
+(where the whole-art rig scale is applied vs legacy + your deterministic height derivation). Append. FINAL
+line = verdict: per-character scale multipliers, the reference-height math, the test path + what it proves,
+and confirmation legacy rigs stay scale 1 and no parts detach.

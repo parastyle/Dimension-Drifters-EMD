@@ -1,0 +1,43 @@
+You are Sol `impl-b17` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b17-idle-hand
+(branch sol/b17-idle-hand). IMPLEMENTATION. Autonomous — no questions. Report incrementally. NO
+live-stack boot (a unit + measured live-idle-parts gate is the acceptance).
+
+## YOUR ORDER — BATCH B17 (systemic hand rotation vs painted thumb + universal idle-hand rule)
+READ `docs/sol-reports/panel-dead-body-parts.md` — implement its 10-step exec plan EXACTLY. That panel
+is your authoritative spec (5-pose vocabulary, universal facing-side rule, WeaponDef.poseLanguage
+schema addition, semantic classification of visible hands, feet normalization).
+
+Summary of the required outcome:
+- Every idle/terminal-recovery hand resolves to the FACING side (never the far side), in canonical
+  local space, before the root mirror.
+- 5-pose vocabulary: `secondary-grip` | `mirror-guard` | `low-guard` | `casting-gesture` | `hip-rest`
+  — family defaults in `pose-language.ts`; per-weapon overrides via optional
+  `WeaponDef.poseLanguage { idle, feet }` schema addition (strict validation + JSON round trip).
+- Semantic classification of every visible hand: hard-constrained / action-owned / recovering /
+  authored-idle / absent-replaced / explicit-test-failure.
+- Replace the whole-art bypass; preserve anti-occlusion via visible absolute targets.
+- Apply facing-side post-condition late (idle + movement + micro-motion composed, then clamped, then
+  root mirrors once).
+- Unify recovery + idle (terminal recovery feeds the same next-frame idle target).
+- Normalize feet (one neutral profile; named stances replace generically).
+
+## Scope guardrails
+- Must NOT change: combat authority, damage, cadence, projectile geometry, muzzle points, existing
+  approved secondary grip points, character art, 6-part manifest offsets. Preserve B8 named actions and
+  the dual-wield / 2H / cast-channel / thrown-recovery / mechanism / flourish invariants (panel
+  section F). Pets out of scope.
+
+## Verification
+- Write FAILING laws first: real negative manifest sockets prove blade/blunt/pistol/focus/Saint-Bough/
+  Hellmouth land on the far half-plane on the pre-fix code (or your test proves the composed-world
+  facing invariant on the post-fix). Then implement. Then flip laws to green.
+- `pnpm gen` + `pnpm gen:check`. `pnpm typecheck`. FULL `pnpm test` green in this worktree.
+- Measured live idle-parts gate on PRIVATE EPHEMERAL PORTS (never 5180/2567) capturing pre/post for
+  representative 1H weapons on both facings across all 3 shipped protos (sheriff/samurai/witch).
+  Retain captures under `docs/owner-notes-audit-v10-evidence/b17-idle-hand/`.
+
+## Rules
+Worktree; commit on sol/b17-idle-hand; orchestrator merges. FIRST: write `docs/sol-reports/impl-b17.md`
+(reading map + plan). Append per step. FINAL line = verdict: universal facing-side rule in place,
+five-pose vocabulary wired, poseLanguage schema added, semantic classifier covers every visible hand,
+evidence paths, files touched.

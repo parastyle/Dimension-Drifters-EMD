@@ -1,0 +1,80 @@
+You are Sol `b82-l10-no-self-snap` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b82-l10-no-self-snap
+(branch sol/b82-l10-no-self-snap). IMPLEMENT A LAW + INSTRUMENT. Autonomous.
+
+## Owner evidence (2026-07-27)
+> "stress testing for 30 seconds and found some hard snaps about an inch on my screen (very big screen)"
+
+Confirmed real: no background agent load was running during this test, so it is NOT machine
+contention. An inch on a large display is a LARGE correction, not a rounding error.
+
+## Part 1 — IMPLEMENT CANON L10 (recorded, never implemented)
+Read `DIMENSION_DRIFTERS_MASTER_SPEC.md` law **L10**. It is locked canon:
+
+> **The local player NEVER feels lag on their own character.** Self position stays client-authoritative
+> inside the B42 plausibility envelope; a correction to SELF is graded (silent / smoothed) rather than
+> teleported; a post-stall `forceResync` must not hard-snap the local player — it recovers through the
+> Smooth band. Remote players, enemies and bosses keep ordinary server authority; this law is about
+> SELF only. Cheating is explicitly not a concern.
+
+**The law is written but the code does not obey it.** `packages/client/src/net/prediction.ts:1459`
+groups `needResync` with `teleported` and `paused` — the hard/teleport path — so a post-stall resync
+bypasses B42's graded correction bands entirely (`MovementCorrectionBand.Silent/Smooth/Snap`,
+`packages/shared/src/movement-authority.ts`).
+
+Make the code obey the law:
+- A resync of **SELF** recovers through the **Smooth** band, over the existing smoothing window.
+- **Genuine teleports remain instant.** A real teleport (rift descent, pit-fall reposition, boss
+  mechanic, spawn) is not a correction and must still snap — the player expects it. Distinguish
+  "server moved me on purpose" from "my prediction was stale". If the current code cannot tell those
+  apart, MAKE it able to, and say how.
+- Remote players, enemies and bosses are UNCHANGED. This is self only.
+- Do not weaken B42's envelope, the correction bands themselves, or the >250 ms stall DETECTION at
+  `ArenaScene.ts:15193` — detection stays, only the self recovery becomes graded.
+
+## Part 2 — INSTRUMENT IT, because "about an inch" is not a number
+Every report of this has been qualitative and it has cost repeated blind batches. Add lightweight,
+**dev-gated** (`clientDevToolsEnabled()`) instrumentation the owner can actually read:
+
+- Count and log every self correction: magnitude in px, band applied, and the cause
+  (stall-resync / envelope violation / teleport).
+- Log every frame over 250 ms with its duration.
+- Surface a small running readout — a HUD line or console summary — so the owner can say
+  "4 snaps, max 92 px, all stall-resync" instead of "about an inch".
+- **Never on in production**, never a modal, never steals input (laws L05, and the reconnect overlay
+  precedent).
+
+This instrumentation is the deliverable that makes the NEXT report diagnosable. Treat it as
+first-class, not an afterthought.
+
+## Part 3 — the stall itself is still unexplained. Say so honestly.
+`b81-five-second-stall` reduced real allocation pressure (baked static floor/spawn art, cached dust/
+HUD/parry textures) but **could not reproduce the owner's cadence** — it measured zero frames >250 ms
+even pre-fix, and a 56 s major-GC interval, not 5 s.
+
+So a stall source likely remains. With your instrumentation in place, try to catch it under STRESS
+(many enemies, heavy VFX, sustained combat — that is what the owner was doing), not on an idle map.
+If you find it, fix it and report the evidence. If you cannot reproduce it, say so plainly and leave
+the instrumentation as the net. **A clean "not reproduced, here is the trap I left" is acceptable.
+Inventing a cause is not.**
+
+## Guardrails
+- Canon **L09** (one constant travel speed; feel from animation, never speed modulation) and
+  **L10** stand. Keep B42, B68, B74, B75, B76 guarantees intact.
+- No player auras. No modal interruptions. Weapon attacks never displace the character.
+- Do not touch `data/weapon-concepts-300.json`, the lava dimension, or the walkability painter.
+- LF endings. Bump `SCHEMA_VERSION` if the wire shape changes and update every test pinning it.
+
+## Verification
+- `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green TWICE consecutively.
+- `tools/diag-rb-telemetry.mts`: all scenarios, zero requests/applications/snaps/pixels, BOTH modes.
+- **Add a test proving the law**: after a simulated >250 ms stall, the SELF rendered position must
+  converge without any single-frame jump above a stated threshold — while a genuine teleport still
+  moves instantly. Both assertions in one test file so the distinction cannot silently rot.
+- Report the measured worst-case self correction, before and after, in px.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b82-l10-no-self-snap.md` with
+the teleport-vs-correction distinction you implemented, the instrumentation and how to read it, and
+any stall evidence found. FINAL line = verdict: L10 implemented how, teleport still instant (proof),
+instrumentation surface, stall reproduced yes/no, worst self correction before/after px, telemetry,
+2x test results.

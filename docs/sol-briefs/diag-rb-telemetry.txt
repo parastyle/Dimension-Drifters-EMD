@@ -1,0 +1,21 @@
+You are Sol `diag-rb-telemetry` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/diag-rb-telemetry
+(branch sol/diag-rb-telemetry). DIAGNOSIS ONLY — no game-code fixes. Autonomous.
+
+## Mission
+The owner reports "a lot of rubberbanding" playing SOLO on localhost after the authority stack
+rework (B42 relaxed authority 3a05a22, B44 motion removal e9c94ad, B45 recoil 8d70bf3). Solo
+localhost should show ZERO self-corrections. Produce a DATA MAP of what actually triggers them.
+1. Build a headless instrumented run harness (private ports; playwright or node client) that
+   plays scripted scenarios and logs every self-correction event with cause context (B42's
+   telemetry counters + add temporary logging in your worktree as needed): scenarios = walk/stop,
+   attack-move-stop with a melee weapon, each gun class firing (recoil!), sustained gatling,
+   dodge roll, parry each direction, jump/pound, slide-hop, chest open, elevator board (belt),
+   pit fall, each kung-fu wrap combo, sparkmitt, spade spin, ultimate.
+2. For each scenario: corrections count, magnitude, duration, and the motion-source state at the
+   time. Rank by severity. Identify the top offenders with tick-level traces.
+3. NO fixes. Report only.
+
+## Verification/Rules
+Worktree; COMMIT the harness + report. docs/sol-reports/diag-rb-telemetry.md with the ranked
+table + traces; evidence under docs/owner-notes-audit-v12-evidence/diag-rb-telemetry/.
+FINAL line = verdict: N scenarios, top-3 offenders named with counts.

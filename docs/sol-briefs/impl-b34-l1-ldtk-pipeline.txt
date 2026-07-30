@@ -1,0 +1,58 @@
+You are Sol `impl-b34-l1-ldtk-pipeline` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b34-l1-ldtk-pipeline
+(branch sol/b34-l1-ldtk-pipeline). IMPLEMENTATION — LDTK MAP PIPELINE (B34 LANE 1 of 2). Autonomous —
+no questions. Report incrementally. NO live-stack boot; unit + live gate on private ephemeral ports.
+
+## Context — the owner delivered the first authored map (committed at data/maps/corporate-grid/)
+`corporate_grid_v13_imagegen_material_variants.ldtk` (LDtk 1.5.3, 60px grid) + 2 tileset PNGs.
+3 floors, each 5160x1080: Office_Red_Carpet_Gallery, Office_Random_Dude_Portrait_Hall,
+Office_Marble_Gallery. Layers bottom-to-top: Parallax_City_Backdrop, Office_Material_Tiles;
+gameplay: Collision_IntGrid (values 1=solid, 3=end blocker), Lane_Guides (1,2), entities
+PlayerSpawn / EnemySpawn / CameraBounds / EndWall / ElevatorMarker / CombatLane.
+
+## OWNER-LOCKED migration contract (NON-NEGOTIABLE)
+- This is a BELT-MODE change ONLY. The generated arena, training room, and all non-belt surfaces
+  stay byte-identical in behavior. The game stays FULLY playable after your change alone.
+- Do NOT rebuild scenes; extend the existing belt-mode path in ArenaScene + server belt code.
+- Every claim screenshot-proven at the live gate; the orchestrator re-verifies.
+
+## Lane 1 contract — importer + render + sim consumption (elevator FLOW is Lane 2, not yours)
+1. **Importer**: a gen-step (`tools/artkit/` or `tools/mapkit/` — your call, follow repo idiom)
+   parsing the .ldtk into a versioned generated TypeScript map model in shared (tile indices,
+   collision grid, lanes, entities, level dims, tileset refs). Deterministic; `pnpm gen:check`
+   covers drift. LDtk file stays the single source of truth.
+2. **Client render**: belt mode renders a floor from the model — parallax backdrop layer (slower
+   scroll factor), material tile layer, correct z under entities. Copy tileset PNGs into the
+   client public path via the importer (do not hand-duplicate). 4K-crisp at game zoom.
+3. **Server sim consumption**: Collision_IntGrid 1-cells are solid (nav + projectile blockers);
+   3-cells + EndWall entities clamp the playable band ends. Lane_Guides + CombatLane entities
+   define the vertical depth band (player + enemy Y clamped to the lane span ~450-930). Camera
+   clamps from CameraBounds + level px size. PlayerSpawn places players.
+4. **Enemy spawn anchors**: EnemySpawn markers are WAVE ANCHORS, not literal enemies. Server
+   belt-wave spawner emits waves at anchors. OWNER RULE: early in a floor, waves come mostly from
+   the RIGHT (ahead of the player); as the run goes deeper (later floors — expose a depth param
+   Lane 2 will drive), waves come from BOTH sides. ADD more EnemySpawn anchors in the importer
+   output if the authored 2 are too sparse (owner explicitly allowed adding markers — synthesize
+   evenly-spaced anchors along the hall; document how many).
+5. **Boot target**: belt mode with `beltLevel` selecting a corporate-grid floor loads floor 1
+   (Red_Carpet). Elevators render as static tiles this lane (Lane 2 animates/wires them).
+
+## Guardrails
+- Parallel Sols: B33 (enemy commit-AI in GameRoom enemy sections), B31 integrator (weapon
+  behavior). Your server edits live in belt map/spawn plumbing; rebase onto main at merge and
+  reconcile. STANDING BANS apply. LF endings; schema bumps from CURRENT value + update pins.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green. `pnpm assets:check` green.
+- Unit: importer determinism, collision/lane/entity extraction counts per floor, spawn-anchor
+  synthesis, right-bias wave direction param.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567): boot belt mode on floor 1 with
+  `proto-cowboy-hidden-face`; screenshots: (a) hallway rendering with parallax skyline, (b)
+  player walking the lane band + clamped at top, (c) camera clamped at both hall ends, (d) a
+  wave spawning from the right, (e) all 3 floors each render (load each directly). Evidence
+  under `docs/owner-notes-audit-v11-evidence/b34-l1-ldtk-pipeline/`.
+
+## Rules
+Worktree; COMMIT YOUR WORK on sol/b34-l1-ldtk-pipeline; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b34-l1-ldtk-pipeline.md` (model shape + importer plan + surfaces list).
+Append per stage. FINAL line = verdict: importer live, 3 floors render, collision/lanes/camera/
+spawn-anchors live (counts), right-bias waves, evidence path, files touched.

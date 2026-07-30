@@ -1,0 +1,57 @@
+You are Sol `b62-legibility` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b62-legibility
+(branch sol/b62-legibility). TWO AUDIT FINDINGS. Autonomous.
+
+Read `docs/sol-reports/audit-design-practice.md` findings **5** and **9** first.
+
+## Finding 5 — weapon identity is invisible (High, M)
+338 weapons, and the client shows behaviour text for NONE of them. `WeaponDef` declares
+`description?: string` (`packages/shared/src/weapons.ts` ~709-710) and 101 of 337 weapons populate it.
+Grepping `.description` across `packages/client/src` returns **zero non-test hits**. The field is
+authored and never rendered.
+
+The player cannot tell what any weapon does before or after picking it up. In a game whose entire
+economy is chests dropping weapons (B20), that is the core loop running blind.
+
+1. Render `description` on the weapon card AND on the pickup prompt wherever it is present.
+2. For the ~236 weapons with no authored description, **derive a one-line behaviour string from the
+   weapon's actual data** — its handling tag, fire mode, projectile behaviour, envelope, whatever the
+   def already carries. Do NOT invent flavour text and do NOT write 236 descriptions by hand. The
+   derived line must be TRUE of the weapon, generated from its fields, so it cannot drift.
+3. An authored description always wins over a derived one.
+
+## Finding 9 — relics have no description (High, S)
+The HUD shows **two-character codes**. Add a `desc` to the relic defs and show it on pickup and on
+hover. Relics are the entire ability system post-B20 — a player currently cannot know what they
+picked up.
+
+Where a relic's effect is derivable from data, derive it, same rule as above. Where it genuinely needs
+authored text, write it plainly: what it does, in the player's words, not the system's. No lore, no
+adjectives — a player reads this mid-fight.
+
+## Quality bar
+Write from the player's side of the screen. "Fires three shots per trigger pull" beats "burst-fire
+handling tag". Active voice, concrete numbers where they matter, no marketing.
+
+## Guardrails
+- **The owner is working on map art in `packages/shared/src/mapgen.ts`,
+  `packages/client/src/scenes/arena/floor-renderer.ts`, and `packages/client/public/tiles/**`.
+  DO NOT TOUCH THOSE THREE. Not even formatting.**
+- Parallel Sols own durable settlement and the accessibility/pause UI. Stay out of both.
+- Weapons are CODEGEN — if descriptions live in generated files, change the GENERATOR and the source
+  data, never the generated output by hand. `pnpm gen:check` must stay clean.
+- Do not retune any weapon. Text and rendering only. LF endings.
+
+## Verification
+`pnpm gen` + `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green. Add a test asserting
+EVERY weapon resolves to a non-empty behaviour line (authored or derived) — that is the guarantee
+worth locking. Same for relics.
+
+Live: pick up a weapon with an authored description and one without, plus a relic. Capture
+`docs/sol-reports/b62-evidence/weapon-desc-authored.png`, `weapon-desc-derived.png`,
+`relic-desc.png`.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b62-legibility.md` with the
+derivation rules, a sample of 10 derived lines across different weapon families so the quality is
+auditable, and the relic approach. FINAL line = verdict: N weapons covered (authored/derived), N
+relics, test result, capture paths.

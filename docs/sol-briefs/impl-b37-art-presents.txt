@@ -1,0 +1,24 @@
+You are Sol `impl-b37-art-presents` in the ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b37-art-presents
+(branch sol/b37-art-presents). ART-ONLY. Autonomous — no questions. Report incrementally. NO live-stack boot.
+
+## Your ONE subject
+Exploding Present Lobber projectile variants (owner: 'image gen the presents, make 5 variations or something, 1 being a big payload')
+**Install:** packages/client/public/sprites/vfx-present-variants/part-1.png .. part-5.png (part-5 = the BIG payload)
+**Generation prompt (verbatim — do not restyle):**
+"Projectile-only in-world sprites, FIVE separate variations of a sinister wrapped gift-box bomb: dark grimy wrapping paper in different colorways (deep red, midnight blue, poison green, dusty purple), fraying ribbon + dented bow, small fuse spark; variants 1-4 similar size, variant 5 noticeably BIGGER and heavier-strapped (the big payload). Each ~4-6 colours, gritty dark-comic cel, hard outlines, readable at small scale. Flat #00ff00 background, one present per image."
+
+## Standing laws
+- ONE subject only (multi-frame/multi-variant sets of the SAME subject are that one subject).
+- NO chains/tassels/dangles, no digits on hands, nothing radial-ambient. LF endings only.
+- Gritty dark-comic cel, flat #00ff00 chroma background, shipped keyer clean.
+- Frame/variant REGISTRATION: same canvas + registration as the reference where a reference exists.
+
+## Deliverables — ART ASSETS ONLY
+1. Generate via the shipped ArtKit pipeline (tools/artkit/harvest-install.mjs conventions).
+2. Install ONLY to the path(s) above. NO manifest/catalog/shared edits — the B37 integrator wires.
+3. Each PNG > 200x200 native, < 2048x2048, keys cleanly.
+
+## Reporting + COMMIT
+FIRST: write docs/sol-reports/impl-b37-art-presents.md with your plan. Append.
+COMMIT your PNGs + report on your branch (the last art wave forgot to commit — do not repeat that).
+FINAL line = verdict: subject id, PNG path(s), prompt used, pixel dimensions.

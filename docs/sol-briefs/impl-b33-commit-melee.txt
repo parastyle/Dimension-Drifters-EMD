@@ -1,0 +1,70 @@
+You are Sol `impl-b33-commit-melee` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b33-commit-melee
+(branch sol/b33-commit-melee). IMPLEMENTATION — COMMITMENT-BASED MELEE ENEMIES. Autonomous — no
+questions. Report incrementally. NO live-stack boot; unit + live gate on private ephemeral ports.
+
+## Context — owner-approved design (chat, 2026-07-24; the owner explicitly approved every element)
+Melee enemies stop using dodgeable-by-walking hit cones. Their attacks LUNGE and are
+near-guaranteed against positioning — beatable ONLY by the player's verbs (dodge-roll i-frames,
+parry) at the right moment. Telegraph is on the enemy body, not painted on the floor.
+
+## The five elements (all LOCKED)
+1. **Remove the melee hit cone.** Melee enemy attacks no longer project a cone the player can
+   strafe out of. The attack is a committed lunge toward the target.
+2. **Attack-token system.** At most N melee enemies may COMMIT an attack on the same player
+   simultaneously (start N=3; tunable constant). Non-token holders posture/circle (keep their
+   existing chase/kite behavior; they just may not enter attack commit until a token frees).
+   Tokens are per-target-player, server-owned, released on attack resolution or holder death.
+   Bosses/elites ignore or have their own token budget (document your choice).
+3. **Two-channel telegraph.**
+   - WIND-UP: gradient full-body tint ramp from the enemy's base look toward its ACCENT color
+     (per-enemy-kind accent from its palette; e.g. brown wolf with red eyes ramps red). Ramp
+     DURATION varies per enemy kind (fast mobs short, heavies long) — this is enemy personality.
+   - COMMIT: one crisp universal WHITE POP frame (plus a tiny anticipation crouch/squash) at the
+     end of the ramp. Identical presentation across all enemy kinds. Colorblind-safe by design
+     (white pop + squash are hue-independent). Pair with a short per-kind commit SFX from the
+     shipped sample families.
+4. **Fixed commit-to-impact window, locked lunge.** From white pop to damage is a CONSTANT
+   ~200ms across ALL melee enemies (single shared constant; this IS the parry-timing window).
+   The lunge vector LOCKS at the pop (modest tracking allowed only during wind-up). During the
+   locked lunge the enemy travels its lunge distance server-authoritatively (nav-validated).
+   The hit lands unless the player is in dodge-roll i-frames, parries it, or is displaced beyond
+   the locked vector's reach by their own verb (jump counts). Walking/strafing does NOT evade.
+5. **Player attack-slow rule.** Verify how player movement interacts with attacking: the rule is
+   ROOT MOTION REPLACES INPUT SPEED — while in active attack frames without authored root motion,
+   input movement is modestly slowed (~25%, tunable); while authored combo root motion plays
+   (kung-fu lunges etc), it REPLACES input movement rather than stacking. If a swing-slow already
+   exists, reconcile it to this rule and document what was there.
+
+## Interactions to respect
+- Parry (B26): a parried committed lunge triggers the directional parry reactions; the attacker
+  should eat a brief stagger on being parried (use existing stagger machinery if present).
+- Tough-enemy combos (#49) and boss melee: multi-beat enemy combos adopt the telegraph per beat
+  where feasible; do NOT redesign boss patterns — bosses keep their authored tells, only the
+  commit-window constant applies where they already lunge.
+- Enemy variety: the existing enemy kinds' damage/HP/speed stay untouched. This is threat
+  DELIVERY, not stat rebalance.
+
+## Guardrails
+- STANDING BANS: no player auras (enemy body tint is fine — it is on the ENEMY), no chains, no
+  radial ambience. Tint via the rig/sprite tint pipeline, not new particle systems.
+- Parallel Sols own: B30 recovered weapon orders, B32 frostbore. Rebase onto main at merge time.
+- LF endings only. Schema bumps from CURRENT value + update all pins. Migrate every test that
+  asserted cone behavior; document deletions.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green.
+- Unit: token acquisition/release (cap, death-release, per-player), ramp->pop->impact timing
+  (constant window), lunge vector lock, i-frame/parry evasion vs walk non-evasion, root-motion
+  vs input-slow rule.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567) on `proto-cowboy-hidden-face`: capture
+  (a) a wolf ramping to accent + white pop + landed lunge on a walking player, (b) the same lunge
+  dodged with a roll at the pop, (c) the same lunge parried (directional reaction + attacker
+  stagger), (d) a 6-enemy swarm where only 3 commit at once, (e) attack-slow while swinging.
+  Evidence under `docs/owner-notes-audit-v11-evidence/b33-commit-melee/`.
+
+## Rules
+Worktree; COMMIT YOUR WORK on sol/b33-commit-melee; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b33-commit-melee.md` (current cone/AI inventory + token design + timing
+constants + tint pipeline plan). Append per element. FINAL line = verdict: cone removed, tokens
+live (N), two-channel telegraph live, fixed window ms, lunge lock, attack-slow rule, evidence
+path, files touched.

@@ -1,0 +1,27 @@
+You are Sol `impl-b6-archives` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b6-archives
+(branch sol/b6-archives). IMPLEMENTATION. Autonomous — no questions.
+
+## YOUR ORDER
+Implement BATCH B6 from the ledger. READ `docs/sol-reports/notes-ledger-v9.md` section "B6 — Weapon
+catalog maintenance: archives" for the FULL authoritative spec.
+
+Summary: two weapons must be ARCHIVED through the existing archive mechanism:
+- Coffin-Nail Carbine (`x2-coffin-nail-carbine`) — "archive this weapon"
+- Psalter of the Burning Halo (`x2-psalter-of-the-burning-halo`) — "archive weapon"
+Both still appear as active generated entries. Remove them from ALL new drop/shop/selection pools, but
+keep them RESOLVABLE for existing saves/inventories that reference the IDs (no crash, no silent
+substitution). Use the existing archive filter in `packages/shared/src/weapons.ts` — follow the pattern
+already used for archived weapons; do not invent a new one.
+
+## STANDING RULES (all batches)
+- Touches `data/weapon-concepts-300.json` + catalog generator/output + archive filter. Run `pnpm gen`;
+  keep gen:check/assets:check green + server booting. `pnpm typecheck` + FULL `pnpm test` GREEN in this
+  worktree. LF endings ONLY. You may CREATE tests; do NOT weaken existing assertions.
+- Acceptance: both IDs absent from every new acquisition/roll pool; an existing-save fixture still
+  resolves them without crash; an archive census gate reports exactly these two state changes. Retain any
+  evidence under `docs/owner-notes-audit-v9-evidence/b6-archives/`.
+- Worktree: commit on sol/b6-archives; orchestrator merges. Don't touch main copy or ports 5180/2567.
+
+## REPORTING
+FIRST: write `docs/sol-reports/impl-b6-archives.md` (the archive mechanism you found + plan). Append.
+FINAL line = verdict: both weapons archived, pool-absence + save-safety proof, files touched.

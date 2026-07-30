@@ -1,0 +1,69 @@
+You are Sol `b76-reverse-bullets` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b76-reverse-bullets
+(branch sol/b76-reverse-bullets). INTERMITTENT DEFECT HUNT. Autonomous.
+
+## The report (owner, verbatim, 2026-07-26)
+> "while walking forward and shooting forward, my bullets just shot backwards....Can't replicate."
+
+**No repro. That is the whole challenge — and it is not a reason to close this.** A projectile
+launching 180° from the aim vector is a total failure of the game's core action. It happened once,
+so it can happen again.
+
+## Your job
+Find the code path that can invert projectile direction, PROVE it can happen, then fix it and lock it
+with a test. Do not go hunting by playing the game hoping to see it — reason about the state machine
+and write tests that try to force it.
+
+## Where to look — this project has history here
+Facing/aim divergence has bitten repeatedly. Relevant prior work, read the reports:
+- **B53 flip warp** (`sol/b53-flip-warp`, merged) — facing flips were positionally discontinuous.
+- **B51/B52** — projected self root fed back as world-space; head-snap from `0854445`.
+- **B56 belt parity** — aim was broken in belt mode; belt is the SAME ArenaScene behind a mode flag.
+- **B68 silky limbs** (merged) — unified three presentation clocks into one, added limb priority.
+- **B74 movement lurch** (merged, `34095d94`) — deleted the turn-hitch and the accel/decel model.
+
+Specific hypotheses worth testing, in rough priority:
+1. **Facing vs aim disagreement.** Walking forward while shooting forward is the case where movement
+   direction, facing, and aim SHOULD all agree — so a bug that only shows when they briefly disagree
+   would be rare and unreproducible. Look for anywhere `facing`/`flipX`/mirror state is used to derive
+   a muzzle direction instead of the aim vector itself.
+2. **Muzzle origin/direction derived from a MIRRORED transform.** If the rig is flipped and the muzzle
+   point is read in local space then transformed, a stale or double-applied flip inverts the vector.
+   B68 changed how the rig presents each frame — check the muzzle sample against the new
+   `PresentedActorState` rather than any older per-part read.
+3. **A one-frame stale aim.** If the projectile spawns from last frame's aim while the flip already
+   applied, you get an inverted shot for exactly one shot — which matches "happened once, can't repeat".
+4. **Normalisation of a zero/degenerate vector.** A zero-length aim normalised can yield NaN or a
+   default that points backwards. Check every `atan2`/normalise on the fire path for the degenerate case.
+5. **Dual-wield / alternating-hand fire** picking the wrong hand's muzzle transform.
+
+## Method
+- Write tests that drive the fire path across ADVERSARIAL state: mid-flip, on the exact frame facing
+  changes, with aim exactly opposite to movement, with a zero-length aim, at flip-and-fire on the same
+  tick, in BOTH top-down and belt. Assert the projectile's initial velocity is within a tight angle of
+  the commanded aim, always.
+- The owner's repro of choice for flip-related bugs is **tapping ADADADA while moving and attacking**
+  — the harness already has `rapid-flip-attack`. Extend it to assert projectile direction, not just
+  position continuity.
+- If you find a path that CAN invert, fix it and say exactly how it triggers. If after genuine effort
+  you cannot force an inversion, say so plainly, list what you ruled out with evidence, and leave the
+  new assertions in place as a trap so the next occurrence is caught automatically. **A clean "not
+  found, here is the net I left" is an acceptable and honest outcome. Inventing a fix for a bug you
+  could not demonstrate is not.**
+
+## Guardrails
+- Keep every standing law: weapon attacks never displace the character (gun recoil excepted), no
+  player auras, no modal interruptions.
+- Keep B68's guarantees and B74's constant-speed law (canon L09 — one constant travel speed, feel
+  comes from animation, never from speed modulation).
+- Parallel Sols own: `data/weapon-concepts-300.json` (guns), the lava dimension, the walkability
+  painter, and the skate/pit fix. Stay out of all of them.
+- LF endings.
+
+## Verification
+`pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green twice. Telemetry
+`tools/diag-rb-telemetry.mts` completes all scenarios with zero corrections in both modes.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b76-reverse-bullets.md`
+listing each hypothesis, how you tested it, and the verdict for each. FINAL line = verdict: inversion
+path found (yes/no) + how it triggers, fix, assertions added, modes covered, test results.

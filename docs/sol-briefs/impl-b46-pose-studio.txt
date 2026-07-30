@@ -1,0 +1,54 @@
+You are Sol `impl-b46-pose-studio` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b46-pose-studio
+(branch sol/b46-pose-studio). DEV TOOL — WEAPON POSE/ANIMATION STUDIO. Autonomous — no questions.
+
+## The owner's ask (verbatim, 2026-07-24)
+"Can you build me a weapon pose generator that shows a character holding the weapon, and I can
+drag drop elements, and then see the animation play out, and have ways of tweaking the
+animation...is that something we can do?"
+
+## Architecture (LOCKED)
+- A dev-only studio page powered by the REAL client rig modules (post-B43 split:
+  `packages/client/src/entities/rig/*` — rig-core/pose/combat/gun-mechanisms) via the existing
+  Vite dev server — extend the shipped Weaponsmith tool (`tools/weaponsmith/`, port 5050) or add
+  a `tools/posekit/` sibling + a dev-portal card; follow whichever integrates cleaner with the
+  Vite client build (the rig imports Phaser — the studio should boot a minimal Phaser scene, NOT
+  reimplement rendering).
+- SOURCE OF TRUTH: the studio reads AND writes the catalog authoring format
+  (`data/weapon-concepts-300.json` combo/pose/grip/performance fields) through a small local save
+  endpoint, then triggers `pnpm gen` (or instructs a one-click regen). NO parallel animation
+  format. A studio save is an ordinary git diff.
+
+## Features (v1)
+1. **Stage**: character picker (WHOLE_ART_CHARACTERS) x weapon picker (active catalog, searchable);
+   real rig render, BOTH facings side by side; zoom; combat-scale toggle.
+2. **Playback**: timeline scrubber over the weapon's combo beats; play/pause/loop; 0.1x-2x speed;
+   onion-skin ghost of the previous beat; beat boundaries + timing windows drawn on the timeline.
+3. **Drag-drop editing**: on-canvas handles for grip points (primary/secondary), idle-hand pose
+   anchors, and per-beat path targets (arc endpoints/reach). Dragging writes the corresponding
+   authoring fields live; render updates immediately.
+4. **Tweak panel**: per-beat numeric/slider editing of timing (activeStart/End/impact/followEnd),
+   path kind/arc/range/damage multipliers, motion name, ribbon profile; pose-language idle
+   selection; weapon displayLength/gripFrac. Schema-validated inputs — reject what the model
+   cannot express with a clear message (never silently approximate).
+5. **Save/Load round-trip**: save to the JSON row, regen, and a "reload game" hint; dirty-state
+   indicator; snapshot/restore (single-level undo of the row on disk).
+6. STANDING LAWS enforced in-editor: no character displacement fields for melee (hide/lock them),
+   gun recoil field visible read-only (B45 owns it), no chain/aura authoring affordances.
+
+## Guardrails
+- DEV TOOL ONLY: zero changes to game runtime code beyond (if strictly needed) exporting existing
+  rig functions. Parallel Sol B45 edits movement/recoil — do not touch those surfaces.
+- LF endings; no schema changes; migrate nothing — this is additive tooling.
+
+## Verification
+- `pnpm typecheck` + FULL `pnpm test` green (tool code typechecks; add a round-trip unit test:
+  load row -> programmatic edit -> save -> reload -> identical).
+- Live proof on PRIVATE EPHEMERAL PORTS: boot the studio headless (playwright), load
+  proto-cowboy-hidden-face + a katana, scrub the combo, drag a grip point, save, assert the JSON
+  row changed + regen passes. Screenshots of the studio UI (stage/timeline/panel) retained under
+  `docs/owner-notes-audit-v11-evidence/b46-pose-studio/`.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Report at
+`docs/sol-reports/impl-b46-pose-studio.md` (integration choice + UI map). FINAL line = verdict:
+studio boots, drag-edit round-trip proven, laws enforced, evidence path, files touched.

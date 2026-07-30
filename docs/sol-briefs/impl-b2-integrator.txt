@@ -1,0 +1,68 @@
+You are Sol `impl-b2-integrator` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b2-integrator
+(branch sol/b2-integrator). IMPLEMENTATION — CATALOG INTEGRATOR. Autonomous — no questions. Report
+incrementally. NO live-stack boot; unit + catalog census + live gate on private ephemeral ports is the
+acceptance.
+
+## Context
+The 7 B2 art assets are ALREADY installed in main:
+- `packages/client/public/sprites/x2-unicorn-rainbow-beam/part-1.png`
+- `packages/client/public/sprites/x2-fish-launcher/part-1.png`
+- `packages/client/public/sprites/x2-squeaky-mallet/part-1.png`
+- `packages/client/public/sprites/x2-exploding-present-lobber/part-1.png`
+- `packages/client/public/sprites/x2-bubble-wand-swarm-caster/part-1.png`
+- `packages/client/public/sprites/x2-boomerang-boot/part-1.png`
+- `packages/client/public/sprites/x2-confetti-cannon/part-1.png`
+
+Each has a corresponding art-Sol report at `docs/sol-reports/impl-b2-art-<slug>.md` with prompt used,
+theme, and pixel dimensions — READ those before wiring the weapon defs so `artPrompt`/`theme` in the
+concepts JSON stay coherent.
+
+## Your job — wire full WeaponDef entries + manifest + tests
+For each of the 7 B2 subjects, produce:
+
+1. **Concept entry** in `data/weapon-concepts-300.json` with COMPLETE gameplay fields (behavior
+   signature, grip/size/rangeBand, stats, cadence, damage, range, muzzle offsets, etc.). Behavior per
+   the ledger's B2 spec:
+   - **Unicorn Rainbow Beam** — beam weapon; MUST use the anchored beam path (Frostquill/Stormcaller
+     idiom, see `docs/sol-reports/v7-beam-structures.md`); broad ribbon silhouette; 5-strand rainbow
+     colouring layered over the beam.
+   - **Fish Launcher** — gun-style launcher, cone-of-fishes spread, wet-slap on-hit VFX.
+   - **Squeaky Mallet** — melee blunt (mauler/quake-mauler family); squeak-on-hit SFX; short reach; big
+     damage per hit + long cooldown (Zelda hammer idiom).
+   - **Exploding Present Lobber** — arced grenade lob; on-detonation confetti-shrapnel VFX.
+   - **Bubble Wand Swarm Caster** — caster spawning multiple bubble projectiles that home slightly (or
+     drift toward cursor line); pop on hit for small AoE.
+   - **Boomerang Boot** — thrown returning; own-sprite projectile; comes back to the player.
+   - **Confetti Cannon** — shotgun-style spread of confetti-shrapnel (visually chaotic, mechanically
+     shotgun); loud recoil.
+2. **Manifest entry** in `packages/client/src/sprites/manifest.ts` — copy structural shape from an
+   existing similar-behavior weapon (e.g. Frostquill for the beam, Slughammer for the mallet, Hexbore
+   for the gun-lobber, etc.). Use the actual pixel dimensions from each art-Sol report.
+3. **Muzzle definitions** in `packages/shared/src/weapon-muzzles.generated.ts` (or its authored input) —
+   place the muzzle at the visible business-end pixel of each PNG.
+4. **VFX recipe** in the shipped `packages/client/src/vfx/*` for weapons that need one (rainbow beam:
+   5-strand ribbon; present lobber: confetti burst; bubble caster: pop; confetti cannon: burst; etc.).
+5. Add/extend catalog tests: 7 new expansion weapon rows appear, distinct behavior signatures, NO two
+   share the same visual+mechanical signature, referenced textures exist with visible alpha bounds.
+
+## Guardrails
+- Ledger's "no palette swap" rule — each of the 7 must have a DISTINCT behavior signature.
+- STANDING chain/tassel/rope BAN — see the shipped `data/owner-notes.jsonl` note and my
+  `~/.claude/projects/*/memory/ddv2-no-chain-physics.md` if visible; no design here should require
+  physics we don't have.
+- Preserve nominal DPS reasonableness — mid-tier melee ≈ 15 DPS, mid-tier gun ≈ 20 DPS ballpark.
+- Do NOT touch pets, whole-art characters (proto-*), or B17's pose-language schema. Do NOT change B3's
+  three fan weapons (`x2-iron-war-fan`, `x2-ember-fan`, `x2-storm-fan`) — the B3 integrator owns those.
+- LF endings only. NO CRLF.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check`. `pnpm typecheck`. FULL `pnpm test` green. `pnpm assets:check` green.
+- Live gallery on PRIVATE EPHEMERAL PORTS (never 5180/2567) — fire each of the 7 weapons on both
+  facings, prove: rainbow beam is muzzle-anchored + broad; each weapon deals damage and produces
+  distinct VFX. Retain evidence under `docs/owner-notes-audit-v10-evidence/b2-wacky/`.
+
+## Rules
+Worktree; commit on sol/b2-integrator; orchestrator merges. FIRST: write `docs/sol-reports/impl-b2-integrator.md`
+(understanding + per-weapon behavior signature + plan). Append per weapon. FINAL line = verdict: 7 wired,
+7 distinct behavior signatures, DPS ballpark, evidence path, files touched, weapon-count census
+(325 → 332).

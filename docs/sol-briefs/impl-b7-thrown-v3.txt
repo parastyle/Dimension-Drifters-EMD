@@ -1,0 +1,47 @@
+You are Sol `impl-b7-thrown-v3` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b7-thrown-v3
+(branch sol/b7-thrown-v3). IMPLEMENTATION. Autonomous — no questions.
+
+## CRITICAL PROCESS RULES (read first — prior runs of this task HUNG twice)
+- Do NOT boot a live server / Vite / Playwright / ephemeral stack. NO live gate. Verification is
+  UNIT-TEST ONLY (see below). Booting a stack is what hung the prior attempts.
+- Report INCREMENTALLY: after EACH of the 3 weapons, append a line to your report file. Do not batch.
+- Keep it small and mechanical. This is a data + light-behavior change, not a systems rewrite.
+
+## YOUR ORDER — convert 3 weapons to thrown (BATCH B7). READ ledger section B7 in
+`docs/sol-reports/notes-ledger-v9.md` for the owner notes. Concrete work:
+
+The canonical thrown pattern already in the catalog (copy it) is `x2-bogwater-twinbits` in
+`data/weapon-concepts-300.json`:
+    "behavior": { "kind": "thrown", "speed": …, "range": …, "damage": …, "charges": …, "refillSeconds": …, "pierce": … }
+    "performance": { "hold": "steady", "action": "throw-release", "suppressSwing": true, "carryAngleRad": … }
+
+1. **Sidewinder Spontoon** (`x2-sidewinder-spontoon`) — currently `edge`. Convert its `behavior.kind`
+   to `thrown` + `performance.action: "throw-release"` (suppressSwing true), mirroring bogwater-twinbits.
+   Choose thrown speed/range/charges consistent with a hurled spontoon and PRESERVE its nominal DPS
+   (compute damage×charges/refill to match its prior sustained DPS; document the math in your report).
+   Its projectile reuses its OWN existing held art (own-sprite thrown, like the other thrown weapons).
+2. **Stormcrow Twin-Hatchets** (`x2-stormcrow-twin-hatchets`) — currently `chainLightning`. Convert to
+   `thrown` own-sprite the same way. PRESERVE its intended electric/chain effect if the schema supports a
+   thrown weapon carrying an on-hit effect; if not cleanly expressible, keep the thrown conversion and
+   note the effect as a follow-up. Preserve nominal DPS.
+3. **Boothook Harpoon** (`x2-boothook-harpoon`) — ALREADY thrown. Do NOT change its behavior. ADD an
+   over-the-shoulder wind-up/release: set/adjust `performance.carryAngleRad` (and any release-pose datum
+   the schema has) so it releases from behind/over the shoulder. Preserve its NO-SPIN requirement
+   (spinRevolutions 0 or equivalent) and current speed.
+
+## Verification (UNIT TEST ONLY — no live stack)
+- Run `pnpm gen` after the data edits; keep `pnpm gen:check` + `pnpm assets:check` green and the server
+  census booting. `pnpm typecheck`. FULL `pnpm test`.
+- CREATE `tests/b7-thrown.test.ts` asserting, from the built `@dd/shared` WEAPONS: sidewinder-spontoon
+  and stormcrow-twin-hatchets each have `behavior.kind === "thrown"` and `performance.action ===
+  "throw-release"`; boothook-harpoon stays thrown, no-spin, with the new over-shoulder carryAngleRad
+  (assert its sign/range). Assert each weapon's nominal DPS is within ~1% of its pre-change value (encode
+  the pre-change DPS numbers as constants from your own computation). Do NOT weaken existing assertions.
+- LF endings ONLY. If any census/count test breaks because delivery-lane counts shifted (edge→thrown,
+  chainLightning→thrown), update that census to the new correct number (document it).
+
+## Rules
+Worktree; commit on sol/b7-thrown-v3; orchestrator merges. Do NOT touch the main working copy or ports
+5180/2567. FIRST action: write `docs/sol-reports/impl-b7-thrown-v3.md` (thrown schema understanding +
+per-weapon plan + the DPS math). Append after EACH weapon. FINAL line = verdict with per-weapon
+before/after behavior + DPS, census changes, files touched.

@@ -1,0 +1,42 @@
+You are Sol `impl-b41-ice-slide` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b41-ice-slide
+(branch sol/b41-ice-slide). PLAYFEEL BUG FIX. Autonomous — no questions.
+
+## The owner's bug report (verbatim, 2026-07-24)
+"alot of times Im attacking while moving, and then I stop pressing anything and my character looks
+like hes sliding on ice for 3 seconds"
+
+## Orchestrator's prime suspect (verify, don't assume)
+The attack-while-moving speed path was changed twice recently and hand-merged:
+- B33 (`4357e9c`): `playerAttackInputSpeedMultiplier(attackMoveMode)` — attack slows input speed;
+  root motion replaces input.
+- B34 L1 (`6d98a21` + merge `c75c238..`): belt X-bound clamps threaded through
+  `stepSteeredMovement` + `stepImpulse` in `packages/client/src/net/prediction.ts` (~line 470).
+The orchestrator's conflict resolution composed the B33 multiplier INSIDE B34's new call shape on
+the CLIENT; verify the SERVER (`GameRoom` movement step) applies the identical multiplier at the
+identical point. Any client/server disagreement while attackMoveMode is active produces a steady
+prediction error that the reconciler smooths as a long glide after input release. Also check:
+(a) whether attackMoveMode LINGERS after the attack ends (stale mode = stale multiplier), and
+(b) movement velocity damping — mvx/mvy decay on zero input (should stop in a few ticks, not 3s).
+
+## Your job
+1. REPRODUCE deterministically: unit-level (simulate move+attack, release input, assert stop
+   within N ticks on both server sim and client prediction; they must agree tick-for-tick) and
+   live (private ports; capture telemetry of position after input release).
+2. ROOT-FIX so client prediction and server movement are bit-identical through attack, release,
+   and recovery. Character stops crisply (existing non-attack stop feel is the reference).
+3. Add a regression unit test pinning client/server movement parity during+after attacking, and
+   a stop-within-N-ticks assertion.
+
+## Guardrails
+Parallel Sols: B40 (SpriteRig flourish), B36 (martial combos — may touch GameRoom combo code;
+your scope is the MOVEMENT step, rebase at merge). Do not change attack-slow DESIGN (the modest
+slow stays; only the desync/lingering dies). LF endings; migrate tests.
+
+## Verification
+`pnpm typecheck` + FULL `pnpm test` green; live capture both arena and belt mode showing crisp
+stops after attack-move. Evidence under `docs/owner-notes-audit-v11-evidence/b41-ice-slide/`.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Report at `docs/sol-reports/impl-b41-ice-slide.md`.
+FINAL line = verdict: root cause named, parity restored, stop ticks before/after, evidence path,
+files touched.

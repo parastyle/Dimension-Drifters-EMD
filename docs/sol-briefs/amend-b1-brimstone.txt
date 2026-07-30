@@ -1,0 +1,33 @@
+You are Sol `amend-b1-brimstone` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b1-brimstone-traj
+(branch sol/b1-brimstone-traj). IMPLEMENTATION. Autonomous — no questions. Report incrementally. NO
+live-stack boot (unit + focused test is the gate).
+
+## YOUR ORDER — B1 amendment (Brimstone Rocket Tube trajectory) per `docs/sol-reports/notes-ledger-v10.md`
+The ledger flagged (row 404) a straight-flight diagnosis vs render discrepancy on Brimstone Rocket Tube
+(`x2-brimstone-rocket-tube`). Owner note (verbatim from `data/owner-notes.jsonl` — check the last-added
+2026-07-23 rows for Brimstone) is the authority.
+
+## Job
+1. **Diagnose first.** Read the ledger's row 404 note, the current projectile flight/trajectory
+   handling for Brimstone in `data/weapon-concepts-300.json`, the shared authority path in
+   `packages/server/src/rooms/GameRoom.ts`, and the client render/animation path in
+   `packages/client/src/scenes/arena/projectile-factory.ts` + arena projectile step. Determine whether
+   the authority sends a straight line and the client renders a curve (or vice versa) — precisely name
+   the file:line seam causing the mismatch.
+2. **Fix minimally.** Keep it CATALOG-FREE unless evidence proves an authored trajectory field is
+   necessary (per the ledger). Preserve DPS + range + damage + cadence. The visible arc/straight
+   behavior must match the authoritative flight path exactly — WYSIWYG.
+3. Add a focused test proving the fix: after N ticks, client-render position equals authoritative
+   position within tolerance, and the visual arc/straight profile matches what the server computes.
+
+## Guardrails
+- Do NOT change combat authority damage/cadence, projectile geometry beyond the reported bug, muzzle
+  points, or 6-part manifest offsets. No pets.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` if you touch data. `pnpm typecheck`. FULL `pnpm test` green. LF only.
+
+## Rules
+Worktree; commit on sol/b1-brimstone-traj; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b1-brimstone.md` (diagnosis first — file:line seam, then plan). Append. FINAL
+line = verdict: root-cause file:line, minimal fix, evidence, files touched.

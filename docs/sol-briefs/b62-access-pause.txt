@@ -1,0 +1,56 @@
+You are Sol `b62-access-pause` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b62-access-pause
+(branch sol/b62-access-pause). TWO AUDIT FINDINGS. Autonomous.
+
+Read `docs/sol-reports/audit-design-practice.md` findings **2** and **6** first.
+
+## Finding 2 — every accessibility setting exists but has NO UI (Critical, S)
+Eleven settings are fully implemented and consumed by the game. There is no way for a player to reach
+any of them. The work is already done except the panel.
+
+Build one options panel in `MenuScene` writing through the existing `updateSettings` path. Do not
+re-implement or re-plumb the settings themselves — find what is already wired and expose ALL of it.
+Enumerate every setting you found and confirm each one is reachable; a panel that surfaces eight of
+eleven is a failed batch.
+
+Reduced-motion and any other accessibility affordance must be honest — if a setting claims to reduce
+motion, verify it actually does at the consumption site rather than trusting the name.
+
+## Finding 6 — no pause at all, in a co-op game whose spec LOCKED a consensus pause (High, M)
+There is no pause key, no pause menu, and no server pause message. The only `scene.pause()` in the
+arena (`ArenaScene.ts:2783`) fires solely on the post-run branch.
+
+The spec's locked wording is consensus-based: *it only pauses once every player confirms — no
+unilateral pause in online co-op.* Honour that.
+
+- **Solo** (`players.size === 1`): `Esc` pauses immediately and HALTS THE SERVER TICK. Not a visual
+  freeze over a running sim — if the tick keeps running, enemies keep hitting a player who thinks the
+  game is paused, which is worse than no pause.
+- **Multiplayer**: a `pauseVote` server message plus a HUD strip showing who has confirmed.
+- Ship the solo half first and make sure it is correct before layering the vote.
+
+**Standing project law: never interrupt gameplay with a modal.** Pause is the exception ONLY because
+the player asked for it — it must be dismissible instantly, must never appear unprompted, and must
+never steal input while the game is live.
+
+## Guardrails
+- **The owner is working on map art in `packages/shared/src/mapgen.ts`,
+  `packages/client/src/scenes/arena/floor-renderer.ts`, and `packages/client/public/tiles/**`.
+  DO NOT TOUCH THOSE THREE. Not even formatting.**
+- Parallel Sols own durable settlement (`packages/server` persistence) and weapon/relic description
+  text. Stay out of both.
+- Bump `SCHEMA_VERSION` if the wire shape changes (the pause message will); update every test pinning it.
+- LF endings.
+
+## Verification
+`pnpm gen` + `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green. Then live:
+- Open the options panel, toggle every setting, confirm each takes effect. Capture it:
+  `docs/sol-reports/b62-evidence/options-panel.png`.
+- Pause solo mid-fight and confirm enemies actually STOP — not just that a panel appeared. Capture:
+  `docs/sol-reports/b62-evidence/pause-solo.png`.
+State what you observed for both, specifically.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b62-access-pause.md` listing
+all eleven settings and whether each is now reachable and verified honest, plus the pause design and
+what halts on pause. FINAL line = verdict: N/11 settings exposed, pause solo + vote status, test
+result, capture paths.

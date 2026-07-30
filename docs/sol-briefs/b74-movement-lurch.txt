@@ -1,0 +1,77 @@
+You are Sol `b74-movement-lurch` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b74-movement-lurch
+(branch sol/b74-movement-lurch). OWNER-REPORTED MOVEMENT DEFECT + A DOCTRINE CHANGE. Autonomous.
+
+## Owner order (verbatim, 2026-07-26)
+
+Defect:
+> "when I walk diagonal backwards down my character starts taking really consistent lumpy movement
+> lurches in that direction. There should be no character lurching. Character should move at 1 speed
+> constantly unless attacking or parrying or is slow by like...idk ice or something"
+
+Doctrine change (supersedes earlier jiggle direction):
+> "I take it back, we dont need jiggly bouncy physics if we can't pull it off, feet hands and heads DO
+> need physics while moving and idle though"
+
+## Part 1 — THE LAW: one constant speed
+**The character moves at ONE CONSTANT SPEED.** The only permitted modifiers are:
+- attacking
+- parrying
+- an explicit environmental slow (ice or similar)
+
+Nothing else may alter speed. No lurching, no pulsing, no per-direction variation, and specifically
+**no diagonal anomaly**. Diagonal movement must be the same speed as cardinal movement — if the
+vector is not normalised somewhere, or is normalised twice, that alone can produce exactly the
+"consistent lumpy lurches" being reported.
+
+The report says **diagonal BACKWARDS-DOWN** specifically, and calls the lurching *consistent* —
+periodic, not random. That is a strong hint: look for something phase-locked. Candidates worth
+checking early — a locomotion/gait cycle feeding back into velocity, the turn-hitch system
+(`MOVE_HITCH_MIN_ANGLE`, `MOVE_HITCH_DIP`, `MOVE_HITCH_MIN_SPEED` in
+`packages/shared/src/constants.ts`) mis-triggering when facing and movement disagree, a
+backpedal/reverse modifier, or depth-sort/Y-band interaction on downward motion.
+
+Facing away from the movement direction is the distinguishing feature of "backwards" — check any code
+that treats move-vector-vs-aim-vector divergence as a reason to modify speed.
+
+**Add a regression test**: sample speed over a run of frames in all 8 directions, forward and
+backpedalling, and assert it is CONSTANT within a tight tolerance. That test is the deliverable that
+stops this recurring.
+
+## Part 2 — limb physics doctrine
+The owner has RETRACTED the general jiggle/bouncy-physics direction. Replace it with:
+- **Feet, hands, and head MUST have physics — while MOVING and while IDLE.** Idle is explicitly
+  included; a statue standing still is wrong.
+- General "jiggly bouncy" secondary motion elsewhere is NOT required. If it is costing stability,
+  fidelity or frame time, remove it rather than fight it.
+
+Audit what exists (`PROCEDURAL_JIGGLE`, `JIGGLE_HAND_W`, `JIGGLE_HAND_Z`, `JIGGLE_HANDOFF_MAX_V` and
+the jiggle references across `packages/client/src/entities/rig/*`) and reshape it to that ruling.
+Keep it subtle and stable — critically damped, not springy overshoot.
+
+## Build on what just landed — do not undo it
+`b68-silky-limbs` shipped and is merged: one `PresentedActorState` per frame, three presentation
+clocks unified to one, root correction debt isolated from pose, and a total limb-priority layer with
+90ms blend-in / 130ms blend-out. **Keep all of it.** Read `docs/sol-reports/b68-silky-limbs.md` first.
+Limb physics must run as a servant inside that priority system, never as a competing writer.
+
+Also standing: weapon attacks never displace the character (gun recoil is the sanctioned exception);
+no player auras; never interrupt gameplay with a modal.
+
+## Verification
+- `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green **twice consecutively**.
+- `tools/diag-rb-telemetry.mts` completes all scenarios with ZERO requests/applications/snaps/pixels
+  in BOTH top-down and belt. Do not buy smoothness with correction traffic.
+- Your new constant-speed test passes for all 8 directions including backpedalling.
+- Keep `b68`'s smoothness regression test passing in both modes.
+- Live: walk diagonal backwards-down and confirm the lurch is gone. State before/after speed samples.
+
+## Guardrails
+- Parallel Sols own: the lava dimension + map files, the walkability painter, and guns 16-30
+  (`data/weapon-concepts-300.json`). Stay out of all of them.
+- Bump `SCHEMA_VERSION` if wire shape changes; update every test pinning it. LF endings.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b74-movement-lurch.md` with
+the lurch root cause, before/after per-direction speed samples, what you changed in the limb physics
+and why, and confirmation b68's guarantees still hold. FINAL line = verdict: lurch cause+fix,
+8-direction speed variance, limb physics state, telemetry, 2x test results.

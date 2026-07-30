@@ -1,0 +1,64 @@
+You are Sol `impl-b14-art-drunken-fist` in the ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b14-art-drunken-fist
+(branch sol/b14-art-drunken-fist). ART-ONLY. Autonomous — no questions. Report incrementally. NO
+live-stack boot.
+
+## Your ONE subject
+**Name:** Drunken Fist Wraps
+**Final id:** `x2-drunken-fist-wraps`
+**Generation prompt (verbatim — do not restyle; use this exact prompt):**
+"Weapon-only in-world sprite: a matched pair of loose, unravelling Drunken Fist hand-wraps — old worn cotton/hemp cord loosely bound, small clay wine-gourd bottle painted rigidly strapped to one wrist (static, no dangling cord), fingers half-loose from the wrap. Weathered warm tan/amber colouring, stained. Gritty dark-comic cel, ~4–8 colours. Flat orthographic side profile, faces RIGHT with the loose knuckles UP-RIGHT to imply the tilted stance. Flat #00ff00 background. No character, no motion lines."
+
+## READ NOW the common brief (all standing rules, art-style contract, deliverables, verification):
+Contents of C:/Users/Exped/AppData/Local/Temp/claude/C--Users-Exped-DDv2/a77d4384-de26-420e-a954-33923a9ca83d/scratchpad/ship/_art-sol-common.md follow below verbatim. Follow them exactly:
+
+## COMMON RULES for B2/B3 art Sols
+
+You are an ART-ONLY Sol. Your job: generate ONE weapon subject sprite and install it. Do NOT
+touch weapon behavior, weapon defs, generator logic, or the catalog integrator's files.
+
+## Standing laws
+- ONE image subject only (the standing "one subject per agent" law). NEVER generate any other
+  weapon subject in this run. Bleed between subjects is the exact failure this law prevents.
+- LF endings only. No CRLF anywhere in text files you touch.
+- NO live-stack boot. Unit / static asset checks are the gate.
+- Worktree isolation — you are already in your own git worktree. Commit on your branch.
+
+## Art brief — the visual style contract (all DDv2 weapons follow this)
+- Flat orthographic side profile, weapon-ONLY (no character, no background, no scene).
+- Weapon faces RIGHT (blade/muzzle/business-end to the right of frame).
+- Flat #00ff00 (pure green) background — the chroma-key input for the shipped keyer.
+- Gritty dark-comic cel treatment; ~4–8 colors in the weapon; readable silhouette at small scale.
+- Preserve the same visual density and stroke weight as existing weapons in
+  `packages/client/public/sprites/x2-*/`.
+
+## Chain/tassel/rope BAN (standing owner rule)
+NO chains, tassels, ropes, whip cords, yo-yo strings, pendulum lines, or any flexible dangling
+element. DDv2 has no chain-physics simulation — such designs read broken. Rigid one-piece
+weapons, beams, ballistic projectiles, and gas/cone/arc effects only. If your subject has a
+"handle wrap" or "grip cloth" it must be a static painted texture that doesn't dangle.
+
+## Deliverables
+1. Generate the art via the shipped ArtKit pipeline:
+   `tools/artkit/harvest-install.mjs` (the same tool `char-rig-batch2` and prior weapon Sols used).
+   Follow its conventions.
+2. Install to `packages/client/public/sprites/<your-final-id>/part-1.png`.
+3. Add ONE manifest entry in `packages/client/src/sprites/manifest.ts` under the weapon block:
+   `"<your-final-id>": { id: "<your-final-id>", kind: "weapon", parts: [{ id: "part-1", ...offsets }] }`
+   — copy an existing similar weapon's manifest shape for offsets/scale.
+4. Add ONE STUB weapon-concept row in `data/weapon-concepts-300.json` with:
+   - `id` = your final id (e.g. `x2-unicorn-rainbow-beam`)
+   - `name`, minimal `theme`/`artPrompt` reflecting the generation you did
+   - Behavior fields LEFT BLANK / placeholder — the B2 or B3 catalog integrator wires the actual
+     behavior signature (beam/thrown/melee/hybrid) per the ledger's per-subject spec.
+   - Include a `_stub: true` marker so the integrator can find these and detect any that were
+     never integrated (safety net).
+
+## Verification
+- The installed PNG chroma-keys cleanly (no green fringe). Verify with the shipped keyer.
+- `pnpm typecheck` must pass. `pnpm gen` need NOT run (integrator will regenerate). But the
+  manifest entry and JSON stub must be syntactically valid.
+- The finished PNG is > 200x200 native, < 2048x2048.
+
+## Reporting
+FIRST: write `docs/sol-reports/impl-b2-art-<slug>.md` (or `impl-b3-art-<slug>.md`) with your plan.
+Append. FINAL line = verdict: your subject id, PNG path, prompt used, and pixel dimensions.

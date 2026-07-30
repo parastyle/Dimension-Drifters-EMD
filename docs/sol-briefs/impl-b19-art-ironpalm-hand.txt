@@ -1,0 +1,42 @@
+You are Sol `impl-b19-art-ironpalm-hand` in the ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b19-art-ironpalm-hand
+(branch sol/b19-art-ironpalm-hand). ART-ONLY. Autonomous — no questions. Report incrementally. NO live-stack boot.
+
+## Context — owner rework order (B19, 2026-07-23)
+The shipped kung-fu wrap art violates the character style: our characters' hands/feet are plain
+finger-free BLOB shapes, but the wraps were painted with human fingers — and some were generated as
+a fused PAIR in one sprite, which rendered 4 wrapped hands on one character. You are regenerating
+ONE hand wrap as a SINGLE item matching the blob style. The rig duplicates it per hand.
+
+## Your ONE subject
+**Name:** ironpalm single hand wrap (rework for `x2-iron-palm-wraps`)
+**Install path (OVERWRITE):** `packages/client/public/sprites/x2-iron-palm-wraps/part-1.png`
+**Generation prompt (verbatim — do not restyle; use this exact prompt):**
+"Weapon-part sprite: a SINGLE wrapped training fist for a cartoon blob character — a plain OVAL mitt shape (like an egg) with NO fingers, NO thumb, NO knuckle digits,
+wrapped in a slate-grey cloth base with riveted dark-iron plates over the striking face, with a studded iron knuckle ridge and worn metal scratches. Rounded closed silhouette that reads as a bandaged
+blob fist at small scale, ~4-6 colours, gritty dark-comic cel treatment with hard outlines.
+EXACTLY ONE single fist — never a pair, no second copy anywhere in frame. Flat #00ff00
+background. No character, no limb, no scenery — the wrapped fist only."
+
+## Shape reference (READ these images before generating)
+- `packages/client/public/sprites/proto-cowboy-hidden-face/hand-l.png` — the character's blob hand this wrap must read as a wrapped version of.
+- `packages/client/public/sprites/x2-iron-palm-wraps/part-1.png` — current (defective) art, palette reference ONLY.
+
+## Standing laws
+- ONE image subject only. LF endings only. NO live-stack boot. Commit on your branch.
+- NO fingers/thumbs/toes/digits of any kind — REJECT and regenerate if any appear.
+- EXACTLY ONE item — REJECT and regenerate if the output contains a pair.
+- Chain/tassel/rope BAN — wrap ends must be flush/tucked, nothing dangling.
+
+## Deliverables — ART ASSETS ONLY
+1. Generate via the shipped ArtKit pipeline (`tools/artkit/harvest-install.mjs` conventions).
+2. Overwrite `packages/client/public/sprites/x2-iron-palm-wraps/part-1.png` with the keyed result.
+3. Do NOT touch the manifest, weapon defs, catalog rows, or ANY shared/generated file — the B19
+   integrator re-measures dims and wires everything. PNG + report only.
+
+## Verification
+- PNG chroma-keys cleanly (no green fringe). > 200x200 native, < 2048x2048.
+- Visual self-check: exactly one fist, zero digits, closed blob silhouette.
+
+## Reporting
+FIRST: write `docs/sol-reports/impl-b19-art-ironpalm-hand.md` with your plan. Append.
+FINAL line = verdict: subject id, PNG path, prompt used, pixel dimensions, digit-free + single-item confirmation.

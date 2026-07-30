@@ -1,0 +1,70 @@
+You are Sol `b66-design-20` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b66-design-20
+(branch sol/b66-design-20). DESIGN ONLY — AUTHOR NO ART, WRITE NO WEAPON ENTRIES. Autonomous.
+
+## Owner order (verbatim, 2026-07-26)
+> "Overnight, make another 20 weapons. Give them all their own painted ammunition, muzzle flashes if
+> needed, the works."
+
+Your job is to produce the **ORDER DOCUMENT** for those 20 — the roster that 20 separate Sols will
+each build one row of. You do not build any of them. Getting this document right is the whole batch.
+
+## Why this exists — read the precedent first
+Read `docs/sol-reports/order-b63-modern-guns.md` in full, especially amendments A1–A5. That order is
+the working template and it was learned the hard way:
+
+- **A1 — NEVER NAME A REAL WEAPON in any prompt, theme or artPrompt.** Naming a real model makes the
+  image generator retrieve its catalogue photo and render it realistically, which overpowers every
+  style instruction. An entire wave was discarded for this. Describe the SHAPE, never the NAME.
+- **A5 — DIMENSION = WEAPON CULTURE.** The B63 guns are the player force's own issue-grade kit. The
+  battered, improvised, fantasy hardware already shipped (coffin magazines, gallows rifles, wrapped
+  grips) belongs to OTHER dimensions and is explicitly still wanted.
+- **ONE SOL, ONE WEAPON.** Never batch subjects; themes bleed.
+
+**These 20 are NOT more cop-dimension guns.** B63 already covers that. Make these the *other*
+dimensions' weapons — the trashy, fantasy, characterful hardware the owner said they want to keep
+making. Draw variety across melee, caster and ranged rather than 20 more rifles.
+
+## What each of the 20 rows must specify
+1. **Name** in the house voice (look at shipped names: Brimstone Gallows Rifle, Dustdevil Riotgun,
+   Quicksilver Streetstomper, Driftblade).
+2. **Family / type** (`melee` | `ranged` | `caster`) and where it sits against the existing roster —
+   every row needs a reason to exist that is not "another sword".
+3. **FORM: a pure shape description containing NO real-world proper noun.** This is what reaches the
+   prompt. Concrete and drawable.
+4. **CHARACTER: the fantasy/gamification hook** — what makes it a Dimension Drifters prop.
+5. **Its dimension / culture** — which world's hardware is this? Use the shipped dimension themes
+   where they fit (`frostfell`, `verdant-ruins`, `ashlands`, `neon-cyber`, `wild-west`).
+6. **PAINTED AMMUNITION — mandatory, owner-ordered.** Every one of the 20 gets its OWN bespoke
+   projectile art. Specify what the projectile IS. Look at
+   `packages/client/public/projectiles/` for the established treatment. A melee weapon with no
+   projectile still needs its signature hit/arc VFX specified instead — nothing ships generic.
+7. **Muzzle flash** where the weapon has a muzzle — see `tools/artkit/gen-weapon-muzzles.mjs` and
+   `packages/client/public/muzzle-reference/` for the existing language. Say when one is NOT needed.
+8. **Balance intent** in one line, so 20 Sols do not all pick identical numbers.
+
+## Standing laws to restate in the order so every Sol sees them
+- No chains, tassels, ropes or anything that dangles — we have no physics for them.
+- No player auras, ever.
+- Weapon attacks never displace the character (gun recoil is the one sanctioned exception).
+- No text, logos or maker's marks in weapon art.
+- Art contract: weapon-only sprite, flat orthographic full side-profile, ~4–6 colours plus bold black
+  ink, faces RIGHT — muzzle right, grip left.
+- House render: near-black base, heavy internal ink, one accent, slight exaggeration, flat cel planes.
+
+## Deliverable — ONE FILE
+`docs/sol-reports/order-b66-twenty-weapons.md`, structured like the B63 order so it can be fanned out
+mechanically: a laws section, a summary table, then one detailed block per weapon.
+
+**Do NOT** write entries into `data/weapon-concepts-300.json` (24 gun Sols are appending to it right
+now), do NOT generate art, do NOT touch code.
+
+## Guardrails
+- Owner map files off limits: `packages/shared/src/mapgen.ts`,
+  `packages/client/src/scenes/arena/floor-renderer.ts`, `packages/client/public/tiles/**`.
+- Read the shipped roster before designing so your 20 do not duplicate what exists. State explicitly
+  how each avoids collision with a shipped weapon.
+- LF endings. Documentation only — nothing to typecheck or test.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. FINAL line = verdict: 20 rows, type split
+(melee/ranged/caster), dimensions represented, projectile+muzzle coverage, collisions checked.

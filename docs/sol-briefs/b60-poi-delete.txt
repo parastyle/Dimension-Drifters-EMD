@@ -1,0 +1,55 @@
+You are Sol `b60-poi-delete` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b60-poi-delete
+(branch sol/b60-poi-delete). DELETION BATCH — REMOVE, DO NOT REDESIGN. Autonomous.
+
+## Owner ruling (verbatim, 2026-07-25)
+> "No landmarks, only destructible environments that don't get in our way, like crates, tumbleweeds,
+> tables...(all of them btw should be able to break, dodge rolling through a crate should break it)
+> MAYBE in the tunnels we'll have obstacles as cover since its horizontal, but not the dimensions."
+
+Read `docs/sol-reports/spec-dimension-art-direction.md` §-1 R7 FIRST. It is binding and it is the
+whole scope of this batch.
+
+## Your job — delete POI landmarks from DIMENSIONS
+POIs are the only asset class in a dimension drawn in two-point isometric, and the only blocking
+geometry besides pits. Both go.
+
+1. **Renderer** (`packages/client/src/scenes/arena/floor-renderer.ts`): remove `poiIds` / `poiDir`
+   from the `DimensionPropPack` type and from all five pack literals; remove the POI build/scatter
+   path and its preload. Keep DECALS — they stay and are unrelated.
+2. **Scene** (`packages/client/src/scenes/ArenaScene.ts`): remove the POI preload loop and any
+   lazy-load gate for a joiner whose synced dimension differs.
+3. **Mapgen** (`packages/shared/src/mapgen.ts`): remove `poiCollisionCircles` and its THREE call
+   sites (spawn validity, nav, collision), plus `PoiInstance` / `PoiCollisionCircle` and POI
+   placement. Dimensions end up with **pits as the only blocking geometry** — that is intended.
+4. **Assets**: delete the 31 POI PNGs — `packages/client/public/pois/**` (6 at the root for
+   wild-west, 6 frostfell, 6 verdant-ruins, 6 ashlands, 7 neon-cyber).
+5. **Tests**: update/remove every test that asserts POI placement, POI collision, or POI-aware
+   spawn validity. Do NOT weaken an assertion to make it pass — delete the ones whose subject is
+   gone, and fix the ones that merely referenced a POI incidentally.
+6. Bump `SCHEMA_VERSION` in `packages/shared/src/constants.ts` if the wire shape changes, and update
+   every test that pins it.
+
+## What you must NOT do
+- Do NOT build a destructible-prop system. It is a separate owner-approved batch. Zero gameplay
+  invention in this one.
+- Do NOT touch decals, tiles, rims, or the floor value work (a parallel Sol owns
+  `tools/artkit/gen-terrain-kits.mjs` and `packages/client/public/tiles/ashlands/`). Stay out of both.
+- Do NOT touch tunnels / the corporate LDtk map. Tunnels may still get cover later.
+
+## Watch for
+Removing all POI colliders may leave mapgen with dead code, unreachable nav branches, or spawn
+validity that now always returns true. Clean that up rather than leaving vestigial branches — but
+report anything whose removal changes gameplay beyond "no landmarks."
+
+## Verification (all must pass)
+- `pnpm gen` + `pnpm gen:check` clean
+- `pnpm typecheck` clean
+- FULL `pnpm test` green
+- Launch the game and confirm a dimension renders and is walkable with no landmarks and no invisible
+  walls. State which dimension you checked.
+
+## Rules
+Worktree; LF endings; COMMIT YOUR WORK; orchestrator merges. Write
+`docs/sol-reports/b60-poi-delete.md` listing every file touched, every test deleted vs fixed, and any
+dead code cleaned. FINAL line = verdict: N files, M assets deleted, T tests updated, test suite
+result, live-check result.

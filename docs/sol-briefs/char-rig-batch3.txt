@@ -1,0 +1,79 @@
+You are Sol `char-rig-batch3` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/char-rig-batch3
+(branch sol/char-rig-batch3). IMPLEMENTATION. Autonomous — no questions. Report incrementally. NO
+live-stack boot; a deterministic asset + roster + manifest test is the gate; the orchestrator does
+the live visual check.
+
+## Context — the WHY (owner's motivation, LOCKED)
+The owner is REMAKING all whole-art characters WITHOUT THUMBS on the hands. The v10 ledger row 412 flagged
+that hands were placed correctly but their painted THUMB direction didn't match the rig's facing; instead
+of adding thumb-rotation code, the owner authored a no-thumb hand style so the problem goes away at the
+source. Every character in this batch has ambiguous OVAL hands (no thumbs, no digits, no palm indicators).
+This is now a STANDING rule: character hands must not show thumbs — see memory
+`ddv2-no-chain-physics.md` neighbor rule if visible in this run.
+
+## Intake — 37 owner-authored no-thumb whole-art characters
+Raw sources at `data/character-proto-intake/proto-<slug>.png`, in the SHIPPED green-chroma template with
+6-part layout (head top, body middle, 2 mitts sides, 2 boots bottom, all rigid oval hands with NO thumbs).
+
+The 37 target ids (INSTALL FRESH SIX-PART RIGS for each):
+
+**Cowboy/hero-set (5):** `proto-cowboy-hidden-face` `proto-cowboy` `proto-ninja-purple` `proto-templar-knight`
+`proto-wizard`
+
+**Existing-name replacements (11) — these WHOLE-ART CHARACTER IDS ALREADY EXIST in main with
+thumb-having art from char-rig-batch2/char-rig-render; DELETE the old sprite dir and install fresh from
+the no-thumb intake source:**
+`proto-samurai` `proto-masked-oval-fighter` `proto-blob-bruiser` `proto-capsule-tactical-unit`
+`proto-armored-bean-heavy` `proto-hooded-rogue` `proto-soft-mascot-fighter` `proto-geometric-robot-pod`
+`proto-mutant-lump` `proto-paper-cutout-fighter` `proto-helmeted-enforcer`
+
+**Brand-new characters (21):** `proto-plague-doctor` `proto-pirate-captain` `proto-desert-nomad`
+`proto-cyberpunk-hacker` `proto-mushroom-alchemist` `proto-gothic-vampire-hunter` `proto-molten-forge-golem`
+`proto-frost-rune-guardian` `proto-toxic-wasteland-scavenger` `proto-space-miner` `proto-carnival-harlequin`
+`proto-clockwork-butler` `proto-swamp-shaman` `proto-bone-cleric` `proto-junkyard-mechanic`
+`proto-royal-executioner` `proto-alien-void-scholar` `proto-red-rebel-demon-hunter`
+`proto-red-rebel-demon-hunter-v2` `proto-blue-spectral-demon-hunter` `proto-punk-occult-summoner`
+
+## Also — RETIRE the two orphaned legacy characters
+`proto-sheriff` and `proto-witch` do NOT have no-thumb versions authored, and the owner did not include
+replacement art. RETIRE THEM:
+- Delete `packages/client/public/sprites/proto-sheriff/` and `packages/client/public/sprites/proto-witch/`
+- Remove their entries from the manifest + roster generator + `WHOLE_ART_CHARACTERS` subset + any test
+  that hardcoded them.
+- Keep their intake source files in `data/character-proto-intake/` untouched (historical record).
+
+**NEW DEFAULT_CHARACTER = `proto-cowboy-hidden-face`** (was proto-sheriff). Update the roster generator +
+the Sol 1 contract in `packages/server/src/rooms/GameRoom.ts` (its `DEFAULT_CHARACTER` derives from
+`packages/shared/src/characters.ts`, which is generated) so a no-selection player spawns as
+proto-cowboy-hidden-face. Every test that pins the old default to proto-sheriff must migrate.
+
+## The job — reuse the shipped char-rig-batch2 approach exactly
+1. Chroma-key each of the 37 sources using the shipped keyer (soft matte + despill), same as batch2.
+2. Slice via `tools/artkit/guards/slice.mjs` — head top, body central, hand-l/hand-r side, foot-l/foot-r
+   bottom. Preserve each part's authored relative position.
+3. Normalize to the 76px body-height unit (Sol 2's shipped whole-art visual-envelope scale will pick up
+   each new whole-art id automatically — do NOT change SpriteRig scale logic).
+4. Install via `tools/artkit/harvest-install.mjs` to `packages/client/public/sprites/<id>/{body,head,hand-l,
+   hand-r,foot-l,foot-r}.png`.
+5. Register each in the SpriteManifest.
+6. Add to the roster generator input so `pnpm gen` emits all 37 into `PLAYABLE_CHARACTERS` and
+   `WHOLE_ART_CHARACTERS`. Sol 4's menu Characters tab enumerates that subset, so all 37 should appear.
+7. Update every test hardcoded to the old 13-id roster (there are likely census counts / equality
+   assertions on WHOLE_ART_CHARACTERS.length).
+
+## Guardrails
+- Do NOT change SpriteRig scale, ArenaScene render logic, character-select menu code, gear archival,
+  weapons, pets, or B17's pose-language schema.
+- LF endings only. `pnpm gen` + `pnpm gen:check` + `pnpm assets:check` green. `pnpm typecheck` +
+  FULL `pnpm test` green in this worktree. Keep the server booting.
+
+## Verification (this Sol)
+- Deterministic test: each of the 37 has 6 part textures + head mount; `WHOLE_ART_CHARACTERS` enumerates
+  37 ids; `DEFAULT_CHARACTER === 'proto-cowboy-hidden-face'`; `proto-sheriff` and `proto-witch` are
+  ABSENT from `WHOLE_ART_CHARACTERS`. NO live-stack boot.
+
+## Rules
+Worktree; commit on sol/char-rig-batch3; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-char-rig-batch3.md` (understanding + per-character classification assumptions +
+plan). Append per character. FINAL line = verdict: 37 installed, 11 replaced-in-place, 21 brand-new,
+2 legacy retired (proto-sheriff + proto-witch), new DEFAULT_CHARACTER, roster size 37, files touched.

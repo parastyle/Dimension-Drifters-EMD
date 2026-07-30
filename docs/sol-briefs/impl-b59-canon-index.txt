@@ -1,0 +1,74 @@
+You are Sol `impl-b59-canon-index` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b59-canon-index
+(branch sol/b59-canon-index). CANON REBUILD — SHRINK, DO NOT EXPAND. Autonomous — no invention.
+
+## The problem (owner-raised, 2026-07-25)
+`DIMENSION_DRIFTERS_MASTER_SPEC.md` is 951 lines, last edited 2026-07-06 — **536 commits ago**.
+Its own line 5 demands every decision be written back into it. It wasn't. Worse, it still asserts
+`[LOCKED]` canon that has since been DELETED (§11 Stats, §12 Leveling, signature-per-5-levels,
+"Ultimate" rarity tier, shopkeeper economy, weapon scalingGrades/requirements). Any agent reading
+it today would build deleted systems.
+
+## Owner ruling on the fix (verbatim decision, 2026-07-25)
+The doc rotted because it narrated things the CODE already expresses — a maintenance tax nobody
+paid. Replace it with a **LEAN CANON INDEX**: keep only what code cannot express, delete
+everything else, and make claims machine-checked where possible.
+**TARGET: ~200-300 lines. If you exceed 400 you have failed the brief.** Shrinking is the goal.
+
+## What the new document KEEPS (only these four kinds of content)
+1. **Standing laws / bans** — with the WHY, so they are never re-litigated. Known laws (find any
+   others in the evidence): no chains/tassels/ropes (no physics for them); no player auras; no
+   thumbs/fingers on character hands or wrap weapons; melee/weapon attacks never displace the
+   character (gun recoil is the sanctioned exception); never interrupt gameplay with modals;
+   big visual changes are render-layer only, all surfaces enumerated and screenshot-gated.
+2. **Locked decisions + supersession chain** — one line each: decision, date, what it superseded,
+   citation. This is the highest-value content: after ~250 decisions, "what is true now" is the
+   thing that is genuinely hard to reconstruct. Include at minimum: B20 economy (no stats/levels/
+   XP/shopkeeper; chests->trinkets/weapons/money; disassembly; 100% banking; booster packs; 50%
+   rarity-weighted dupe refund), B55 (ultimates OFF until further notice; augments from capsule
+   trinkets; capsule contents), B57 (the dimension loop: grind rooms, timed portals with visible
+   types and unlimited concurrency, boss sequences, escalation + gas circle, NO hub, NO crystals,
+   mode collapse), relaxed movement authority, commit-melee enemies, directional parry.
+3. **Fiction canon** — the Dimension Police Department employer, dimensional capsules (not
+   "chests") as DPD armory resupply, the Madness-flavored art direction, character/weapon art
+   style rules. Code cannot hold this.
+4. **Open questions** — decisions NOT yet made, so they are never silently guessed.
+
+## What the new document DELETES (be ruthless)
+Every section that narrates what the code does: system walkthroughs, API/architecture description,
+weapon/character counts, pinned dependency versions, implementation detail, per-feature history,
+anything a reader could learn by reading code or running the game. If a claim is checkable by a
+test, it belongs in the test, NOT in prose.
+
+## Method
+1. **Evidence ledger first** (this is the expensive, valuable part): read
+   `docs/sol-reports/design-lock-b20.md`, `design-lock-b57-dimension-loop.md`, the night summaries
+   (`night-summary-2026-07-24.md`, `night-summary-2026-07-25.md`), `audit-design-practice.md`,
+   the notes ledgers, and the shipped code/generated catalogs for anything ambiguous. Map: claim ->
+   current truth -> citation (doc or commit or file:line).
+2. Rewrite `DIMENSION_DRIFTERS_MASTER_SPEC.md` as the lean canon index. Keep the `[LOCKED]`
+   convention. EVERY entry carries a citation so canon is auditable, not asserted.
+3. Open the doc with a short "How this stays true" section: locks are written HERE in the same
+   commit as the decision; `docs/sol-reports/design-lock-*.md` remain the detailed record and this
+   file is the index of truth; anything checkable is a test.
+4. **Anti-rot test**: add ONE small test file asserting machine-checkable canon invariants and
+   failing loudly on drift — e.g. no level/XP symbols in shared, no shopkeeper room message,
+   weapons carry no `scalingGrades`/`requirements`, ultimates gated off, no `belt` mode flag once
+   B57-L1 lands (skip that last one until it does). Assert only what is cheaply and honestly
+   checkable; do not fake coverage.
+5. **DO NOT invent design.** Contradictory or missing decisions go to the OPEN QUESTIONS section
+   verbatim as questions. Guessing is the one unacceptable outcome.
+
+## Guardrails
+Documentation + one test file only; no gameplay changes. Parallel Sols are editing code (b53 rig,
+b54-l2 catalog, b55 chests, b56 belt, b58 art, engineering audit) — rebase at merge and re-verify
+any section they touched. LF endings.
+
+## Verification
+`pnpm typecheck` + FULL `pnpm test` green including the new invariant test. Report the
+before/after line count.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Also write
+`docs/sol-reports/impl-b59-canon-index.md` with the evidence ledger and a list of what was
+deleted (so the deletions are auditable too). FINAL line = verdict: spec 951 -> N lines, L laws,
+D locked decisions, F fiction entries, Q open questions, invariant test summary, files touched.

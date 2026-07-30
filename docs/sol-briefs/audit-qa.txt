@@ -1,0 +1,31 @@
+You are Sol `audit-qa`. READ-ONLY AUDIT. Do NOT edit any code or tests. Write ONLY your report
+`docs/sol-reports/audit-qa.md`. Main tree. Autonomous.
+
+## Game: Dimension Drifters (C:/Users/Exped/DDv2)
+pnpm monorepo, Phaser 4 + Colyseus 0.16 + @dd/shared. ~137 vitest files / ~1790 tests, plus Playwright
+e2e "live gate" specs, plus census guards (`pnpm gen:check`, `assets:check`) and CI (.github/workflows).
+
+## Audit: QA / TEST STRUCTURE + SOUNDNESS
+Evaluate the testing posture and QA process. Cover:
+- COVERAGE GAPS by risk: what critical runtime paths have NO real test? IMPORTANT DATAPOINT: the client
+  character-render pipeline had a total gap — whole-art characters (proto-*) silently fell back to the
+  boilerplate base model and NO test caught it. Find other such blind spots (client render, netcode
+  reconciliation, input, VFX, boss phases).
+- TEST QUALITY: how many tests are brittle SOURCE-GREP / string-contains assertions on ArenaScene source
+  (e.g. flourish panels) vs real BEHAVIORAL tests? Source-grep tests break on formatting/CRLF and don't
+  prove behavior. Quantify and recommend which to convert to behavioral.
+- CENSUS/EXPECTATION tests: are exact-count guards (weapon counts, routing censuses) maintainable, or a
+  merge-conflict/churn magnet? (They just caused a 120->121 merge fixup.)
+- FLAKINESS: map-RNG flakes (projectiles hitting random POIs/pits), full-vs-isolated run differences,
+  ordering. Enumerate known/likely flaky patterns and the fixture discipline that prevents them.
+- ENVIRONMENTAL: the CRLF-vs-LF issue makes local `pnpm lint`/source-grep tests fail though CI is green.
+  Recommend a durable fix (.gitattributes / normalization) so local == CI.
+- E2E "live gate" coverage: what's gated live vs not; should character render, movement feel, hit-reg be
+  live-gated?
+- CI pipeline soundness (.github/workflows/ci.yml): does it actually catch what matters?
+
+## Deliverable
+A QA HARDENING PLAN: prioritized list of (a) tests to ADD (highest-risk-first, with the exact behavior to
+assert), (b) tests to STRENGTHEN or convert from source-grep to behavioral, (c) tests/patterns to PRUNE,
+(d) process/tooling fixes (CRLF normalization, flake fixtures, CI gaps). Cite file:line. No code changes.
+FIRST action: create the report with understanding + plan; append as you go; final line = verdict.

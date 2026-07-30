@@ -1,0 +1,24 @@
+You are Sol `panel-anim-doctrine` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/panel-anim-doctrine
+(branch sol/panel-anim-doctrine). RESEARCH PANEL — no implementation. Autonomous.
+
+## Mission
+The owner: "theres got to be a best formula for this kind of things. What have like-games done."
+Context: DDv2 is a Phaser 4 top-down/belt co-op bullet-heaven with a 20Hz authoritative sim,
+60fps render, a six-part procedural character rig (body/head/hands/feet), procedural walk-bob/
+jiggle, combo-driven pose animation, and recent symptoms: part-level snapping (~2Hz head snap
+while walking), general "vibraty" movement (fixed separately), and past interpolation bugs.
+RESEARCH the best-practice formula for smooth procedural 2D rig animation over a fixed-tick sim:
+1. How comparable games structure this — Brotato, Vampire Survivors, Hades, Dead Cells, Rivals
+   of Aether, Duck Game, Nuclear Throne, Enter the Gungeon, Madness: Project Nexus (our fiction
+   reference): sim-tick vs render-frame decoupling, render interpolation/extrapolation, animation
+   clocks (wall-clock vs sim-tick driven), procedural bob composition, part-hierarchy transforms.
+2. The canonical formulas: fixed-timestep + alpha interpolation (Gaffer-style), animation phase
+   accumulators that never reset (continuous wrap), spring/damper smoothing for secondary motion
+   (heads, hands), and where each belongs in a Phaser pipeline.
+3. AUDIT our stack against the doctrine (read packages/client/src/entities/rig/*, the render
+   loop in ArenaScene, prediction/interp in net/): produce a gap table — what we do vs the
+   formula, ranked by user-visible impact.
+4. Deliverable: docs/sol-reports/panel-anim-doctrine.md — the doctrine, per-game citations of
+   what is known/inferable, the gap table, and a CONCRETE ordered fix plan (each item small,
+   independently shippable). NO code changes.
+COMMIT the report. FINAL line = verdict: N gaps ranked, top recommendation.

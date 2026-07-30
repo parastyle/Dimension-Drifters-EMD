@@ -1,0 +1,21 @@
+You are Sol `pet-robotic-gate`. DESIGN ONLY — your only write is your report. C:/Users/Exped/DDv2.
+
+## Owner directive (binding): PETS ARE ROBOTIC, no organic lumps
+Read `docs/design/OWNER-DECISIONS-characters-pets.md` item 7. Owner rejected a "rock-turd" organic-lump
+pet. Pets read mechanical/robotic (drones, constructs, chrome, servos, optics, jointed limbs).
+
+## Your mandate
+Read the existing pet ART pipeline design: `docs/design/pet-4-art-pipeline.md` and
+`docs/design/pet-layer-pipeline.md` / `pet-layer-render.md`. Update the pipeline DESIGN for a ROBOTIC
+house style and, critically, add an explicit REVIEW GATE that REJECTS any generated pet render reading
+as an organic lump (rock, turd, blob, ooze, shapeless mass) or lacking clear mechanical features.
+Deliver: (1) the robotic house-style preamble additions (materials, lighting, "built not grown"
+silhouette rules) layered onto the existing pet generation prompt; (2) a concrete pass/FAIL review
+checklist an art reviewer or automated check applies to every generated pet — e.g. must show >=2 of
+{visible seams/panels, optic/lens, antenna/sensor, jointed limb, exhaust/vent, chrome/metal spec
+highlight}; must NOT read as an undifferentiated organic mass; (3) 2-3 literal example robotic pet
+prompts. Reuse the ONE-SUBJECT-PER-AGENT law (see docs) — do not batch subjects.
+
+Write `docs/design/pet-robotic-gate.md`. First action: create it with your understanding. Append as
+you go. Do NOT touch product code/assets. Live game on 5180/2567 is UP — do not touch. Record
+assumptions; do not ask.

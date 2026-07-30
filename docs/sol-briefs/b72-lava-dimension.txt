@@ -1,0 +1,88 @@
+You are Sol `b72-lava-dimension` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b72-lava-dimension
+(branch sol/b72-lava-dimension). NEW PROCEDURAL DIMENSION. Autonomous. Read the whole brief.
+
+## Owner order (verbatim, 2026-07-26)
+> "I got a map to replace the barren ashen wasteland or whatever
+> C:\Users\Exped\Documents\Dicking Around\concept-art\claude-lava-procedural-v9-package-20260726
+> ... have a procedurally generated dimension ready to go using what I sent you (dont destroy the old
+> stuff, just test this out, same behaviour use the same systems....or I swear to god....jc)"
+
+## THE RULE ABOVE ALL OTHERS — READ TWICE
+**DO NOT DESTROY OR ALTER ANY EXISTING DIMENSION.** This is ADDITIVE. The owner has been burned before
+by a change that was supposed to be scoped and instead reworked the whole game, and said so in
+capital-letter terms. Specifically:
+
+- Register a **NEW dimension id** alongside `wild-west`, `frostfell`, `verdant-ruins`, `ashlands`,
+  `neon-cyber`. Do not repurpose `ashlands`. Do not delete anything.
+- **REUSE THE EXISTING SYSTEMS.** Same room/scene, same movement, same combat, same netcode, same
+  weapon and enemy pipelines. This is a new map, not a new game mode. If you find yourself writing a
+  parallel scene, a second movement path, or a new mode flag — STOP and report instead.
+- Every existing dimension must render and play EXACTLY as before. Prove it.
+
+## The package
+`C:/Users/Exped/Documents/Dicking Around/concept-art/claude-lava-procedural-v9-package-20260726/`
+
+READ `NEXT_STEPS_FOR_CLAUDE.md` AND `README.md` IN FULL FIRST. They contain an implementation plan,
+a recommended data shape, and a **Non-Negotiables** list from the author. Honour that list.
+
+Contents: 6 platform PNGs, 3 `mega-connected` hero rooms, 20 decorative debris pieces, 2 lava layers
+(`lava-background-4k-loop.png`, `lava-flow-overlay-v1.png`), and 4 manifests in `metadata/`.
+
+Their non-negotiables, restated because they are easy to violate:
+- **Never scale platform or mega-room art at runtime.** Native size only.
+- No modular bridge snapping. No using debris as mandatory jump platforms — debris is decorative and
+  non-colliding.
+- Lava parallax is slow and ENDLESS — never a single screen-locked image.
+- Do not copy raw generation folders, diagnostics, or old iteration assets into the repo. Import only
+  what ships.
+
+## Build
+1. Import the shipping assets into the repo under the established layout, and the manifests into
+   `data/`. Keep the import list minimal and auditable.
+2. Load the manifests into a `PlatformPrefab` registry (id, file, native width/height, visibleBounds,
+   collision, tags, rarity, nativeScale: 1) — see the recommended shape in `NEXT_STEPS_FOR_CLAUDE.md`.
+3. Treat each `mega-connected` image as ONE rare authored hero room, never two separable platforms.
+4. Generate an abstract room graph first — spawn, route, branch, hub, reward, exit — then place
+   prefabs from the graph at native size, rejecting heavy overlaps.
+5. Gaps between platforms must be directly traversable with the movement kit we already have. Verify
+   against the real jump/dodge distances in the shipped movement code, not by eye.
+6. Lava background + flow overlay as endless tiled parallax behind everything.
+7. Skip chunk streaming for now — get the base generator correct and stable first.
+
+## COLLISION — the owner's actual pain point
+> "We'll need better hitmap on these though Codex wasn't able to make things very walkable"
+
+The package ships debug collision rectangles, and its own upgrade order starts with "Author real
+collision polygons". A parallel Sol (`b73-walkability-painter`) is building an authoring tool for
+exactly this.
+
+**Your job: make the collision DATA-DRIVEN and externally authorable.** Collision must come from a
+data file keyed by prefab id, NOT hard-coded. Ship the best automatic derivation you can as the
+default — derive walkable top surfaces from the art's alpha/visible bounds rather than a naive
+bounding box — but the format must be one an authored polygon can override per prefab. Coordinate on
+format by writing it down clearly in your report; the painter Sol will consume it.
+
+**Walkability must be honest**: if the art shows a gap or a slope edge, the player must not stand on
+it, and must not be blocked by empty space.
+
+## Guardrails
+- Parallel Sols own: guns 16-30 (`data/weapon-concepts-300.json` — DO NOT TOUCH), the walkability
+  painter, and the movement-lurch fix (rig + movement code — do not touch).
+- Bump `SCHEMA_VERSION` if wire shape changes; update every test pinning it.
+- LF endings. Disk is tight — do not copy the 64MB package wholesale, import only shipping assets.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green.
+- **Regression proof:** load EVERY pre-existing dimension and confirm it renders and plays unchanged.
+  Capture one screenshot per existing dimension into `docs/sol-reports/b72-evidence/regression-<dim>.png`.
+  This is the evidence the owner will actually check.
+- New dimension: capture `docs/sol-reports/b72-evidence/lava-overview.png` and
+  `lava-traversal.png` showing a player standing on and moving between platforms.
+- State the seed you used and confirm regeneration is deterministic.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b72-lava-dimension.md` with
+the imported asset list, the collision data format (explicitly, for the painter Sol), the room-graph
+algorithm, traversal-distance evidence, and the per-dimension regression captures. FINAL line =
+verdict: dimension id, prefabs registered, collision format, existing dimensions verified N/N,
+determinism, test result.

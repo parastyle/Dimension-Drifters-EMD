@@ -1,0 +1,62 @@
+You are Sol `b93-dist-jump-onset` in an ISOLATED WORKTREE at
+C:/Users/Exped/ddv2-wt/b93-dist-jump-onset (branch sol/b93-dist-jump-onset). OWNER-BLOCKING. Autonomous.
+
+## Owner report (2026-07-28)
+> "still choppy"
+
+## Cause (measured from the owner's F9 dump — verify, do not re-derive)
+The player was in a DISTANCE JUMP. Sustained travel is correct: rendered 4.31 px/frame at 143fps =
+616 px/s against the authored `DIST_JUMP_SPEED` = 620, and `BASE STEP` = 31.00 = 620 x 0.05s. Sixty
+consecutive frames of it, dead smooth, `ROOT GAP` flat 0.00.
+
+The defect is the ONSET. Three frames at the transition into the jump:
+
+    ROOT STEPS   ... 2.22   13.43   18.85   27.48   4.31  4.31 ...
+    PREVIEW ms   ... 30.43   0.00    6.96    1.28   8.22 ...
+    BASE STEP    ... 0.00    0.00    0.00   31.00   0.00 ...
+
+- 27.48 px in one 7ms frame is ~3900 px/s instantaneous — an order of magnitude over both MOVE_SPEED
+  (320) and DIST_JUMP_SPEED (620). Roughly 60px of extra travel is injected across three frames.
+- `PREVIEW ms` COLLAPSES to 0.00 mid-saw and then re-resets (0.00 -> 6.96 -> 1.28) instead of running
+  its normal 0->50 sawtooth. That is the frame-sampled lead being discarded and rebuilt.
+- `Render<->commit` peaked at 16.9px intra / **23.2px boundary** in that window. Both had been 0.0px
+  for the entire session before this.
+- `SELF corrections` stayed 0, `forceResync` 0, no stalls. This is NOT a correction, a teleport, or a
+  network event. It is local, at the moment the distance jump begins.
+
+Related owner report from the same build, likely the same fragile path:
+> "many of jump attempts last for about .1 second and then im grounded again"
+`b91` fixed one abort cause (endpoint collapse). Check whether the onset discontinuity and the
+short-jump abort share a root; if they do, fix both here and say so.
+
+## Fix
+Entering a distance jump must be a clean handover from `MOVE_SPEED` locomotion to `DIST_JUMP_SPEED`
+travel with NO injected displacement:
+- No frame may render more travel than the active speed allows for that frame's delta. The authored
+  speed changes at the transition; the DISTANCE covered in a frame must still equal speed x dt.
+- The frame-sampled preview lead must not collapse and rebuild at the transition. If the jump commit
+  legitimately consumes the pending window, the render path must account for what it consumed rather
+  than double-count it — that double-count is the most likely source of the ~60px.
+- Do NOT fix this by easing or ramping the speed change (canon L09: one constant speed per state, feel
+  comes from animation). The transition is instantaneous; what must not happen is EXTRA distance.
+
+## Guardrails
+- Canon L09/L10/L11 stand. Keep B42/B68/B74/B75/B76 guarantees and b83's frame-sampled path.
+- `b90` (guaranteed platform gaps), `b91` (walkability, inset 0 + runtime radius), `b92` (hole
+  rejection at one player diameter) all just landed in the lava dimension. Do not disturb them; the
+  distance jump budget is what b90's INV-B is measured against.
+- LF endings. Bump SCHEMA_VERSION only if the wire shape changes.
+
+## Verification
+- `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green TWICE.
+- Rubber-band telemetry: zero requests/applications/snaps/pixels, BOTH modes.
+- **Add a regression test**: across a distance jump from standing and from full-speed locomotion, no
+  single frame's rendered travel exceeds the active speed x that frame's delta (plus a stated epsilon),
+  and the preview lead never collapses mid-saw. Must FAIL before the fix.
+- Report the worst single-frame rendered travel at onset, before and after, in px.
+- Re-run b90's 2000-seed sweep to confirm the jump budget still holds.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b93-dist-jump-onset.md`.
+FINAL line = verdict: root cause, shared with the 0.1s abort y/n, worst onset frame before/after px,
+telemetry, sweep, 2x test results.

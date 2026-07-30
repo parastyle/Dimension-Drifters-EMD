@@ -1,0 +1,29 @@
+You are Sol `audit-structure`. READ-ONLY AUDIT. Do NOT edit any code or tests. Write ONLY your report
+`docs/sol-reports/audit-structure.md`. Work in the main tree (you touch no shared files). Autonomous.
+
+## Game: Dimension Drifters (C:/Users/Exped/DDv2)
+Top-down / belt co-op bullet-heaven. pnpm monorepo: packages/{shared,server,client,desktop}. Phaser 4
+client, Colyseus 0.16 authoritative server, shared sim/data in @dd/shared. Heavy codegen pipeline
+(`pnpm gen` -> *.generated.ts, manifests, portal). 334 weapons, ~43 characters, bosses, pets, augments.
+
+## Audit: STRUCTURAL SOUNDNESS
+Assess the architecture for maintainability and correctness risk. Cover:
+- Package/module boundaries + dependency direction (shared<-server, shared<-client; any leaks/cycles?).
+  Is authoritative logic correctly in shared/server, not duplicated in client?
+- GOD FILES: `packages/client/src/scenes/ArenaScene.ts` is enormous (~9k+ lines). Identify the worst
+  oversized/over-responsible modules and propose concrete seams to split them.
+- Generated-vs-source discipline: is the `*.generated.ts` + manifest + census-guard system coherent, or
+  are there hand-edits to generated files, drift risks, or fragile census counts?
+- The CHARACTER RENDERING debt specifically: the client renders every player from ONE `boilerplate`
+  base body + gear-bake overlays; whole-art characters (proto-*) have no first-class render path (a
+  separate Sol is fixing this now). Assess how deep this coupling runs and what a clean character-render
+  abstraction should look like.
+- State schema (Colyseus) shape, nested rows vs flat, client reflection getters, message surface.
+- Dead code / abandoned systems (e.g. the retiring wardrobe system, 113 wardrobe pieces the owner said
+  to drop) — enumerate what can be pruned.
+- Naming/consistency, error handling, obvious footguns.
+
+## Deliverable (in your report)
+Prioritized findings P0/P1/P2, each with: file:line refs, the risk, and a CONCRETE recommendation
+(not vague). End with a short "top 5 structural moves, in order" list. No code changes — analysis only.
+FIRST action: create the report with your understanding + plan; append as you go; final line = verdict.

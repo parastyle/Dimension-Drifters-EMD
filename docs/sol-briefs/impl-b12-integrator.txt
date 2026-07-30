@@ -1,0 +1,85 @@
+You are Sol `impl-b12-integrator` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b12-integrator
+(branch sol/b12-integrator). IMPLEMENTATION — WEAPON EXTENSION INTEGRATOR. Autonomous — no
+questions. Report incrementally. NO live-stack boot; unit + live gate on private ephemeral ports.
+
+## Context — the owner's ask (verbatim, ledger v9 row B12)
+"Mirage Hardlight Saber (x2-mirage-hardlight-saber): Give this the blade extension technique"
+
+## The B12 art asset is ALREADY installed in main
+- `packages/client/public/sprites/x2-mirage-hardlight-saber/part-1.png` — hardlight emitter/hilt
+  sprite. Whether it also has a `part-2.png` extension art, or whether the extension is procedurally
+  drawn from the hilt shape like the 6 brutalist greatswords, is YOUR call — read the existing
+  Mirage sprite dir + intake before deciding.
+
+## Prior art (READ BEFORE PLANNING)
+- `packages/shared/src/hit-envelope.ts` — `BRUTALIST_GREATSWORD_IDS` (6 members), `BLADE_EXTENSION_*`
+  constants, `LEGACY_WEAPON_HIT_ENVELOPE_OVERRIDES` uses `extensionAuthoring()` for each of the 6.
+  You are adding Mirage as the 7th member of the extension family.
+- `packages/client/src/vfx/blade-extension-treatments.ts` — visual treatment per-weapon-id.
+- `packages/client/src/entities/SpriteRig.ts` — extension render path (`BLADE_EXTENSION_OVERLAP_FRACTION`
+  usage, `measureBladeSpan`, etc).
+- `docs/sol-reports/notes-ledger-v9.md` §B12 for full acceptance signal (Mirage joins the extension
+  census; Headsman is absent post-B10; visible reach matches server damage; blade-owned through all
+  combo frames; ignites only in its authored window).
+- `e2e/tests/v7-blade-extension-live-gate.spec.ts` — existing gate you are extending.
+
+## Your job — join Mirage Hardlight Saber to the unified blade-extension technique family
+1. **Extension census** — add `"x2-mirage-hardlight-saber"` to `BLADE_EXTENSION_WEAPON_IDS`. Note:
+   `BRUTALIST_GREATSWORD_IDS` is a distinct 2H greatsword family — do NOT add Mirage there. Either
+   (a) split them so `BLADE_EXTENSION_WEAPON_IDS = [...BRUTALIST_GREATSWORD_IDS, "x2-mirage-hardlight-saber"]`
+   or (b) introduce a new frozen tuple for the Mirage-inclusive extension family and re-export it
+   from `BLADE_EXTENSION_WEAPON_IDS`. Pick the cleanest option; do not require every consumer of
+   `BRUTALIST_GREATSWORD_IDS` to know about Mirage.
+2. **hit-envelope authoring** — add an entry for `"x2-mirage-hardlight-saber"` to
+   `LEGACY_WEAPON_HIT_ENVELOPE_OVERRIDES` using the same `extensionAuthoring()` builder
+   (Mirage's authored ignition/retraction constants come from the shared BLADE_EXTENSION_* module).
+   Mirage IS 1H saber (grip="1H", size="M", not a 2H greatsword) — the extension multiplier constants
+   are already family-shared so this is fine, but confirm the resulting extended reach reads at
+   combat scale for a 1H weapon.
+3. **Visual treatment** — Mirage's hardlight extension art. Bespoke hardlight look (not brutalist
+   greatsword's "steel bar" extension); use the shipped `part-1.png` hilt as the base and either
+   (a) procedurally draw the hardlight blade from a bespoke recipe in
+   `packages/client/src/vfx/blade-extension-treatments.ts`, or (b) if a `part-2.png` extension art
+   ships, wire it as the extension sprite. Bespoke color/emissive treatment consistent with the
+   hardlight fiction.
+4. **Ignition + retraction** — Mirage extends only during its authored combo window using
+   `BLADE_EXTENSION_IGNITION_SECONDS` + `BLADE_EXTENSION_RETRACTION_SECONDS`. Owner-critical: the
+   blade is BLADE-OWNED through all combo frames — the extension does not separate from the
+   hilt on flip/facing changes. Per-facing transform must sample from the shared held-blade affine.
+5. **Live-gate extension** — `e2e/tests/v7-blade-extension-live-gate.spec.ts` must gain Mirage for
+   local/remote left/right cases. Match the existing 6-weapon fixture pattern.
+6. **Headsman absence** — B10 already removed Headsman's extension treatment; do NOT revive it. Assert
+   (in a unit test if not already covered) that `"x-katana-headsman"` (or whatever the Headsman id
+   was) is ABSENT from `BLADE_EXTENSION_WEAPON_IDS`.
+
+## Concrete deliverables
+- Extension census: Mirage in `BLADE_EXTENSION_WEAPON_IDS` (via whichever authoring shape from step 1).
+- `LEGACY_WEAPON_HIT_ENVELOPE_OVERRIDES` entry for Mirage.
+- Visual treatment in `blade-extension-treatments.ts` (bespoke hardlight recipe or sprite wiring).
+- SpriteRig extension render path handles Mirage's 1H sample correctly.
+- Live-gate + unit test coverage.
+- Evidence: PNG captures on both facings for the 6 brutalist + Mirage, showing visible reach ==
+  server damage extent, under `docs/owner-notes-audit-v10-evidence/b12-mirage-extension/`.
+
+## Guardrails
+- Do NOT rebalance Mirage's damage/cadence/range/DPS/scaling. Purely visual + envelope alignment.
+- Do NOT revive Headsman's extension. Do NOT touch B2/B3/B11/B14 weapons or whole-art characters.
+- Do NOT modify `SpriteRig` scale logic or the whole-art character render path.
+- LF endings only. Preserve existing tests. STANDING chain/tassel/rope BAN — irrelevant here
+  (visual is a hardlight blade extension, not physical dangles).
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green in this worktree.
+- `pnpm assets:check` green.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567): fire Mirage on both facings on
+  `proto-cowboy-hidden-face` (new default character). Capture: (a) hardlight extension clearly visible
+  during the authored combo window, (b) extension ignites only in-window, (c) authoritative hit-envelope
+  covers the full extension reach with no invisible damage outside the visible blade, (d) 6 brutalist
+  greatswords still work identically (no regression). Retain evidence under
+  `docs/owner-notes-audit-v10-evidence/b12-mirage-extension/`.
+
+## Rules
+Worktree; commit on sol/b12-integrator; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b12-integrator.md` (understanding + census-shape decision + visual approach +
+plan). Append per stage. FINAL line = verdict: Mirage added to extension census, Headsman absent,
+visible == authoritative, evidence path, files touched.

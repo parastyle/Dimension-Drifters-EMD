@@ -1,0 +1,84 @@
+You are Sol `b68-silky-limbs` continuing in your EXISTING WORKTREE at
+C:/Users/Exped/ddv2-wt/b68-silky-limbs (branch sol/b68-silky-limbs). ITERATION 2. Autonomous.
+
+## Status: your work was MERGED, FAILED VERIFICATION, and has been REVERTED off master.
+Your commit `c470b3b` is still on your branch. Master is back at `868b89b` and green
+(228 files / 2,790 passed). You are fixing three regressions, then it goes back in.
+
+**Rebase onto current master first** (`origin/feat/v0.118-metagame` = `868b89b`) — it contains the b64
+movement fix and the b66 roster merge, which you did not have.
+
+## What you got RIGHT — keep all of it
+Your core result is good and is the reason this is being fixed rather than discarded:
+- Presentation clocks unified 3 -> 1 across all six rig modules.
+- One coherent `PresentedActorState` per actor per frame.
+- Root correction debt isolated from pose.
+- Total limb priority, 90ms blend-in / 130ms blend-out.
+- Owner's ADAD repro (top-down): root max/p95 `9.203/7.873 -> 6.637/6.457 px`, discontinuities `6 -> 0`.
+Do not undo any of that.
+
+## REGRESSION 1 — a weapon now does DOUBLE DAMAGE. Highest severity.
+`packages/server/src/rooms/GameRoom.v5m.test.ts:142`
+`GameRoom — V5M melee authority > keeps Doubleheader's held whirlwind planted with one receipt per
+visual revolution`
+
+FAILS: `expected 10 to be close to 5`.
+
+The receipt damage is **exactly 2x** the weapon's damage. The test name states the invariant you
+broke: **ONE receipt per VISUAL revolution.** Your presentation/clock unification changed how visual
+revolutions are counted, so the held whirlwind now books two receipts per revolution.
+
+This is a live gameplay bug — a weapon dealing twice its listed damage — not a test artifact. Find why
+the revolution count doubled and fix the CAUSE. Do NOT relax the assertion, do NOT change the expected
+value, do NOT special-case the test.
+
+## REGRESSION 2 — BELT MODE regressed. The owner has been burned by exactly this before.
+`tools/diag-rb-telemetry.mts` aborts:
+`Error: belt:rapid-flip-attack assertion failure: {"completed":true,"zeroCorrections":false,"zeroSilent":false}`
+
+You reported the top-down numbers for the owner's ADAD repro and they are genuinely improved. **You
+did not report belt.** In belt mode the same repro now produces correction traffic where master has
+none.
+
+Belt is the SAME ArenaScene threaded with a mode flag — 221 `belt` references in ArenaScene alone.
+A change that is correct top-down can be wrong in belt. The owner's exact words after the last time
+this happened: *"This is exactly what I feared that you assured me wouldnt happen."*
+
+**Both modes must be zero. Verify belt explicitly and report belt numbers separately.**
+
+## REGRESSION 3 — a correction request appeared in top-down parry
+`[diag-rb] topdown:parry-right applications=0 b42=2 requests=1 sumPx=0.000 maxPx=0.000`
+
+Master reports `requests=0` everywhere. `requests=1` is small, and sumPx is still 0, but the standard
+for this harness is ZERO and a nonzero request means something asked for a correction that previously
+did not. Explain it and eliminate it.
+
+## Also verify (it failed in the merged run — establish whether you caused it)
+`packages/server/src/integration.test.ts > real Colyseus transport > terminates the socket and
+reconnects the same run without state or settlement duplication`.
+This test has a known history of failing under parallel load and was fixed by per-worker database
+isolation (`b62-db-isolation`). It passes on master. Determine whether your change genuinely breaks it
+or whether it is the old flake resurfacing, and SAY WHICH — do not just re-run until it passes.
+
+## The bar
+- FULL `pnpm test` green, run **three times consecutively**. Your first pass reported green from your
+  worktree and then failed on merge; three clean runs on a rebased branch is the bar now.
+- `tools/diag-rb-telemetry.mts` completes ALL 83 scenarios with **zero requests, applications, snaps
+  and correction pixels in BOTH top-down AND belt.**
+- Keep your smoothness regression test, and EXTEND it to cover belt mode for the ADAD repro.
+- `pnpm gen:check` + `pnpm typecheck` clean.
+
+## Guardrails
+- Owner map files OFF LIMITS: `packages/shared/src/mapgen.ts`,
+  `packages/client/src/scenes/arena/floor-renderer.ts`, `packages/client/public/tiles/**`.
+- `data/weapon-concepts-300.json` is being appended to by parallel weapon Sols. Do not touch.
+- Do not weaken, skip, or delete any existing assertion to get green. If an assertion is genuinely
+  wrong, say so explicitly and justify it — do not quietly edit it.
+- LF endings.
+
+## Rules
+Same worktree, same branch, COMMIT ON TOP of `c470b3b` after rebasing. Update
+`docs/sol-reports/b68-silky-limbs.md` with a v1-vs-v2 section: the whirlwind root cause, the belt
+numbers (separately from top-down), the parry-right explanation, and the integration-test verdict.
+FINAL line = verdict: whirlwind cause+fix, belt corrections, topdown corrections, 3x test results,
+telemetry 83/83 both modes.

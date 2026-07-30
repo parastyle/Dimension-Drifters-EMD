@@ -1,0 +1,51 @@
+You are Sol `plan-wardrobe-retire`. READ-ONLY PLANNER. Do NOT edit code/tests. Write ONLY
+`docs/sol-reports/plan-wardrobe-retire.md`. Main tree. Autonomous — no questions.
+
+## Context (DDv2)
+The owner is RETIRING the wardrobe/gear overlay system in favor of WHOLE-ART characters. The whole-art
+render path shipped this session: `packages/client/src/sprites/whole-art-character.ts` +
+`SpriteRig.ts` + `ArenaScene.ts` load a character's own six part textures (`char:<id>:{body,head,
+hand-l,hand-r,foot-l,foot-r}`) for ids starting `proto-` (proto-sheriff/samurai/witch). Deep-link
+`?dev=char:proto-sheriff` renders whole-art correctly. BUT a normal player who doesn't pick a character
+still spawns as the boilerplate "wardrobe dummy" (base body + gear-bake), because the DEFAULT character
+is still the boilerplate/wardrobe path.
+
+## The owner's four asks — produce a wave plan to deliver ALL of them
+1. **WHOLE-ART SIZE**: whole-art characters (proto-*) render WAY TOO BIG in-game — the sheriff dwarfs the
+   enemies and the wardrobe dummy. Scale the whole-art rig down to match the roster/enemy scale (compare
+   to the boilerplate/drifter body-height unit — the existing chars are normalized to a 76px body unit;
+   the proto rig is clearly not matching). Find WHERE the whole-art rig scale is set vs the legacy rig.
+2. **ARCHIVE THE WARDROBE SYSTEM (pets are UNAFFECTED)**: retire the gear/wardrobe overlay system as the
+   standing character system — the gear-bake render path, the 113 wardrobe gear pieces, the armory/
+   wardrobe UI surfaces. "Archive" = disable/retire SAFELY (keep code + data for save/load compat and
+   census-guard stability, remove from ACTIVE use / new-player default / UI entry points), NOT a hard
+   delete unless clearly safe. DO NOT touch the pet system.
+3. **ARCHIVE THE BASE MODEL / DEFAULT SPAWN**: make the DEFAULT spawn character a whole-art character
+   (proto-sheriff, or a whole-art default) instead of the unwardrobed boilerplate dummy — "if I spawn in
+   as anything it'll probably be the sheriff." Find where the default character / `PLAYER_SPRITE` /
+   roster-default is set (server GameRoom onJoin + client ArenaScene addBlob) and switch it to a
+   whole-art character. Ensure a player with NO explicit character still renders whole-art, not the dummy.
+4. **CHARACTER-SELECTION MENU TAB**: add a character-selection tab to the MENU screen so players can pick
+   their whole-art character (at least the 3 proto characters + any other whole-art). Find the menu
+   screen structure + how existing tabs are built.
+
+## Deliverable — `docs/sol-reports/plan-wardrobe-retire.md`
+- SYSTEM MAP with file:line for each: default-character/PLAYER_SPRITE origin (server + client); the
+  wardrobe/gear render path (`gear-parts.ts`, `gear-texture-baker.ts`, manifest) + its UI entry points;
+  the roster/character registry; the menu screen + its tab system; the whole-art rig scale vs legacy.
+- A WAVE PLAN: how many implementation Sols, each with a SCOPED file partition, a risk note, and a brief
+  outline. A SAFE SERIAL MERGE ORDER. Flag which Sols touch the shared character render path (must
+  serialize / order matters — e.g. default-must-become-whole-art BEFORE or WITH wardrobe archival so
+  rendering never breaks) vs independent tracks (the menu tab UI, the size fix).
+- RISKS + mitigations: archiving wardrobe without breaking any player render; save/load + census/test
+  fallout (many tests assume the wardrobe/gear counts — they'll need reconciliation); the meta-game gear
+  identity/banking systems that reference gear; whether the boilerplate base is still needed as a
+  fallback. Recommend the MINIMAL SAFE definition of "archive" (disable-and-retain vs delete) per surface.
+- Standing laws for the impl Sols: each mutating Sol in its OWN git worktree (tools/sol/worktree.sh);
+  LF endings; full `pnpm test` + typecheck green; keep the server booting (census); LIVE verification for
+  visual changes (whole-art size, default spawn, menu tab) on PRIVATE EPHEMERAL PORTS (never 5180/2567);
+  the GameRoom RNG-stream flake root-fix is already in main (module-scope Math.random seed) so catalog
+  changes won't reshuffle those tests. Pets are OUT OF SCOPE.
+
+FIRST action: create the report with your system map, then append the wave plan + risks. FINAL line =
+verdict: recommended Sol count, the safe merge order, and the single biggest risk.

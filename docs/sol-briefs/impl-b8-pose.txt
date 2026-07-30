@@ -1,0 +1,34 @@
+You are Sol `impl-b8-pose` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b8-pose
+(branch sol/b8-pose). IMPLEMENTATION. Autonomous — no questions.
+
+## YOUR ORDER
+Implement BATCH B8 from the ledger. READ `docs/sol-reports/notes-ledger-v9.md` section "B8 — Weapon pose,
+grip, and combo language" for the FULL authoritative spec (8 weapons, exact owner notes, per-weapon
+concrete change, files, acceptance). That section is your order.
+
+The 8 weapons (see ledger for each verbatim note + exact change):
+- Gravewarden Buster (`gravediggers-spade`) — continuous smooth beyblade-style full spin, no seam at loop.
+- Saint-Bough Frost Crozier (`x2-saint-bough-frost-crozier`) — one-hand upright walking-staff idle + anim.
+- Nullspike Pike (`x2-nullspike-pike`) — far hand inward onto the midpoint purple wrap; 3-thrust combo.
+- Voltedge (`x-sword-neon-katana`) — near-ear blade-up ready pose; stab attack (replaces side/wave cut).
+- Sunbreaker Railgun (`x2-sunbreaker-railgun`) — support hand on the horizontal foregrip before the barrel.
+- Fool's Gold Revolver (`x2-fool-s-gold-revolver`) — primary grip hand at the trigger.
+- Hollowbarrel Spell-Scattergun Staff (`x2-hollowbarrel-spell-scattergun-staff`) — horn raised to the face.
+This batch is intentionally isolated to POSE/GRIP/COMBO language; do NOT touch VFX recipes.
+
+## STANDING RULES (all batches)
+- Touches `packages/shared/src/weapons.ts`, `data/weapon-concepts-300.json`, regenerated
+  `weapons-expansion.generated.ts`, `SpriteRig.ts`, `pose-language.ts`, combo/pose tests,
+  `tests/owner-notes-weapon-pose.test.ts`. Run `pnpm gen` after data edits; keep gen:check/assets:check
+  green + server booting. `pnpm typecheck` + FULL `pnpm test` GREEN in this worktree. LF endings ONLY.
+  Preserve nominal DPS unless a change alters cadence (it shouldn't here). You may CREATE tests; do NOT
+  weaken existing assertions.
+- Live left/right pose/combo gallery (VFX disabled) on PRIVATE EPHEMERAL PORTS only (never 5180/2567):
+  grip markers land on the actual painted handles/trigger/wrap/foregrip; Gravewarden loop seamless;
+  Nullspike exactly 3 authoritative hits; Voltedge hit envelope follows the stab. Retain evidence under
+  `docs/owner-notes-audit-v9-evidence/b8-pose/`.
+- Worktree: commit on sol/b8-pose; orchestrator merges. Don't touch main copy or ports 5180/2567.
+
+## REPORTING (durable, incremental — update the file as you go, NOT only at the end)
+FIRST: write `docs/sol-reports/impl-b8-pose.md` (pose-language system + per-weapon plan). Append after
+EACH weapon. FINAL line = verdict: per-weapon status, evidence paths, files touched.

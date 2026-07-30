@@ -1,0 +1,32 @@
+You are Sol `impl-b40-flourish-regression` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b40-flourish-regression
+(branch sol/b40-flourish-regression). REGRESSION FIX. Autonomous — no questions.
+
+## The regression (orchestrator-verified on current main)
+`e2e/tests/b29-ranged-presentation-live-gate.spec.ts` fails: "timed out capturing kunai-twirl for
+x2-kunai" — telemetry shows the flourish NEVER ARMS (`flourish.arm.armed: false`,
+`earliestStartMs: -1e9`, `maxFlourishRotation: 0`, `flourishMoments: []`). The kunai end-hook
+pistol-twirl (B29, commit 49b8cd2 era) worked when B29 merged (`ada7593`); it is broken on
+current HEAD. Suspects between: B35 (`0797234` — 18 gun corrections incl. stray-hand class fix +
+pose changes), B38 (`8a157b9` — hammer-hand layering). Both touched SpriteRig/pose surfaces.
+
+## Your job
+1. Diagnose which change disarmed the flourish (read the two commits' SpriteRig/pose diffs; use
+   git bisect against the gate if needed — private ports only).
+2. ROOT-FIX so the kunai twirl (and any other flourish that shares the arming path — check the
+   flourish streak/arm machinery broadly) works again WITHOUT reverting B35's stray-hand fix or
+   B38's hammer layering (all three must coexist).
+3. Sweep: run the FULL flourish-related gates — `e2e/tests/b29-ranged-presentation-live-gate.spec.ts`
+   + `pistol-twirl.spec.ts` + any flourish spec — 2x green each.
+
+## Guardrails
+LF endings; migrate tests; never weaken gate assertions. Parallel Sol B39 (stance amplify) also
+edits SpriteRig — you launch FIRST; B39 rebases on you.
+
+## Verification
+`pnpm typecheck` + FULL `pnpm test` green; the three gates 2x green on PRIVATE EPHEMERAL PORTS
+(never 5180/2567). Evidence under `docs/owner-notes-audit-v11-evidence/b40-flourish-regression/`.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Report at
+`docs/sol-reports/impl-b40-flourish-regression.md`. FINAL line = verdict: culprit commit + cause,
+fix summary, gates 2x green, files touched.

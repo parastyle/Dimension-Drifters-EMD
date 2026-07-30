@@ -1,0 +1,62 @@
+You are Sol `impl-b59-spec-reconcile` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b59-spec-reconcile
+(branch sol/b59-spec-reconcile). CANON RECONCILIATION. Autonomous — no invention.
+
+## The problem (owner-raised, 2026-07-25)
+`DIMENSION_DRIFTERS_MASTER_SPEC.md` (951 lines) is the project's canon and its own line 5 states:
+"Any decision made anywhere (chat, coding session, playtest) must be written back into this file
+or it does not exist. If code and this doc disagree, that's a bug in one of them — reconcile
+immediately." It was last edited 2026-07-06 — **536 commits ago**. Since then the design changed
+fundamentally and every decision was written into `docs/sol-reports/design-lock-*.md` and night
+summaries instead, forking the canon.
+
+Known-false `[LOCKED]` claims in the spec today (non-exhaustive — find them all):
+- §11 Stats & Attributes and §12 Leveling: DELETED by B20 (no stats, no XP, no levels).
+- Signature upgrades "unlock every 5 levels"; parry augments "one per signature level" — the
+  acquisition lane is gone; augments now come from chest trinkets (B55).
+- Wooden starter "usable from level 1 at the 1/1/1/1/1 start" — no stats/levels exist.
+- "Ultimate" listed as a rarity tier; ultimates are OFF by owner ruling (B55).
+- Shopkeeper/shop economy — REMOVED (B20 L3).
+- Weapon `scalingGrades`/`requirements` — DELETED (B20 L1); weapons are flat.
+
+## Your job — RECONCILE, never invent
+1. **Build an evidence ledger first.** Read, in this order: `docs/sol-reports/design-lock-b20.md`
+   (economy), `design-lock-b57-dimension-loop.md` (core loop + fiction + mode collapse), the night
+   summaries (`night-summary-2026-07-24.md`, `night-summary-2026-07-25.md`), the notes ledgers
+   (`notes-ledger-v9/v10*.md`), the doctrine panels (`panel-anim-doctrine.md`,
+   `panel-netfeel-doctrine.md`), `audit-design-practice.md`, and the shipped code/generated
+   catalogs for anything ambiguous. Produce a table: spec section -> current truth -> evidence
+   (commit/doc/file:line).
+2. **Rewrite the master spec to match reality.** Preserve its structure, voice, and `[LOCKED]`
+   convention. Correct or delete every falsified section. Add the systems that shipped but were
+   never written into canon: the B20 chest/trinket/disassembly/banking/booster economy, weapon
+   tiers, relics/trinkets + augments-from-capsules, commit-melee enemies, directional parry, gun
+   recoil, the corporate LDtk pipeline, the Pose Studio, the B57 dimension loop (grind rooms,
+   timed portals, boss sequences, gas circle), the Dimension Police Department fiction and
+   dimensional capsules, and the standing laws (no melee displacement, no player auras, no
+   chains/tassels, no thumbs on hands, no weapon-driven character motion).
+3. **Mark provenance.** Every reconciled/added section cites the lock doc or commit it came from,
+   so canon is auditable rather than asserted.
+4. **DO NOT invent design.** If evidence is contradictory or a decision was never made, add it to
+   an "OPEN QUESTIONS FOR OWNER" section at the end with the specific question. Guessing is the
+   one unacceptable outcome.
+5. **Anti-rot mechanism.** Add a short "How this document stays true" section at the top codifying
+   the update ritual, AND implement a lightweight check the suite can run: a test that asserts a
+   handful of machine-checkable canon invariants still hold (e.g. no `levels`/`xp` symbols in
+   shared, no shopkeeper room message, weapons carry no `scalingGrades`, ultimates gated off) and
+   fails loudly if code drifts from spec claims. Keep it small and honest — assert what is cheaply
+   checkable, do not fake coverage.
+
+## Guardrails
+- Documentation + one test file only. No gameplay/code changes.
+- Parallel Sols are editing code (b53 rig, b54-l2 catalog, b55 chests, b56 belt, audit). Rebase at
+  merge; if a parallel batch lands a change you documented, re-verify that section before finishing.
+- LF endings.
+
+## Verification
+`pnpm typecheck` + FULL `pnpm test` green (including your new canon-invariant test).
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Also write
+`docs/sol-reports/impl-b59-spec-reconcile.md` containing the evidence ledger table and the list of
+sections corrected/deleted/added. FINAL line = verdict: N sections corrected, M added, K deleted,
+open-questions count, invariant test summary, files touched.

@@ -1,0 +1,35 @@
+You are Sol `char-proto-fix` in the EXISTING worktree C:/Users/Exped/ddv2-wt/char-proto
+(branch sol/char-proto). The 3 prototypes (proto-sheriff/samurai/witch) are already keyed, sliced,
+installed, and selectable from your prior run (`docs/sol-reports/char-proto.md`). Two owner-reported
+defects remain. FIX ONLY THESE. Fast + focused. Do NOT re-slice or restyle the art.
+
+## Defect 1 — LEFT HAND NOT RENDERING
+The owner's art has a hand on the LEFT and a hand on the RIGHT. The slicer produced both `hand-l` and
+`hand-r` and the manifest has both with positions (e.g. proto-sheriff hand-l ox=-137, hand-r ox=+134).
+Yet in-game only ONE hand renders (right). Find why the rig does not draw the left hand for these
+characters and fix it so BOTH hands render. Likely causes to check: the character rig's hand-rendering
+path (does it draw hand-l for a character with no equipped weapon?), a z-order/occlusion behind the
+body, a pose-language hand override, or the drifter-kit hand config these protos inherit. Whatever it
+is, both hands must visibly render at rest for all 3.
+
+## Defect 2 — HEADS TOO FAR ABOVE THE BODY
+The head sits too high (proto-sheriff head oy=-191.56, big air gap above the body/collar). Move each
+head CLOSER to the body — reduce the head's vertical offset so the head's lower silhouette nears/overlaps
+the body's shoulder/collar (reference the drifter: its head sits close, oy≈-116 for a ~106px-tall head).
+The proto heads are taller, so compute a value that seats the head near the collar with only a small
+alive gap — NOT a decapitated float. Apply per-character (their bodies/heads differ). The owner said
+"a little closer" — err toward seated/cohesive.
+
+Keep everything else identical (green removal, slices, selectability, size). Do NOT touch weapon files,
+pet files, or ports 5180/2567.
+
+## PROOF — this is what the owner is judging
+Re-capture all 3 at REST in the ephemeral stack: BOTH hands visible, head seated close (no big gap),
+cohesive character read. Overwrite `docs/owner-notes-audit-v8-evidence/char-proto/proto-*-rest.png`.
+Confirm proto-sheriff specifically reads as one cohesive character with two hands. Run `pnpm typecheck`
+and the focused character tests; keep the server booting.
+
+## Reporting
+Append to `docs/sol-reports/char-proto.md` a "FIX PASS" section: root cause of the missing left hand,
+the per-character head-offset change (old->new oy), and the recapture paths. Final line: verdict — both
+hands render on all 3, heads seated close, sheriff cohesive. Work autonomously; do not ask.

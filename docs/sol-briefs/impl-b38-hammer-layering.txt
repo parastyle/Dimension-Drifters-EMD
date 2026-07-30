@@ -1,0 +1,29 @@
+You are Sol `impl-b38-hammer-layering` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b38-hammer-layering
+(branch sol/b38-hammer-layering). SMALL TARGETED FIX. Autonomous — no questions.
+
+## The owner's order (verbatim, 2026-07-24)
+"i think the hammer pin animation is happening behind the gun for alot them. Which is OK, but the
+hand should be above the hammer in the animation because underneath I just cant see behind the gun."
+
+## The fix
+B29 shipped hammer pull-back beats for 17 1H revolvers + the 2H pair treatment. The hammer-hand
+micro-motion renders BEHIND the weapon sprite on many revolvers, making it invisible. Route the
+hammer-beat hand through SpriteRig's EXISTING above-art layering policy (the same explicit policy
+pump/lever/crank hands use — see the layering note around SpriteRig.ts:3318) so during the hammer
+beat the hand draws ABOVE the gun art, then returns to its normal layer. Both 1H and the 2H pair
+treatment; both facings. No timing/pose changes — layering only.
+
+## Guardrails
+- Rebase onto CURRENT main first (B35 just landed in these files — build on its state).
+- Touch only the hammer-beat layering path. LF endings. Migrate affected tests.
+
+## Verification
+- `pnpm typecheck` + FULL `pnpm test` green.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567): fire 3 different 1H revolvers + the
+  Twin-Maw pair, both facings; capture the hammer-hand VISIBLE above the gun during the beat.
+  Evidence under `docs/owner-notes-audit-v11-evidence/b38-hammer-layering/`.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Report at
+`docs/sol-reports/impl-b38-hammer-layering.md`. FINAL line = verdict: hammer hand above art (N
+weapons verified), evidence path, files touched.

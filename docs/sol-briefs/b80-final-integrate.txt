@@ -1,0 +1,62 @@
+You are Sol `b80-final-integrate` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b80-final-integrate
+(branch sol/b80-final-integrate). FINAL INTEGRATION. Autonomous. This is the last blocker.
+
+## Situation
+**All 30 B63 guns are now merged.** Catalog is at **394 weapons / 374 active / 20 archived** and the
+census pins in `packages/shared/src/weapon-resource.ts` are already updated to match.
+
+`pnpm gen`, `pnpm gen:check` and `pnpm typecheck` are CLEAN. The full suite is RED on census/behaviour
+pins for guns 22-30. Before guns 25-30 merged it was 11 failures across 10 files; expect similar or a
+few more now.
+
+**Master is unpushed and red. Your branch is what makes it green.** Nothing else is queued behind you.
+
+## The rule — unchanged, and it has paid off repeatedly today
+Sort every failure into one of two kinds:
+
+1. **Legitimate count growth** → move the number. Prefer DERIVING it from the catalog where the pin is
+   a pure size with no other meaning — `b78-census-derive` already converted 24 pins that way and
+   deliberately kept 27 literal because they encode INTENT (specific archived ids, "moves the census
+   by exactly one", named cohorts). Respect that split; extend it where a new pure-count pin appears.
+
+2. **A behavioural law over "every weapon"** → **the new gun must SATISFY the law. Fix the WEAPON,
+   never widen the assertion.**
+
+**`tests/b45-gun-recoil.test.ts` is failing and it is a behavioural law**, not a count: *"covers the
+post-B63/B66 ranged catalog while melee/caster roots stay planted."* Standing law — guns recoil,
+melee and caster never displace the character. If any of guns 22-30 lacks recoil that is a REAL
+DEFECT in that gun's data. Fix the data.
+
+Expect more of these. Earlier integration passes found 8 real defects this way: missing gun SFX
+families, missing ranged pose families, a missing manifest row, a missing VFX override, muzzle
+allocations. Guns 22-30 are mostly ENERGY weapons (beam, pulse, plasma, ion, arc, photon) — check the
+beam/projectile-specific laws carefully, they are the least-trodden path in this catalog.
+
+**Never** delete a test, skip a test, or loosen an assertion to turn red green. If you believe an
+assertion is genuinely wrong, say so explicitly with reasoning — do not quietly edit it.
+
+## Also confirm, since everything is now in
+- Every one of the 30 B63 guns resolves to a subclass under the taxonomy that `b79` rebased (unseen
+  families must derive, never throw at import).
+- Every gun has an art-space muzzle where the validator requires one.
+- Every gun resolves to a non-empty behaviour description line.
+
+## Guardrails
+- **Owner map files OFF LIMITS:** `packages/shared/src/mapgen.ts`,
+  `packages/client/src/scenes/arena/floor-renderer.ts`, `packages/client/public/tiles/**`.
+- Do not touch the lava dimension (`lava-foundry`) or the walkability painter.
+- Do NOT add, remove or rename weapons. Do NOT retune balance beyond fixing an actual law violation.
+- Canon L09: movement is one constant speed; the turn-hitch/accel/decel constants stay deleted.
+- Keep B68/B74/B75/B76 guarantees intact.
+- LF endings.
+
+## Verification
+`pnpm gen` + `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green **twice consecutively**.
+`tools/diag-rb-telemetry.mts` completes all scenarios with zero requests/applications/snaps/pixels in
+BOTH top-down and belt.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b80-final-integrate.md` with
+the failure → kind → action table, and an explicit list of REAL DEFECTS found in guns 22-30 and how
+each was fixed. FINAL line = verdict: N tests fixed, C pins derived/bumped, D real defects found+fixed,
+30/30 guns valid (subclass + muzzle + behaviour line), telemetry, 2x test results.

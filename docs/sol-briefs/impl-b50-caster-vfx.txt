@@ -1,0 +1,25 @@
+You are Sol `impl-b50-caster-vfx` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b50-caster-vfx
+(branch sol/b50-caster-vfx). CASTER/VFX CORRECTIONS (owner notes 2026-07-24/25). Autonomous.
+
+## 4 orders (verbatim-condensed)
+1. `x2-hexbinder-s-iron-orrery` — becomes a PURPLE BEAM weapon (use the shipped beam machinery +
+   a purple treatment; DPS within ±10% of current).
+2. `x2-emberleaf-chapbook` — the book OPENS while charging (two-state frame like Wyrmskull /
+   procedural splay), and the growing fireball sits centered over the open book's middle.
+3. `x2-verdigris-grand-grimoire` — remove the brown VFX entirely (book opening + pages is the
+   whole look); pages shoot from the book in a CONE.
+4. `x2-cinderquill-almanac` — archive weapon (established pattern; out of active + pack pools;
+   census pins).
+
+## Guardrails
+STANDING LAWS: no player auras, nothing radial-ambient, no chains. Post-B43 layout. Parallel
+B48/B49 — no overlap. LF endings; schema from CURRENT + pins; migrate tests.
+
+## Verification
+gen/gen:check/typecheck/FULL test green; assets:check green. Live gate (private ports): purple
+orrery beam, emberleaf open-book charge with centered fireball, verdigris clean page cone,
+almanac absent. Both facings. Evidence under docs/owner-notes-audit-v12-evidence/b50-caster-vfx/.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Report docs/sol-reports/impl-b50-caster-vfx.md.
+FINAL line = verdict: 4 orders done, evidence path, files touched.

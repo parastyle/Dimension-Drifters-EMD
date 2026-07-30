@@ -1,0 +1,73 @@
+You are Sol `impl-b55-chest-contents` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b55-chest-contents
+(branch sol/b55-chest-contents). B55 — CHEST CONTENT OVERHAUL + AUGMENT REVIVAL. Autonomous.
+
+## Context: the design audit found orphaned systems
+READ docs/sol-reports/audit-design-practice.md (finding #1) — B20 deleted levels/XP, which were the
+ONLY acquisition lane for augments and ultimates. Result today: `packages/shared/src/augments.ts`
+has 16 tuned augments read by ~10 combat paths, but the only server write is
+`room-progression.ts:2826` -> `player.augments = ""`, so every `countAugment` returns 0 forever.
+
+## The owner's rulings (verbatim, 2026-07-25)
+1. "Ultimates are out until further notice."
+2. "augments are found in-game via chests"
+3. "you can find several things in chests: trinkets (which sometimes have augments) / weapons /
+   Pets / HP potions"
+
+## Orchestrator interpretation (implement this; flag in the report if the code contradicts it)
+- **TRINKET = the player-facing name for the existing in-run relic item** (B20 shipped 9 commons +
+  6 rares in `packages/shared/src/relics.ts`). Do NOT redesign that system. Rename the PLAYER-FACING
+  text to "trinket" (HUD, pickup toasts, chest reveals); the internal module/identifier naming may
+  stay `relic` to avoid a churn refactor — your call, but be consistent and document it.
+- **Augments ride on SOME trinkets.** A trinket may carry an augment payload; picking it up grants
+  that augment (this is the missing write that makes `player.augments` real).
+- Money stays a possible chest roll (B20 locked it; the owner listed additions, not a removal).
+
+## The work
+1. **Ultimates OFF (reversible)**: feature-flag the ultimate system off — no charge meter, no HUD
+   affordance, no activation input, no ultimate grants. DO NOT delete the code or its tests
+   (the owner said "until further notice"): gate it behind one clearly-named constant so
+   re-enabling is a one-line change. Remove/neutralize the B20-interim hardcoded assignment. Any
+   test asserting ultimate availability migrates to assert the disabled contract.
+2. **Augment grant path (the critical fix)**: augments become obtainable in-run via trinkets from
+   chests. Wire the server grant so `player.augments` actually accumulates, is synced, respects
+   any existing stack caps in `augments.ts`, and is cleared on run start/end exactly like other
+   run state. VERIFY end-to-end that at least 3 different augments visibly change combat (pierce,
+   ricochet, arc-split are read at room-combat.ts:4042/4044/4217) with a test per augment family.
+3. **Chest content table**: rolls produce TRINKET (sometimes augment-bearing) / WEAPON / PET /
+   HP POTION / money. Keep B20's existing machinery: per-player instancing, scar-zone risk
+   weighting, the 2.5-minute weapon-bearing rubber-band, seeded determinism. Document the new
+   weight table in the report.
+4. **HP POTION (new item)**: ASSUMPTION — an instant-heal pickup on contact/interact (no inventory
+   slot, no carrying), healing a documented fraction of max HP, with existing pickup presentation
+   + a heal SFX from the shipped families. If the codebase already has a healing item pattern,
+   follow it instead. Flag the assumption prominently in the report for owner review.
+5. **PET from chest (new source)**: ASSUMPTION — a chest pet joins the player as an in-run
+   companion for the remainder of the run using the shipped pet system; it does NOT grant a
+   permanent meta-account unlock (packs remain the unlock lane, per B20 L4). Respect the existing
+   one-active-pet rule if one exists (offer swap/replace rather than stacking). Flag this
+   assumption for owner review too.
+6. **Reveal UX**: the chest-open toast must name what you got and, for augment-bearing trinkets,
+   say what the augment does — never a silent grant. Non-interrupting (standing law).
+
+## Guardrails
+- Parallel Sol `b54-l2-limb-claims` edits `packages/shared/src/weapons.ts` + catalog + schema pins:
+  REBASE onto main at merge and reconcile SCHEMA_VERSION rather than assuming a number.
+- STANDING LAWS: never interrupt gameplay with modals; no player auras; melee never displaces.
+- Damage/DPS unchanged except via augment effects that already exist. LF endings; migrate tests.
+
+## Verification
+- `pnpm gen` + `gen:check` + `typecheck` + FULL `pnpm test` green.
+- Unit: augment grant/stack/clear; per-augment combat effect (3+ families); chest roll weights +
+  determinism; potion heal math + overheal clamp; pet-from-chest activation/swap; ultimates
+  disabled contract.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567) on `proto-cowboy-hidden-face`: open
+  chests until each content type appears; capture an augment-bearing trinket pickup AND proof the
+  augment changed combat (e.g. visible extra pierce/bounce); a potion heal; a pet joining; and the
+  HUD with NO ultimate affordance. Evidence under
+  `docs/owner-notes-audit-v12-evidence/b55-chest-contents/`.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Report docs/sol-reports/impl-b55-chest-contents.md
+(chest weight table + augment-on-trinket mapping + BOTH flagged assumptions called out clearly).
+FINAL line = verdict: ultimates gated off (flag name), augments grantable (N families proven),
+chest table shipped, potion + pet sources live, assumptions flagged, evidence path, files touched.

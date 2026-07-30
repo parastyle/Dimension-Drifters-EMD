@@ -1,0 +1,71 @@
+You are Sol `char-rig-batch2` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/char-rig-batch2
+(branch sol/char-rig-batch2). IMPLEMENTATION. Autonomous — no questions. Report incrementally.
+NO live-stack boot (it has hung Sols); a deterministic asset+manifest test is your gate; the
+ORCHESTRATOR does the live visual check.
+
+## Context
+The owner authored 10 NEW whole-art characters in the same green-chroma template used by the shipped
+prototypes (`proto-sheriff`, `proto-samurai`, `proto-witch`). The raw sources are now at:
+- `data/character-proto-intake/proto-masked-oval-fighter.png`
+- `data/character-proto-intake/proto-blob-bruiser.png`
+- `data/character-proto-intake/proto-capsule-tactical-unit.png`
+- `data/character-proto-intake/proto-armored-bean-heavy.png`
+- `data/character-proto-intake/proto-hooded-rogue.png`
+- `data/character-proto-intake/proto-soft-mascot-fighter.png`
+- `data/character-proto-intake/proto-geometric-robot-pod.png`
+- `data/character-proto-intake/proto-mutant-lump.png`
+- `data/character-proto-intake/proto-paper-cutout-fighter.png`
+- `data/character-proto-intake/proto-helmeted-enforcer.png`
+
+The shipped whole-art pipeline + tests are the exact same one from the earlier `char-proto` /
+`char-rig-render` work — `packages/client/src/sprites/whole-art-character.ts` +
+`packages/client/src/entities/SpriteRig.ts` + the roster generator + the character-select menu (Sol 4).
+The 3 existing protos are ALREADY selectable in the game.
+
+## YOUR JOB — key + slice + install as 10 new PLAYABLE whole-art characters
+This is the owner's authored art. Do NOT regenerate, restyle, or "clean up" anything — key + slice +
+install FAITHFULLY.
+
+1. **Chroma-key** the green background on each source PNG. REUSE the existing keyer (`tools/artkit/` —
+   the same soft-matte + despill step that produced the shipped `proto-sheriff.keyed.png` etc.). Do NOT
+   invent a new keyer. Green must be fully removed with no fringe.
+2. **Slice** each keyed image into the six parts via `tools/artkit/guards/slice.mjs` (it has a `head`
+   role from the head-split work): `head`, `body`, `hand-l`, `hand-r`, `foot-l`, `foot-r`. Classifier:
+   top-most detached component above the body = head; largest central = body; the two mid-height side
+   components = hands; the two bottom components = feet. Preserve each part's authored relative
+   POSITION so the assembled character matches the owner's layout. Record any classification
+   assumption per character in your report.
+3. **Normalize** to the game's 76px body-height unit like every other character; the whole-art size
+   correction Sol 2 has already shipped (Samurai `0.847`, Sheriff `0.729`, Witch `0.739`) will pick up
+   each new whole-art id automatically — do NOT change SpriteRig scale logic. Just make each character's
+   six-part manifest correct.
+4. **Install** as 10 new proto characters with the EXACT ids listed above (`proto-masked-oval-fighter`,
+   `proto-blob-bruiser`, `proto-capsule-tactical-unit`, `proto-armored-bean-heavy`, `proto-hooded-rogue`,
+   `proto-soft-mascot-fighter`, `proto-geometric-robot-pod`, `proto-mutant-lump`,
+   `proto-paper-cutout-fighter`, `proto-helmeted-enforcer`):
+   - Write sprite parts to `packages/client/public/sprites/<id>/{body,head,hand-l,hand-r,foot-l,foot-r}.png`
+   - Register each in the SpriteManifest (`kind: character`, all 6 parts + head mount) using the same
+     pattern as the shipped protos.
+   - Add to the character roster generator input so `pnpm gen` emits them into
+     `packages/shared/src/characters.ts` (`PLAYABLE_CHARACTERS`) AND — critically — into the
+     `WHOLE_ART_CHARACTERS` subset that Sol 1 added (`proto-*` ids that Sol 1's default/validation
+     accepts). Sol 4's menu Characters tab enumerates `WHOLE_ART_CHARACTERS`, so once emitted, all 10
+     should appear as selectable cards WITHOUT any menu edit.
+5. **DO NOT change** SpriteRig scale, ArenaScene render logic, menu tab code, server contract, or gear
+   archival. This Sol is purely: key + slice + install + register.
+
+## Verification (this Sol)
+- `pnpm gen` + `pnpm gen:check` + `pnpm assets:check` green (you touch the roster/manifest/atlas).
+  `pnpm typecheck`. FULL `pnpm test` green in this worktree. LF endings ONLY.
+- A DETERMINISTIC unit/behavioral test proving: each new id's 6 part textures exist in the manifest; each
+  qualifies for the whole-art render path (matches Sol 3's `resolveOrdinaryPlayerCharacterId`); the
+  character-select roster (Sol 4's `WHOLE_ART_CHARACTERS`) now enumerates the 3 shipped + 10 new = 13
+  ids; each SpriteRig constructs from its own 6 char:proto-*: textures with head mount and no missing
+  parts. NO live-stack boot.
+
+## Rules
+Worktree; commit on sol/char-rig-batch2; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-char-rig-batch2.md` (understanding + per-character classification assumptions +
+plan). Append after EACH character. FINAL line = verdict: 10 chars keyed/sliced/installed/registered,
+their 6-part paths + green-removal confirmation, the roster now 13 whole-art, files touched, and the
+passing tests.

@@ -1,0 +1,52 @@
+You are Sol `impl-b54-l2-limb-claims` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b54-l2-limb-claims
+(branch sol/b54-l2-limb-claims). B54 LANE 2 — LIMB-CLAIM SCHEMA + CATALOG DECLARATIONS. Autonomous.
+
+## The owner's doctrine (verbatim, 2026-07-25)
+"We've got a character body separate from all the limbs. This should be guaranteed to move at one
+constant speed all the time smoothly... with a % speed modifier when attacking, getting hit, and
+also some gun knockback. The body parts should have fluid and dynamic servant principles that are
+aesthetic only. Cartoonish flippy floppy feet and arms when they're not in another overriding
+animation like a sword swing (obviously only the hands for a sword swing). Really loosy goosy
+completely unscripted movement... exactly how Interactive Buddy felt." Plus: "we need animations
+disconnected from our netcode."
+
+READ FIRST: docs/sol-reports/panel-anim-doctrine.md + panel-netfeel-doctrine.md (both panels
+independently recommended one per-render-frame presentation state; this is that program).
+
+## Your lane: the CLAIM CONTRACT (data + schema + generator only — NO client rig files)
+Lane 1 (parallel, later) rewrites the rig to run springs by default and honor claims. You define
+WHAT each animation claims so it has something to honor.
+
+1. **Schema**: add an optional `limbClaims` contract to the weapon/combo authoring model in
+   `packages/shared/src/weapons.ts`: which limbs an action owns — `hand-l`, `hand-r`, `foot-l`,
+   `foot-r`, `head`, `body-lean` — expressible PER COMBO BEAT (a kick beat claims a foot; a stab
+   beat claims one hand) and for the weapon HELD/IDLE pose (e.g. a 2H rifle claims both hands
+   continuously). Unclaimed limbs are FREE = spring-driven. Include a release policy per claim
+   (`snap` or `handoff` — handoff returns the limb to springs carrying its exit velocity; the
+   shipped `JIGGLE_HANDOFF_MAX_V` constant is the clamp).
+2. **Inference, not 340 hand edits**: write a generator pass that DERIVES claims from what the
+   catalog already declares — grip (1H/2H/dual gives hands claimed while held), combo step `limb`
+   and `hand` fields (already authored for kung-fu/melee: foot beats claim feet, hand beats claim
+   that hand), caster/beam (both hands), glove-pairs (both hands plus feet for wrap kicks). Emit
+   into the generated catalog via `pnpm gen`. Author explicit overrides ONLY where inference is
+   wrong; list every override in the report with its reason.
+3. **Census test**: every active weapon resolves a claim set for held pose plus every combo beat;
+   no action claims a limb it has no authored reason to; free-limb count per action is reported
+   (the doctrine wants MOST limbs free MOST of the time — flag any weapon claiming all four).
+4. **Docs**: a short authoring note in the report explaining the contract for future weapons.
+
+## Guardrails
+- NO client rig files (parallel lanes own those). NO gameplay/damage/timing changes — claims are
+  presentation metadata only. STANDING LAWS unchanged (no melee displacement; gun recoil is the
+  sanctioned body motion, not a limb claim).
+- LF endings; schema bump from CURRENT + update all pins; migrate tests.
+
+## Verification
+`pnpm gen` + `gen:check` + `typecheck` + FULL `pnpm test` green; census test green with the
+free-limb report printed in the Sol report.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Report
+docs/sol-reports/impl-b54-l2-limb-claims.md (contract spec + inference rules + override list +
+free-limb census). FINAL line = verdict: contract shipped, N weapons inferred, M overrides,
+free-limb census summary, files touched.

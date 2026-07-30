@@ -1,0 +1,54 @@
+You are Sol `impl-sfx-wave` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/sfx-wave
+(branch sol/sfx-wave). IMPLEMENTATION — SOUND EFFECTS WAVE. Autonomous — no questions. Report
+incrementally. NO live-stack boot.
+
+## Context — the owner's order (verbatim, 2026-07-24)
+"Please make proper gun sound effects for the guns, and find things that need sound effects and
+make those sound effects."
+
+The ElevenLabs key in the repo-root `.env` (`ELEVENLABS_API_KEY`) is VALID (orchestrator verified
+HTTP 200 tonight). NEVER print/log/echo the key or any .env contents.
+
+## The shipped soundkit pipeline (USE IT — do not invent a new one)
+READ `tools/soundkit/README.md`. Contract: `tools/soundkit/sfx-manifest.json` rows
+`{ id, category, priority, prompt, durationSeconds, loop, variations, replaces }`;
+`node tools/soundkit/gen-sfx.mjs` generates + installs to `packages/client/public/audio/sfx/`;
+`check-sfx.mjs` verifies. Wire playback through the existing `AudioBus`
+(`packages/client/src/audio/AudioBus.ts`) + sample-bank patterns.
+
+## Your job
+1. **Gun SFX census.** Enumerate every ACTIVE gun-class weapon (fireMode/delivery from the shared
+   catalog). Map each to a fire-sound FAMILY by its fiction + mechanism (revolver crack, shotgun
+   boom, gatling burst, coil/energy zap, arcane bolt, etc). Guns within a family share a base
+   sound with per-family `variations` (2-3) so repeated fire doesn't machine-loop identically.
+   Author manifest rows with rich cinematic prompts (gritty western-occult tone; punchy transients;
+   no music, no voice). Generate + install + wire so every gun FIRES its family sound (replacing
+   any placeholder/synth beep it currently uses).
+2. **Gap audit.** Find game events with NO sound or clearly-placeholder sound. Candidates to check
+   (verify in code, don't assume): dodge roll, jump/land, ground pound, chest/pickup, money drop
+   pickup (L1 just rerouted XP->money — does pickup have a sound?), enemy death variants, boss
+   quake/roar coverage, parry whiff vs success, weapon swap, disassemble (if landed), menu
+   confirm/cancel, kung-fu strike whooshes. Author + generate + wire the missing ones (priority
+   the combat-loop sounds; menu niceties last).
+3. **Budget discipline.** Batch prompts; reuse families; keep total new generations reasonable
+   (~40-80 clips). Resumable runs (the tool skips existing raws) — safe to re-run.
+4. If the API errors mid-run (quota/expired), STOP generation gracefully, wire what landed, and
+   record exactly what remains in the report. Do not thrash retries.
+
+## Guardrails
+- NEVER print .env contents or the key (not in logs, not in the report, not in commits).
+- Do NOT commit raw outputs in `tools/soundkit/out/` if the repo pattern gitignores them — follow
+  the existing pattern; installed `public/audio/sfx/` files ARE committed.
+- Do NOT touch weapon behavior/damage, VFX, parry, kung-fu combos (parallel Sols). Audio wiring
+  in AudioBus/sample-bank + manifest only. LF endings only. Migrate/extend audio tests.
+
+## Verification
+- `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green. `node tools/soundkit/check-sfx.mjs` green.
+- Deterministic audio-wiring unit test: every active gun resolves a fire sound; no placeholder ids
+  remain in the gun map; new event sounds resolve.
+
+## Rules
+Worktree; commit on sol/sfx-wave; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-sfx-wave.md` (gun family census + gap-audit findings + generation plan).
+Append per batch. FINAL line = verdict: N guns wired across M families, K gap sounds added, any
+API shortfall, files touched.

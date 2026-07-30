@@ -1,0 +1,58 @@
+You are Sol `impl-b31-integrator` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b31-integrator
+(branch sol/b31-integrator). IMPLEMENTATION — RECOVERED-ART INTEGRATOR. Autonomous — no questions.
+Report incrementally. NO live-stack boot; unit + live gate on private ephemeral ports.
+
+## Context — 4 harvested art subjects awaiting behavior (commit 3fe2103; art reports in
+docs/sol-reports/impl-b31-art-*.md). Frostbore is NOT yours (B32 already wired it).
+
+## The four orders (owner notes, recovered window)
+1. **Emberleaf Chapbook** (`x2-emberleaf-chapbook`) — "Hold trigger down, fireball gets bigger.
+   Release, fireball shoots. Explosion scale with size."
+   Art: `packages/client/public/sprites/vfx-emberleaf-fireball/part-1.png`.
+   Wire a hold-to-charge cast: the fireball sprite grows at the muzzle while held (client
+   presentation from the authoritative charge clock), releases as a projectile whose size,
+   damage, and explosion radius scale with charge (server-owned; document the scale curve;
+   uncharged tap = small quick bolt). Total DPS at full-charge cycle within ±10% of current.
+2. **Wyrmscale Hex-Talon** (`x2-wyrmscale-hex-talon`) — "make them a dual wield set. Dramatic
+   slash combo one after another, big swings. Fire VFX."
+   Art: new `part-2.png` (palm side) beside the existing part-1.
+   Convert to a PRE-MADE dual (grip "dual", both talons render — back-side on one hand, palm-side
+   on the other). Author a dramatic alternating big-swing slash combo (one talon after the other,
+   wide arcs) with fire VFX accents on the slash arcs (arc-anchored, no player aura, nothing
+   radial/ambient). DPS within ±10% of current.
+3. **Unicorn Rainbow Beam** (`x2-unicorn-rainbow-beam`) — "horrifying VFX... looks ugly as heck."
+   Art: `packages/client/public/sprites/vfx-unicorn-rainbow-beam/part-1.png` (clean tileable
+   cel-band beam). REPLACE the current beam presentation with this art (tile it along the beam
+   length; keep the shipped beam anchor/lifecycle machinery + authoritative beam damage exactly
+   as-is). Remove every displaced procedural layer. Sparkle restraint: the art carries it.
+4. **NEW WEAPON: Emberfist Wraps** (`x2-emberfist-wraps`) — the owner-ordered sparkmitt sibling:
+   "same animation but fist wraps. Flame fists with VFX on each punch. Flame should not be
+   particles, overlay over fist at every punch."
+   Art: part-1 (single black/ember hand wrap), part-2 (flame sheath registered to part-1's
+   silhouette). Author the full weapon def: CLONE `x2-coyote-trickster-s-sparkmitt`'s combo/
+   animation signature (B30 just stripped its VFX — the animation is the owner-approved
+   reference), glove-pair rendering (both hands, single-item art duplicated per hand like the
+   kung-fu wraps), and on each punch's impact frames composite the flame OVERLAY (part-2) over
+   the striking fist — sprite overlay, NOT particles. Balance to nominal DPS ~20 like the wrap
+   family. Register in catalog + tier (L5 formula assigns) + pack pool.
+
+## Guardrails
+- STANDING BANS: no player auras, no chains/tassels, nothing radial/ambient, no digits on fists.
+- Parallel Sol B33 owns enemy AI surfaces — avoid GameRoom enemy sections; your server edits are
+  weapon-behavior only. Rebase onto main at merge.
+- LF endings only. Schema bumps from CURRENT value + update all pins. Migrate affected tests.
+- Weapon census tests will shift (+1 active weapon) — update counts deliberately.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green. `pnpm assets:check` green.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567) on `proto-cowboy-hidden-face`: capture
+  (a) emberleaf charge growth + small/large release + scaled explosions, (b) wyrmscale dual
+  talons alternating big slashes with fire arcs, (c) the new rainbow beam tiled clean, (d)
+  emberfist punches with flame overlay flashing on the striking fist, both facings each.
+  Evidence under `docs/owner-notes-audit-v11-evidence/b31-integrator/`.
+
+## Rules
+Worktree; COMMIT YOUR WORK on sol/b31-integrator; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b31-integrator.md` (per-subject wiring plan + emberleaf charge curve +
+emberfist def sketch). Append per subject. FINAL line = verdict: 4 subjects wired (charge curve,
+dual set, beam swap, new weapon id + DPS), census delta, evidence path, files touched.

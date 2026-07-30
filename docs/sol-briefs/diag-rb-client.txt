@@ -1,0 +1,21 @@
+You are Sol `diag-rb-client` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/diag-rb-client
+(branch sol/diag-rb-client). DIAGNOSIS ONLY — no game-code fixes. Autonomous.
+
+## Mission
+Client-side audit of prediction/reconciliation for rubberband causes:
+1. `packages/client/src/net/prediction.ts` — verify the predicted movement pipeline is
+   bit-identical to the server step for every mode (note: the stepSteeredMovement call shape was
+   HAND-MERGED during B33/B34 integration — audit argument order/values against the server call;
+   then B41/B42/B44/B45 changes on top). Check the client mirrors recoil impulses (B45 added
+   server impulses — does prediction apply the same impulse the same tick, or does the client
+   only learn via correction = guaranteed rubberband on every shot?).
+2. The correction application path: banded policy (silent snap <3px / 140ms cap / instant snap)
+   — verify the bands are actually wired everywhere corrections apply, verify the smoother
+   cannot re-trigger per-tick during recoil (correction while impulse active = fighting).
+3. serverMotionEpoch echo: the client echoes clientServerMotionEpoch — verify the echo timing
+   can't lag a fast epoch (fire-recoil epochs may be shorter than a round trip!).
+4. Unit reproductions for each mismatch (failing tests on your branch). NO fixes.
+
+## Rules
+Worktree; COMMIT tests + report docs/sol-reports/diag-rb-client.md. FINAL line = verdict: N
+paths audited, M mismatches named (call out the round-trip/epoch race explicitly if real).

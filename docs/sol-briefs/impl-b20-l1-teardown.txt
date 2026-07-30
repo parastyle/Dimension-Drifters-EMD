@@ -1,0 +1,58 @@
+You are Sol `impl-b20-l1-teardown` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b20-l1-teardown
+(branch sol/b20-l1-teardown). IMPLEMENTATION — B20 LANE 1: CORE STAT/LEVEL TEARDOWN. Autonomous —
+no questions. Report incrementally. NO live-stack boot; unit + live gate on private ephemeral ports.
+
+## Authority
+READ FIRST: `docs/sol-reports/design-lock-b20.md` — the owner-locked B20 design. You are Lane L1.
+Implement ONLY L1's scope. Lanes L2-L5 (chests/relics, economy, booster meta, tier curve) are NOT
+yours — do not scaffold them beyond what L1's contract requires.
+
+## L1 contract — delete stat/level progression, flatten weapon power
+1. **Weapon defs lose stat coupling.** Remove `scalingGrades` and `requirements` from the WeaponDef
+   schema, the generator (`tools/artkit/gen-weapon-expansion.mjs`), the source catalog rows
+   (`data/weapon-concepts-300.json` — scripted strip, keep everything else), and all generated
+   outputs. Weapon damage becomes exactly the def's flat damage.
+2. **Remove stat-based damage scaling.** `heldDamageMult` (and any stat-multiplier path in
+   GameRoom/shared) collapses to its stat-independent factors (held-charge behavior stays if it is
+   time/charge-based; only STAT scaling dies).
+3. **Character stats/classes.** Remove per-character stat spreads and class stat-bias from
+   character generation + state. Characters keep identity/class LABELS for flavor and pack
+   rarity later, but no numeric stat effects. (`packages/shared/src/character-classes.ts` — strip
+   numeric bias, keep blurbs/labels used by menus.)
+4. **Crit flattens.** Crit chance = flat base (default 5%) + hooks for additive modifiers (the
+   relic lane will feed these; land the modifier accumulator now, empty). Remove LUK/DEX crit
+   derivation. Gold crit numbers/presentation unchanged.
+5. **XP/level system dies.** Remove XP orbs/pickups, level curves, level-up state, level HUD/UI
+   (level bar, level-up carousel). XP pickup spawns convert to MONEY drops (money = the existing
+   scrip currency server-side; reuse its state plumbing; a proper economy pass is L3's job — you
+   only reroute the pickup spawn to scrip and delete the XP surface).
+6. **Ultimate unlock trigger.** Stat-frequency unlock is gone. Interim rule until relics land:
+   ultimates charge purely by the existing damage/activity meter with a flat threshold — pick the
+   simplest stat-free adaptation of the shipped machinery, document it in the report. Do NOT
+   delete the ultimate system.
+
+## Hard guardrails (the owner's migration contract — NON-NEGOTIABLE)
+- **The game must remain FULLY playable after your change alone**: every weapon fires/swings with
+  correct damage, every character spawns, parry/dodge/jump/pets/bosses unaffected, menus open.
+  You are deleting progression, not content.
+- Do NOT touch: chest systems (none exist yet), shopkeeper (L3 removes it — leave it working),
+  booster/meta anything (L4), weapon tiers (L5), kung-fu wraps combo code (B19 just landed —
+  rebase onto its merge), fans/Wyrmskull/Mirage surfaces.
+- Do NOT invent relics — only the empty crit-modifier accumulator hook.
+- LF endings only. Migrate every test that referenced stats/XP/levels/scaling to the new contract
+  (delete only tests whose entire subject is deleted; document each deletion in the report).
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green. `pnpm assets:check` green.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567) on `proto-cowboy-hidden-face`:
+  (a) spawn, move, jump, dodge, parry; (b) fire a gun, a melee weapon, a caster weapon — damage
+  numbers appear and match flat defs; (c) kill enemies — MONEY drops where XP used to; (d) no
+  level bar/level-up UI anywhere; (e) menu + character select still work. Screenshot each.
+  Retain evidence under `docs/owner-notes-audit-v10-evidence/b20-l1-teardown/`.
+
+## Rules
+Worktree; commit on sol/b20-l1-teardown; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b20-l1-teardown.md` (understanding + inventory of every stat/XP/scaling
+touchpoint you found + plan). Append per subsystem. FINAL line = verdict: stats/XP/scaling
+removed, weapons flat, crit flat+hooked, money-drop reroute live, playability gate passed,
+evidence path, files touched, tests migrated/deleted counts.

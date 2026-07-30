@@ -1,0 +1,55 @@
+You are Sol `char-art-slice`, the CHARACTER ART GENERATOR. Role: art director + generation.
+C:/Users/Exped/DDv2, branch feat/v0.118-metagame.
+
+## Goal: produce a VIEWABLE slice of new bobbing-head characters the owner can see
+
+The owner wants to SEE some new whole-prompted characters with bobbing heads. You generate the ART for
+a small proof slice; a sibling Sol wires it into the rig afterward. Do the art RIGHT — this is the pivot
+the whole character direction rests on.
+
+READ FIRST:
+1. `docs/design/OWNER-DECISIONS-characters-pets.md` — BINDING. All characters SAME SIZE. No face, ever.
+2. `docs/design/chars-4-pipeline.md` — the generation pipeline: Drifter first as the LOCKED house-style
+   reference, then others prompted against it; body + head delivered as SEPARATE transparent layers
+   that overlap without a neck.
+3. `docs/design/chars-2-facelaw.md` — the no-face law and per-character concealment.
+4. `docs/design/chars-3-headrig.md` — the head must be a separate layer with a clean overlap zone and
+   NO rendered neck, so the rig can bob it. Honor the silhouette grammar (proportions, overlap).
+5. `docs/design/chars-1-roster.md` — identities. `data/character-concepts.json` — reprompt source.
+
+## Exact deliverable (a SLICE, not all 32)
+
+Generate **4 characters** as the proof: the **Drifter** (base/reference, shadow-face) FIRST, then
+**Kuro-Oni** (demon mask), **Iridia of the Nine Veils** (veils), and **Cogwarden** (construct furnace-
+slit) — chosen to prove the range (shadow / mask / veil / no-anatomy).
+
+For EACH: produce codex-GENERATED art as TWO separate transparent layers —
+  - `body.png` (torso/arms/legs/hands/feet, NO head, NO neck stub protruding)
+  - `head.png` (the bobbing head only, face concealed per its treatment, sized/anchored to overlap the
+    body's shoulder line with the chars-3 overlap, no neck)
+All 4 at the SAME body scale (owner decision). Drifter is generated first and is the style lock; the
+other three must read as the same cast (palette discipline, line weight, proportion, top-down-ish game
+read).
+
+Write the art to a NEW staging directory `packages/client/public/sprites/chars-v2/<id>/` (body.png,
+head.png) so it does not disturb the shipped `cc-*` character assets. Record each character's concept +
+the exact head-anchor/overlap you authored in a new `data/characters-v2.json` (id, name, concealment,
+head anchor offset, notes). Include a plain-text `docs/design/char-art-slice-evidence.md` with a
+per-character checklist result: no face present, head separable, no neck, on-style, same size.
+
+## HARD RULES
+
+- Generate real bitmap art via codex image generation. Do NOT wire anything into the game — no
+  `SpriteRig.ts`, no `manifest.ts`, no rig code, no catalog. That is the sibling integration Sol's job.
+  Your writes are limited to `packages/client/public/sprites/chars-v2/**`, `data/characters-v2.json`,
+  `docs/design/char-art-slice-evidence.md`, and your report.
+- A visible face is an automatic reject + regenerate. Never ship a face.
+- The owner's live game on ports 5180/2567 is UP. Do NOT touch those ports.
+- Other Sols are working in this worktree. Stay strictly in your lease above.
+- LF line endings on any text you write.
+
+## Reporting — NON-NEGOTIABLE
+FIRST action: write `docs/sol-reports/char-art-slice.md` (understanding + plan) before generating.
+Append as you go. Final line: explicit verdict — which 4 characters shipped as body+head layers, the
+face-law checklist result per character, and the exact head-anchor data you handed to integration.
+Work autonomously; record assumptions. Do not ask.

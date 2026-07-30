@@ -1,0 +1,32 @@
+You are Sol `amend-b9-mournveil` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b9-mournveil-art
+(branch sol/b9-mournveil-art). IMPLEMENTATION + generated art (ONE subject only). Autonomous — no
+questions. Report incrementally. NO live-stack boot.
+
+## YOUR ORDER — B9 amendment (Mournveil Scythe restoration)
+The v10 ledger (`docs/sol-reports/notes-ledger-v10.md` row 405) records that B9 approved Mournveil
+Scythe (`x2-mournveil-scythe`) at a 1.3× display upsize (`280 -> 364 px`), and it now needs a
+higher-resolution ART restoration at that approved size — the current asset was upscaled without a
+matching source render.
+
+## Job (ONE image subject only — this is the "one subject per art Sol" law)
+1. Regenerate the Mournveil Scythe held/carry sprite at a resolution appropriate for its 364 px
+   display length. Preserve the authored silhouette, blade curve, grip, and colorway — no restyle.
+2. Install the restored asset via the shipped art pipeline (`tools/artkit/harvest-install.mjs`) so
+   the atlas + manifest + pose registration all update coherently. The pose language, DPS, range,
+   collision length (via B9's `collisionLength` datum) MUST remain unchanged.
+3. Verify pixel registration: the new asset's grip and blade-edge anchors align with the current
+   pose within 1px.
+
+## Guardrails
+- No display-size change beyond the already-approved 364. Do NOT alter gameplay reach/damage/cadence
+  or the collisionLength datum. Only Mournveil is touched. Pets untouched.
+
+## Verification
+- Add/extend a focused test asserting Mournveil retains 364 display length, collisionLength unchanged,
+  and manifest anchors within tolerance of pre-change values. `pnpm gen` + `pnpm gen:check` +
+  `pnpm typecheck` + FULL `pnpm test` green. LF only.
+
+## Rules
+Worktree; commit on sol/b9-mournveil-art; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b9-mournveil.md` (understanding + plan). Append. FINAL line = verdict:
+restoration installed, pixel registration proof, files touched, evidence path.

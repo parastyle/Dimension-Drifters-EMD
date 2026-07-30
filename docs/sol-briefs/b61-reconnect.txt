@@ -1,0 +1,56 @@
+You are Sol `b61-reconnect` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b61-reconnect
+(branch sol/b61-reconnect). BUG FIX — two findings from the engineering audit. Autonomous.
+
+Read `docs/sol-reports/audit-engineering-practice.md` sections **F1** and **F3** first. They contain
+the full evidence with file:line citations. Fix both.
+
+## F3 first — production dev tools are fail-open (XS, ship-blocking)
+Debug authority is enabled whenever `NODE_ENV !== "production"`, and the checked-in production start
+command never sets `NODE_ENV`. The production client also honors `?dev`.
+
+Invert it: debug authority must require an **explicit positive opt-in** (e.g. an env var that must be
+set to a known value), so the absence of configuration is SAFE rather than permissive. Same for the
+client `?dev` path. Do not rely on `NODE_ENV` alone for anything security-relevant. Make the checked-in
+production start command correct as well.
+
+## F1 — reconnection is not implemented (M, player-visible run loss)
+Today a Wi-Fi blip, refresh, or browser transport reset loses the whole run. There is no
+`allowReconnection`, no `reconnectionToken`, no client `reconnect()`, and no room `onLeave`/`onError`
+handler. `ArenaScene.connect()` retries `joinOrCreate`/`create` up to 30 times ONLY during cold
+startup. Meanwhile the server removes the player and keys its reservation by the DEPARTED session id,
+while a fresh join is issued a different id — so the reservation exists but is unreachable.
+
+Implement per the audit's recommendation:
+1. **Server**: distinguish an UNEXPECTED leave from a CONSENTED one. On unexpected transport loss,
+   reserve the seat with `await this.allowReconnection(client, seconds)` for a short bounded window.
+   Only a timeout or an explicit quit abandons the run. Check `autoDispose`/`onDispose` — if the last
+   player drops, the default room lifecycle currently destroys the only in-memory reservation.
+2. **Client**: persist `room.reconnectionToken` plus `{roomId, runId}` in `sessionStorage`. Attach
+   `onLeave`/`onError` handlers IMMEDIATELY after joining. Reconnect via `client.reconnect(token)`
+   with capped, jittered backoff.
+3. **UI**: a non-destructive full-screen overlay showing reconnecting / recovered / run ended.
+   **STANDING PROJECT LAW: never interrupt gameplay with a modal.** This overlay must not steal input
+   or block the view of the run; it is a status surface, not a dialog.
+
+## Test that actually proves it (F12 says this coverage is thin — do not fake it)
+Add a real transport test that **terminates the socket** — NOT `room.leave()`, which is the consented
+path and proves nothing. Then reconnect with the token and assert: same session id, same run id, same
+escrow, same HP, same position, and **no duplicate settlement**.
+
+## Scope discipline
+- Do NOT attempt F2 (durable settlement / SQLite). It is a separate owner-gated decision. If your
+  reconnection work touches settlement code, leave the persistence model exactly as it is.
+- Parallel Sols own `packages/client/src/scenes/arena/floor-renderer.ts` + decal/tile art
+  (`b61-render-tweaks`) and Vastaghar boss code (`b60-vastaghar-charge`). Stay out of all three.
+- Bump `SCHEMA_VERSION` in `packages/shared/src/constants.ts` if the wire shape changes; update every
+  test that pins it. LF endings.
+
+## Verification
+`pnpm gen` + `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green including your new
+transport test. Then prove it live: start a run, kill the socket, and confirm the run resumes with
+state intact. State exactly what you did to kill the socket and what you observed.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b61-reconnect.md` covering
+both findings, what changed, and the live transport-kill result. FINAL line = verdict: F3 fixed how,
+F1 fixed how, transport test result, live result, test suite result.

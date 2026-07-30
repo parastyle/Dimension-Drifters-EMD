@@ -1,0 +1,22 @@
+You are Sol `impl-b31-art-frostbore` in the ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b31-art-frostbore
+(branch sol/b31-art-frostbore). ART-ONLY. Autonomous — no questions. Report incrementally. NO live-stack boot.
+
+## Your ONE subject
+Frostbore Scattergun art REDO (owner: 'image needs to be redone, flat side profile')
+**Install:** packages/client/public/sprites/x2-frostbore-scattergun/part-1.png (OVERWRITE)
+**Generation prompt (verbatim — do not restyle):**
+"Weapon-only in-world sprite (no character, no background): a heavy frost-crusted double-barrel scattergun, icy blue-steel barrels rimmed with hoarfrost, dark wooden stock with frozen leather wrap, STRICT FLAT ORTHOGRAPHIC FULL SIDE-PROFILE (no perspective, no three-quarter view), barrels pointing RIGHT, stock LEFT, ~5 colours, gritty dark-comic cel with hard outlines. Flat #00ff00 background."
+
+## Standing laws
+- ONE image subject only (the flame-fist's two parts are ONE registered subject). LF endings only.
+- NO fingers/thumbs on any fist art. NO chains/tassels/dangles. NO player-aura framing.
+- Gritty dark-comic cel, readable silhouette, flat #00ff00 chroma background, shipped keyer clean.
+
+## Deliverables — ART ASSETS ONLY
+1. Generate via the shipped ArtKit pipeline (tools/artkit/harvest-install.mjs conventions).
+2. Install ONLY to the path(s) above. NO manifest/catalog/shared edits — the B31 integrator wires.
+3. PNG > 200x200 native, < 2048x2048, keys cleanly.
+
+## Reporting
+FIRST: write docs/sol-reports/impl-b31-art-frostbore.md with your plan. Append.
+FINAL line = verdict: subject id, PNG path(s), prompt used, pixel dimensions.

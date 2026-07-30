@@ -1,0 +1,60 @@
+You are Sol `b61-render-tweaks` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b61-render-tweaks
+(branch sol/b61-render-tweaks). RENDER TWEAKS — owner-approved. Autonomous.
+
+Read `docs/sol-reports/spec-dimension-art-direction.md` §-1 (owner rulings — binding) and §5
+(T1-T4). You are implementing **T2 and T4**. Both are already ruled on; you are not deciding whether.
+
+Ashlands is the only re-authored theme so far (merged, `d828644`). The other four still have old art.
+Everything you do must be correct for both.
+
+## T2 — terminate the arena boundary as a shelf (§3.6, §5 T2) — owner ruling R3
+Today the world ends at a hairline rail. Make it read as a **finite plateau floating in the theme's
+void** by reusing the existing per-dimension `rim.png` around the arena boundary. ~40 lines. NO new
+art, NO collision change, NO change to playable bounds.
+
+**Owner constraint (verbatim, R3):** *"we can always parallax the background past the edges later."*
+So do NOT hard-code the region beyond the shelf as a flat fill baked into the same object. Leave that
+area as ONE addressable layer a future parallax pass can replace without unpicking the shelf.
+
+## T4 — per-pack decal alpha (§5 T4) — owner ruling R6 delegates the value to the orchestrator
+The `flat` decal role renders at alpha **0.065**. There are 38 authored decal images across the
+themes and they are effectively invisible. Raise it so ground wear actually reads.
+
+**The number is a judgement call and I (the orchestrator) own it — so give me the evidence, do not
+just pick one.** Produce `docs/sol-reports/b61-evidence/decal-alpha-ladder.png`: the SAME ashlands
+scene captured at alpha 0.065 (current), 0.12, 0.18, 0.25, and 0.35, labelled, **during a fight with
+roughly 40 enemies on screen**. The question is not "can I see the decals" — it is "do the decals
+start competing with enemies for attention when the screen is busy." Ship 0.18 as the default; I will
+adjust from the ladder.
+
+Also report the per-role alphas for the other decal roles so I can see the whole picture.
+
+## Why T4 matters more than it looks — read this
+Owner ruling R7 deleted every POI landmark from dimensions. §3.1's four semantic floor tiles are now
+the ENTIRE spatial-orientation system. Separately, §2 P6 forbids memorable marks inside a 512px
+repeat tile, because the arena shows ~9x9 of them and any distinctive mark instantly reads as
+wallpaper — a defect now visible in the merged ashlands kit.
+
+The resolution of that tension is decals: **base tiles stay pristine, ALL wear ships as scattered
+decals**, which `scatterDecor` already places seeded and rotated so they never form a grid. Raising
+decal alpha is what makes that division of labour actually work. Keep it in mind while tuning; if you
+find the scatter DENSITY budget also needs to move for wear to read without the tiles carrying it,
+report that with numbers rather than silently changing it.
+
+## Explicitly NOT yours
+- T1 (unify `FLOOR_STYLES` indices) — the ashlands merge already re-mapped that entry and there is an
+  open question about the missing wear-route system. Leave `FLOOR_STYLES` alone.
+- T3 (authored rim-lip override) — skip.
+- Do NOT regenerate or retouch any tile art. A hue decision is pending with the owner.
+- Do NOT touch `packages/shared/src/mapgen.ts` or boss code — parallel Sols own those.
+
+## Verification
+`pnpm typecheck` clean, FULL `pnpm test` green. Capture the shelf live in ashlands AND in one
+un-re-authored theme (frostfell) to prove it works with old art too:
+`docs/sol-reports/b61-evidence/shelf-ashlands.png`, `shelf-frostfell.png`. Plus the alpha ladder.
+
+## Rules
+Worktree; LF endings; COMMIT YOUR WORK; orchestrator merges. Write
+`docs/sol-reports/b61-render-tweaks.md` with the shelf approach, the layer left free for parallax,
+the alpha ladder findings, and any density recommendation. FINAL line = verdict: T2 approach + line
+count, T4 shipped alpha, ladder path, capture paths, test result.

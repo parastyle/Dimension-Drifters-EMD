@@ -1,0 +1,66 @@
+You are Sol `impl-b19-integrator` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b19-integrator
+(branch sol/b19-integrator). IMPLEMENTATION — KUNG-FU WRAPS REWORK INTEGRATOR. Autonomous — no
+questions. Report incrementally. NO live-stack boot; unit + live gate on private ephemeral ports.
+
+## Context — the owner's rework order (verbatim, ledger v10 addendum B19)
+"the kung fu gloves are a disaster … our characters hands are blobs, why do ours include fingers?
+Also the hand wraps can be generated as just 1 hand wrap then just duplicate it … I want elaborate
+kung-fu combos showcasing the best of their fantasized martial art. That includes foot wraps I
+guess, punching and kicking, and forced character displacement in the animation."
+
+## Art state (ALREADY in main, harvested + reconciled)
+Each of the 4 wraps now ships TWO single-item digit-free blob sprites (max-512, keyed):
+- `part-1.png` = ONE hand wrap (oval mitt). `part-2.png` = ONE foot wrap (dome boot).
+- `x2-muay-thai-wraps` (crimson + rope ridge) · `x2-wing-chun-wraps` (white + endless knot)
+- `x2-drunken-fist-wraps` (tan + wine stains) · `x2-iron-palm-wraps` (grey + iron plates/studs)
+Manifest dims + muzzle striking-centroids were already reconciled (commit 937ded9) — re-derive
+only if you change parts. Art reports: `docs/sol-reports/impl-b19-art-*.md`.
+
+## Your job — three coupled changes
+1. **Rig duplication: 2 wrapped hands + 2 wrapped feet per character.** The wrap weapon must
+   render its part-1 on BOTH character hands and its part-2 on BOTH character feet (replacing or
+   covering the character's own hand/foot sprites while equipped — pick the cleaner mechanism in
+   SpriteRig; the character must never show 3+ fists or mixed bare/wrapped limbs). Mirror the
+   single art per side. Both facings clean.
+2. **Elaborate style-showcase combos (the Rumble Fighter scroll idiom).** Rebuild each wrap's
+   combo as a LONGER, more theatrical sequence (4-6 beats) mixing PUNCHES (hand parts) and KICKS
+   (foot parts), choreographed to its fantasized martial art:
+   - Muay Thai: teep kick -> elbow pair -> clinch knee -> spinning back-elbow finisher.
+   - Wing Chun: chain-punch triplet (very fast) -> low oblique kick -> double-palm burst.
+   - Drunken Fist: staggering weave strikes with direction feints -> sweeping leg -> falling
+     haymaker; per-beat drift direction varies.
+   - Iron Palm: slow crushing palm -> stomp kick -> wind-up double-palm quake finisher.
+   Preserve each wrap's shipped nominal DPS within ±10% (redistribute damage across the longer
+   sequence; cadence feel per style stays: wing chun fastest, iron palm heaviest).
+3. **Forced character displacement in the animation.** Combo beats carry authored character
+   displacement (forward lunge steps, drunken weave drift, muay thai clinch advance, iron palm
+   stomp advance). Displacement is SERVER-AUTHORITATIVE (extend the existing attack-root/lunge
+   machinery — see `stepPendingWeaponLunges` / attack-root movement from B5), nav-validated so it
+   cannot push through walls, and reconciled client-side without teleport pops. Remote players see
+   identical motion.
+
+## Concrete deliverables
+- SpriteRig wrap-equip rendering (hands + feet duplication, both facings).
+- 4 rebuilt combo definitions (shared weapons.ts + server GameRoom) with per-beat displacement.
+- Per-style VFX/SFX beat accents consistent with what B14 shipped (reuse recipes; adjust to new
+  beat timings; kicks get foot-anchored impact effects using the part-2 muzzle points).
+- Tests: combo-signature distinctness, DPS band, displacement authority (server moves, nav-valid),
+  rig duplication (2 hands + 2 feet, no fused pair rendering), both facings.
+- Evidence under `docs/owner-notes-audit-v10-evidence/b19-kungfu-rework/`.
+
+## Guardrails
+- Do NOT touch fans (B18), Wyrmskull (B13), Mirage (B12), characters' base sprites, pets.
+- Do NOT regenerate wrap art. LF endings only. Preserve existing tests (b14-kungfu-wraps.test.ts
+  may be superseded — update it to the new contract rather than deleting coverage).
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green. `pnpm assets:check` green.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567) on `proto-cowboy-hidden-face`: run each
+  wrap's full combo both facings; capture punch beats, kick beats, displacement travel, and
+  2-hands+2-feet rendering. Retain evidence.
+
+## Rules
+Worktree; commit on sol/b19-integrator; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b19-integrator.md` (understanding + per-style beat chart + displacement
+plan). Append per wrap. FINAL line = verdict: 4 wraps rendering 2+2 limbs, 4 elaborate combos with
+displacement, DPS bands, evidence path, files touched.

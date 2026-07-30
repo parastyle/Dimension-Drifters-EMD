@@ -1,0 +1,34 @@
+You are Sol `amend-b8-gravewarden` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b8-gravewarden-spin
+(branch sol/b8-gravewarden-spin). IMPLEMENTATION. Autonomous — no questions. Report incrementally.
+NO live-stack boot (unit + focused test is the gate).
+
+## YOUR ORDER — B8 amendment (Gravewarden continuous frontflipping beyblade)
+The v10 ledger (`docs/sol-reports/notes-ledger-v10.md` row 406) refines the B8 Gravewarden fix: owner
+clarified the intended motion is a CONTINUOUS FRONTFLIPPING BEYBLADE (continuous full-body vertical
+spin/frontflip while held/attacking), NOT the ground-plane whirlwind currently shipped by B8.
+
+Weapon: **Gravewarden Buster** (`gravediggers-spade`).
+
+## Job
+1. Replace the shipped ground-plane whirlwind choreography with a continuous frontflipping beyblade
+   spin: fixed-rate full-body/weapon vertical rotation (pitching forward, like a beyblade), maintained
+   as long as attack is held/looping. No seam at the loop point. Preserve identity as a buster spade
+   sword and existing attack coverage/damage/cadence.
+2. Locate the current whirlwind pose/animation in `packages/client/src/sprites/pose-language.ts` +
+   `packages/client/src/entities/SpriteRig.ts` + `data/weapon-concepts-300.json`. Prefer a data-driven
+   change if the existing pose vocabulary can name a `continuous-frontflip` spin family; otherwise add
+   the minimal SpriteRig pose primitive needed.
+3. Add a focused test proving continuous seamless rotation (no jitter/reset at loop point, correct
+   rotational axis: PITCH — forward/back — not YAW — spinning on the ground).
+
+## Guardrails
+- Do NOT change damage/cadence, attack coverage, hit envelope, or B17's shipped idle-hand law (this
+  is an action-owned pose, not idle). Data-first; SpriteRig additions minimal.
+
+## Verification
+- `pnpm gen` + `pnpm gen:check` + `pnpm typecheck` + FULL `pnpm test` green. LF only.
+
+## Rules
+Worktree; commit on sol/b8-gravewarden-spin; orchestrator merges. FIRST: write
+`docs/sol-reports/impl-b8-gravewarden.md` (understanding + plan). Append. FINAL line = verdict:
+continuous frontflip vs old whirlwind, seamless loop proven, files touched.

@@ -1,0 +1,31 @@
+You are Sol `impl-b1-facing` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b1-facing
+(branch sol/b1-facing). IMPLEMENTATION. Autonomous — no questions.
+
+## YOUR ORDER
+Implement BATCH B1 from the ledger. READ `docs/sol-reports/notes-ledger-v9.md` section "B1 — Game
+correctness: screen-true damage numbers and projectile facing" for the FULL authoritative spec (exact
+owner note, concrete change, likely files, acceptance signal). That section is your order; follow it.
+
+Summary: owner note (2026-07-23) — "damage numbers still face the wrong way on many hits, same with a
+few sprites like the holy skull will be upside down if shot to the left". Keep damage text screen-upright
+through the REAL world/camera/container transform chain (not just the isolated helper). For directional
+projectile art, preserve its authored upright axis and use horizontal facing/mirroring instead of blindly
+rotating asymmetric sprites through π. Audit the holy skull + every projectile flagged asymmetric in the
+projectile manifest. CLIENT-RENDERING ONLY — do NOT touch the weapon catalog.
+
+## STANDING RULES (all batches)
+- If you touch data/manifests/generated inputs, run `pnpm gen` and keep `pnpm gen:check`/`assets:check`
+  green. Keep the server booting (census guards). `pnpm typecheck` + FULL `pnpm test` GREEN in this
+  worktree before you finish. LF line endings ONLY (this repo is LF; never introduce CRLF).
+- You may CREATE new test files and extend a unit's own test; do NOT weaken existing assertions.
+- For any live gate, boot the REAL stack on PRIVATE EPHEMERAL PORTS (never 5180/2567 — owner's live
+  game). Retain captures/JSON under `docs/owner-notes-audit-v9-evidence/b1-facing/`. A real
+  transform-chain proof (screen-space baseline upright, both left/right skulls same "top", velocity still
+  correct) is the acceptance — not an isolated-helper unit test.
+- You are in a worktree; commit on sol/b1-facing (orchestrator merges). Do NOT touch the main working
+  copy or ports 5180/2567.
+
+## REPORTING (durable, incremental)
+FIRST action: write `docs/sol-reports/impl-b1-facing.md` (understanding + the transform chain you found +
+plan). Append as you go. FINAL line = verdict: per-note status, what you changed, evidence paths, files
+touched, any follow-ups. Do not ask; work autonomously.

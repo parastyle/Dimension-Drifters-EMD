@@ -1,0 +1,92 @@
+You are Sol `b90-lava-guaranteed-gaps` in an ISOLATED WORKTREE at
+C:/Users/Exped/ddv2-wt/b90-lava-guaranteed-gaps (branch sol/b90-lava-guaranteed-gaps). Autonomous.
+
+## Owner order (2026-07-27, verbatim)
+> "Platforms should not touch each other, but always be jumpable distances. Can we gaurantee that and
+> make it procedural?"
+> "also yes, make the platforms at their natural render"
+
+Context the owner gave: the Lava Foundry assets and generator were handed over from Codex and "the map
+needed alot of work."
+
+## What is true today — do not re-derive, verify then change
+
+`packages/shared/src/lava-dimension.ts`:
+- **Overlap is ALLOWED BY DESIGN.** `MAX_VISIBLE_OVERLAP_FRACTION = 0.32` (line ~37) permits two
+  platforms to overlap up to 32% of the smaller one's visible silhouette. This is the owner's
+  "platforms should not touch" complaint, encoded as a constant.
+- **Placement is REJECTION SAMPLING, not construction.** `placeLavaRooms` (~line 568) loops
+  `for (let attempt = 0; attempt < 32; attempt++)`, and on exhaustion THROWS:
+  `"Lava Foundry placement exhausted 32 deterministic overlap/traversal attempts"`. A retry loop
+  cannot guarantee an invariant; it can only fail. That throw is a live crash path.
+- Jump reach IS already respected: `DIST_JUMP_REACH` = 372px, with the lava budget deliberately
+  ~32px under it (see the comment at line ~33). Keep that safety margin.
+- `TARGET_GAP_MIN = 72`, `TARGET_GAP_MAX = 124` are targets, not enforced bounds.
+- `nativeScale: 1` is already set — platforms already render at natural size.
+- Hero/mega platforms appear on only `rng.chance(0.16)` of maps and ONLY in the `hub` slot;
+  `spawn` is hardcoded to `broken-security-gate-platform` every single run.
+
+## Deliverable 1 — GUARANTEE the two invariants, by construction
+
+**INV-A (separation):** no two platforms' WALKABLE COLLISION SURFACES may touch or overlap. Minimum
+clearance ≥ a named constant (start at the existing 72px target floor).
+**INV-B (traversability):** every graph edge's crossing must be ≤ the shipped distance-jump budget,
+keeping the existing margin under `DIST_JUMP_REACH`.
+
+Requirements:
+- Place BY CONSTRUCTION along the connection graph, not by guess-and-reject. For each edge, choose a
+  direction and a separation sampled from `[MIN_CLEARANCE, MAX_JUMP_BUDGET]` measured between the two
+  platforms' actual surfaces, then position the child accordingly. Construction that satisfies the
+  invariant by arithmetic cannot "fail".
+- **Measure clearance on the COLLISION SURFACES, not the image rect and not `visibleBounds`.** These
+  PNGs carry transparent margins (e.g. a 1368x1007 image with visibleBounds `[32,32,1304,943]`), and
+  the platforms are irregular. Rect-vs-rect is the wrong metric in both directions: it reports
+  overlap where only transparency meets, and it reports clearance where two silhouettes actually
+  touch. `collisionBounds` / the collision polygons are the truth. Say what metric you used.
+- **Delete the 32-attempt throw.** If a construction genuinely cannot place a room (e.g. a 4K hero in
+  a tight arena), it must DEGRADE deterministically — pick a smaller prefab, reroute, or shrink the
+  graph — never throw and never ship a touching pair. State the degradation ladder.
+- Keep generation DETERMINISTIC and seeded. Same seed must produce the same map.
+- Respect `MAP_MARGIN` and the arena bounds as now.
+- Keep `nativeScale: 1`. Platforms stay at natural render; do NOT solve crowding by scaling art down.
+
+Keep a final verification pass that asserts INV-A and INV-B over the produced layout. With correct
+construction it can never fire — that is the point. It is a tripwire, not the mechanism.
+
+## Deliverable 2 — massive platforms must actually appear
+
+The owner asked for some platforms to be massive at natural render. Four 4K heroes exist
+(3840x2160 / 2160x3840, ~6x the area of the five regulars, which sit within 14% of each other) but
+16% x hub-only means `broken-mega-arena` reaches roughly 1 map in 25.
+
+- Raise the hero rate substantially (start ~0.5) and let a hero occupy more than the `hub` slot, so a
+  massive room can be a destination (`reward` / `exit`) and not only the middle.
+- Stop hardcoding `spawn` to one prefab if you can do it without weakening the invariants; if you
+  decide a fixed known-safe spawn is worth keeping, SAY SO and why.
+- These are 4K images in an arena with bounds — placing them at native size is the hard case for
+  INV-A. That is the point of doing it after Deliverable 1, not before.
+
+## Explicitly OUT of scope
+- Do NOT author or regenerate art. Five near-identical regular platforms is a real problem but it is
+  an art order, not this batch. Note it in the report.
+- Do not touch `data/weapon-concepts-300.json` or the walkability painter.
+- Do not weaken the collision data to make placement easier.
+
+## Guardrails
+- Canon L09/L10/L11 stand. LF endings. Bump `SCHEMA_VERSION` only if the wire shape changes.
+- The lava dimension must remain additive: the five pre-existing dimensions keep working unchanged.
+
+## Verification
+- `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green TWICE.
+- **Property test over many seeds** (>= 2000): for every generated layout, assert INV-A (no touching
+  collision surfaces, clearance >= min) and INV-B (every edge crossing within the jump budget), and
+  assert generation NEVER throws. Report the seed count and any seed that degraded, with its ladder step.
+- Report the measured distribution of realised gaps (min / median / max) and the hero-appearance rate
+  over those seeds, before and after.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b90-lava-guaranteed-gaps.md`
+with the construction algorithm, the clearance metric you used and why, the degradation ladder that
+replaced the throw, the seed-sweep results, and the hero rate before/after. FINAL line = verdict:
+construction method, clearance metric, min/median/max gap, seeds swept, throws eliminated y/n, hero
+rate before/after, 2x test results.

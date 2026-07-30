@@ -1,0 +1,44 @@
+You are Sol `audit-engineering-practice` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/audit-engineering-practice
+(branch sol/audit-engineering-practice). AUDIT ONLY — no fixes, no refactors. Autonomous.
+
+## The owner's ask (verbatim, 2026-07-25)
+"I was under the impression all this was common sense from the get-go. What other things have we
+neglected best practice for in the name of haste? ... diagnose the code base for missing in best
+practice for like games? Doesn't have to be netcode or movement related."
+
+Context: DDv2 shipped enormous CONTENT velocity (340+ weapons, 37 characters, pets, bosses, an
+economy, an LDtk map pipeline) in weeks. Known debt already being addressed elsewhere: rig/
+presentation architecture (B54), netcode feel (B42/B51), monolith structure (B43 split). DO NOT
+re-report those. Find what ELSE a shipped game of this genre has that we lack or do badly.
+
+## Your lens: ENGINEERING PRACTICE (read the actual code; cite files/lines)
+Audit at least these, and anything else you find. For each: what best practice is, what we do,
+severity (player-visible? data-loss? ship-blocking?), and a concrete minimal fix.
+1. **Failure + recovery**: what happens on server crash, room crash, disconnect mid-run, tab
+   backgrounding, browser refresh? Is there reconnection? Does a player lose a run/loot on a
+   blip? Colyseus `allowReconnection` usage. Error boundaries around scene code.
+2. **Persistence integrity**: meta-account/bank/unlocks (B20) live in localStorage-ish storage —
+   is there schema versioning, migration, corruption handling, backup, or does a bad write brick
+   a player? Any place a crash mid-write loses the bank.
+3. **Performance budgets**: object pooling for projectiles/VFX/damage numbers vs per-frame
+   allocation; texture atlas count and draw-call behavior with 340 weapons + 48 particle packs;
+   GC pressure in the render loop; any O(n^2) over entities; enemy cap behavior under a swarm.
+   Measure where cheap to do so.
+4. **Asset + memory**: total sprite payload, whether everything loads up-front vs on demand,
+   audio buffer count (60+ MP3s), leak risk on scene restart (event listeners, tweens, timers,
+   Phaser objects not destroyed).
+5. **Observability**: is there any structured logging, error reporting, or crash telemetry a
+   solo dev could read after a bad session? Dev-only vs prod behavior.
+6. **Determinism + replay**: seeds are used well in mapgen — is combat reproducible enough to
+   debug a report like "this weapon broke"? Is there any repro/replay capability?
+7. **Test strategy gaps**: 216 files / 2775 tests exist — where is coverage thin RELATIVE TO
+   RISK (economy math, save/load, reconnection, boss state machines, pack rarity)? Flaky tests
+   (a known order-dependent flake exists) and what makes them flaky.
+8. **Build/release**: CI contents, prod build correctness, dev-only code fenced out of prod
+   (dev tools were dev-gated — verify), bundle size, source maps, versioning.
+
+## Rules
+Worktree; READ-ONLY analysis; COMMIT only your report. Write
+docs/sol-reports/audit-engineering-practice.md: a RANKED table (severity x effort) with file:line
+citations, then per-item detail and minimal-fix sketches. No code changes.
+FINAL line = verdict: N findings, top-3 by severity named.

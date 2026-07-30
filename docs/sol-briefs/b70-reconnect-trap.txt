@@ -1,0 +1,87 @@
+You are Sol `b70-reconnect-trap` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b70-reconnect-trap
+(branch sol/b70-reconnect-trap). OWNER-BLOCKING REGRESSION. Autonomous.
+
+## The report (owner, verbatim, 2026-07-26)
+> "so when i test the game, I like to refresh my webpage and when I do you have a reconnect current
+> session thing which basically locks me into a map with no enemies, I cant press T or go to lobby and
+> I cant move from the beginning circle"
+
+This is a TRAP STATE. It is strictly worse than having no reconnection at all, and it blocks the
+owner's primary testing loop (refresh to re-test). Treat it as P0.
+
+## What I already know
+`packages/client/src/net/reconnection.ts` stores the reservation in **sessionStorage** under
+`dd.reconnect.v1`. sessionStorage SURVIVES A PAGE REFRESH, so every refresh reconnects into the old
+room rather than starting fresh. Shipped in the B61 reconnection batch — my brief explicitly asked for
+"refresh recovery", which was the wrong call for this game's actual usage.
+
+## There are TWO separate defects. Fix BOTH.
+
+### Defect 1 — refresh should not silently hijack the session
+A deliberate page refresh is not a transport failure. Reconnection exists for a Wi-Fi blip or a
+dropped socket, NOT for the developer/player choosing to reload.
+
+Decide and implement the right policy, and justify it in your report. Strong recommendation:
+**refresh starts FRESH by default**, and reconnection fires on genuine unexpected transport loss.
+If you keep any refresh-resume behaviour at all, it MUST be an explicit opt-in the user chooses,
+never an automatic takeover.
+
+### Defect 2 — the reconnected state is BROKEN, and that is a bug on its own
+Even when reconnection is correct, the owner lands in a room with:
+- no enemies
+- movement locked at the spawn circle
+- T (Testing Grounds) refused
+- no way back to the lobby
+
+So the restored session is not actually playable. **Diagnose why.** Candidates: the room was disposed
+and recreated empty; the run is in a terminal/settled state but the client still attaches; host status
+is lost so `toggleTraining` is refused (`room-progression.ts` requires `isHost`); spawn//ready gating
+never releases; the wave/spawner never resumes. Find the real cause — do not paper over it.
+
+**A reconnect that restores an unplayable room must fail loudly and fall back to a fresh session
+rather than attaching.** Validate the room is actually resumable BEFORE committing the player to it.
+
+## THE NON-NEGOTIABLE RULE
+**There must ALWAYS be an escape hatch.** No state in this game may ever trap the player with no way
+out. Whatever the reconnect UI does, it needs a visible, always-available way to abandon and start
+fresh — and that control must work even when the underlying room is broken. The owner could not reach
+the lobby, could not reach Testing Grounds, and could not move. That must be impossible by construction.
+
+Standing law: never interrupt gameplay with a modal. The reconnect overlay is a status surface — it
+must not steal input or block the view. If the current overlay is what is eating the T key or
+movement input, that is squarely part of this bug.
+
+## Do NOT regress what B61 got right
+- Genuine transport loss must still preserve the run (`allowReconnection`, 30s seat reservation).
+- `packages/server/src/integration.test.ts` terminates a REAL socket and asserts same session, run,
+  escrow, HP, position and no duplicate settlement. Keep that passing and keep it strict.
+- Durable settlement (B62) must keep working.
+
+## Known flake, adjacent — fix it while you are in here
+`packages/server/src/integration.test.ts > real Colyseus transport > terminates the socket and
+reconnects...` fails roughly 1 run in 2 of the FULL suite and passes 3/3 in isolation. Two prior Sols
+concluded it is a parallel-load race, not a product bug. A test this flaky is not evidence any more.
+Make it deterministic without weakening what it asserts.
+
+## Verification
+- `pnpm gen:check` + `pnpm typecheck` clean, FULL `pnpm test` green **three times consecutively**
+  (the flake above means one green run proves nothing).
+- Live, and state exactly what you observed for each:
+  1. Start a run, REFRESH the page -> you get a fresh, fully playable session (can move, can press T,
+     can reach the lobby).
+  2. Start a run, kill the socket for real -> the run is preserved and resumes PLAYABLE.
+  3. From any reconnect state, the escape hatch returns you to a working fresh session.
+- Captures: `docs/sol-reports/b70-evidence/after-refresh.png`, `after-transport-loss.png`,
+  `escape-hatch.png`.
+
+## Guardrails
+- **Owner map files OFF LIMITS:** `packages/shared/src/mapgen.ts`,
+  `packages/client/src/scenes/arena/floor-renderer.ts`, `packages/client/public/tiles/**`.
+- Do not touch `data/weapon-concepts-300.json`.
+- Bump `SCHEMA_VERSION` if wire shape changes; update every test pinning it. LF endings.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Write `docs/sol-reports/b70-reconnect-trap.md` with
+the refresh policy you chose and why, the root cause of the unplayable room, the escape-hatch design,
+and the flake fix. FINAL line = verdict: refresh policy, trap root cause, escape hatch, flake fix,
+3x test results, capture paths.

@@ -1,0 +1,30 @@
+You are Sol `impl-b48-gun-holds` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b48-gun-holds
+(branch sol/b48-gun-holds). GUN HOLD/MECHANISM CORRECTIONS (owner notes 2026-07-24/25). Autonomous.
+
+## 8 orders (verbatim-condensed from data/owner-notes.jsonl)
+1. `x2-hallowbore-coachgun` — "requires a pistol hammer fan, not a pump": swap pump mechanism ->
+   fan-hammer treatment (B29 pattern; Twin-Maw is the reference).
+2. `x2-boomstick-saddlegun` — "this is a lever action, not a pump": pump -> lever mechanism.
+3. `x2-dustline-lever-action` — lever hand ANGLED with the lever, still touching the trigger.
+4. `x2-gravedog-auto-rifle` — current bullet VFX reads as tracers: keep tracers but give it real
+   bullet projectiles (tracer presentation over an actual ballistic projectile).
+5. `x2-widowmaker-arbalest` — stock to shoulder, one hand on trigger, one hand on (crank) lever.
+6. `x2-whisperbarb-hand-crossbow` — dual pair: one held higher than the other to showcase both.
+7. `x2-powderkeg-mortar` — one hand on the handle, the other stays where it is.
+8. `x2-thunderhead-repeater-cannon` — one hand on barrel, trigger hand does the lever animation.
+Census pins will shift (pump/lever/fan counts) — update deliberately.
+
+## Guardrails
+Post-B43 layout: gun mechanisms live in packages/client/src/entities/rig/rig-gun-mechanisms.ts +
+grips in catalog. Parallel Sols B49 (melee/thrown) + B50 (caster VFX) — no overlap. STANDING
+LAWS: no melee displacement authoring; gun recoil (B45) untouched. LF endings; schema from
+CURRENT + pins; migrate tests.
+
+## Verification
+gen/gen:check/typecheck/FULL test green. Live gate (private ports, never 5180/2567): each weapon
+both facings showing its corrected hold/mechanism. Evidence under
+docs/owner-notes-audit-v12-evidence/b48-gun-holds/.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Report docs/sol-reports/impl-b48-gun-holds.md.
+FINAL line = verdict: 8 orders done, mechanism census deltas, evidence path, files touched.

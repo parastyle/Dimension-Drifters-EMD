@@ -1,0 +1,68 @@
+You are Sol `dead-parts-panel`. READ-ONLY DESIGN PANEL. Do NOT edit code/data/tests. Write ONLY
+`docs/sol-reports/panel-dead-body-parts.md`. Main tree. Autonomous — no questions.
+
+## The owner's ask (verbatim, 2026-07-23T16:22)
+> Hellmouth Palmcaster: "Many one handed weapons are leaving the unused hand on the other side of the
+> character's orientation. Making it look weird, both hands should be on the side of the character
+> he/she is facing during these times they would otherwise be idle. Get a team of Sols understanding
+> when our characters have dead (unused) body parts, and what they should be doing"
+
+Owner explicitly asked for a DESIGN PANEL to figure out when characters have dead/unused body parts
+during weapon action AND what those parts should be doing to look alive/intentional (not just
+mirrored to the "correct" facing side).
+
+## Context you MUST read before proposing
+- The whole-art rig has 6 discrete pieces (body/head/hand-l/hand-r/foot-l/foot-r) each drawn
+  independently; pose is a set of per-part transforms per weapon. `packages/client/src/sprites/pose-
+  language.ts` + `packages/client/src/entities/SpriteRig.ts` + `packages/shared/src/weapons.ts` +
+  `data/weapon-concepts-300.json` are the load-bearing files. The floating-head bob and hand/foot
+  offsets come from the manifest.
+- Existing 2H vs 1H distinction is via `tags.grip` ("2H" / "1H") and per-weapon `gripPoints.primary` /
+  `gripPoints.secondary`.
+- The character can face LEFT or RIGHT (horizontal mirror via facing datum). "Facing side" = the
+  direction the mouse is; "far side" = opposite.
+- Recent B8 pose work added new stances (Voltedge near-ear stab, Saint-Bough 1H walking staff, etc.).
+- Prior grip audits: `docs/sol-reports/v7-hands-affine.md`, `tests/owner-notes-weapon-pose.test.ts`,
+  the head-fit + grip laws.
+
+## The panel's questions (address each)
+1. **When are hands "dead"?** Taxonomize the states — one-handed weapon (off-hand idle), thrown weapon
+   between throws (both hands recover), reloading gun (support hand pumps), charging/channeling caster
+   (off-hand does nothing), during a swing's recovery frames, etc.
+2. **The wrong-side bug** — WHY does the off-hand end up on the far side of the facing direction for
+   many 1H weapons? (Trace it in code — is the off-hand pinned to a rig-local x that isn't mirrored on
+   facing? Or is it default-parked at world "left" regardless of facing?)
+3. **Same for feet** — do idle feet drift under the character or land in weird gaps during runs or
+   swings?
+4. **Design language for "alive"** — what SHOULD the idle-side hand do? Options (rank them and pick a
+   default per weapon class):
+   - Rest on the hip / belt (character-side).
+   - Hover at low guard on the facing side (ready but not committed).
+   - Mirror-guard (extended toward the target, defensive posture — think fighting games' off-hand).
+   - Rest on the equipped weapon secondary point when the weapon supports it.
+   - Fingers curl / passive vs interactive (secondary weapon flourish / prop).
+5. **The systemic fix shape** — propose a compact rule set the impl Sol can execute:
+   - A per-weapon-class default "idle-hand pose" (a small vocabulary — 4-5 poses tops).
+   - A universal mirror rule: idle appendages ALWAYS resolve to the FACING side, never the far side.
+   - Data hooks: a `poseLanguage.idle` datum per weapon class (or per weapon override) with the pose
+     name; the SpriteRig applies it. What columns/fields would you add to the data + generator?
+   - Testability: how do you unit-test "no idle appendage on the far side across every weapon"?
+6. **Interaction with existing systems**: dual-wield (both hands active — the idle rule doesn't apply),
+   thrown recovery (both hands recover on facing side), casters channeling (off-hand doing the
+   "casting" gesture, not idle), guns (off-hand as foregrip already handled).
+7. **Feet during idle vs during action** — should feet always resolve to a "planted natural stance"
+   regardless of upper-body pose? Any weapon-class specific stance (samurai wide stance vs pistol
+   loose stance)?
+
+## Deliverable
+A structured design panel: (a) the taxonomy of dead-part states, (b) the diagnosis of the
+wrong-side wrong-facing bug, (c) a ranked recommendation for the idle-hand vocabulary + universal
+mirror rule, (d) a proposed data schema addition (fields, defaults), (e) an implementation plan for
+one Sol to execute (scope, files, tests, evidence), (f) call out any weapons that need a bespoke idle
+call-out. No code changes; a follow-up impl Sol takes this and does the work.
+
+## Rules
+READ-ONLY. Your report is the only artifact. LF endings. Cite file:line + verbatim owner text.
+FIRST: create the report with your reading map. FINAL line = verdict: the universal idle-mirror rule,
+the recommended idle-hand vocabulary (4-5 poses), the proposed data schema addition, and the impl-Sol
+plan you'd hand off.

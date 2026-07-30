@@ -1,0 +1,39 @@
+You are Sol `impl-b39-stance-amplify` in an ISOLATED WORKTREE at C:/Users/Exped/ddv2-wt/b39-stance-amplify
+(branch sol/b39-stance-amplify). TARGETED FIX. Autonomous — no questions.
+
+## Context — the owner rejected B35's implementation as invisible (verbatim orders)
+Original (16:21): "lets make them shoulder level and bring the head down just a nod to meet them
+half-way....i think thats how soldiers do it irl"
+Rejection: "I didnt see any head going closer to the gun for weapons with a sight or long barrel,
+u sure it went in?"
+B35 shipped only a 0.055 rad (~3°) head ROTATION (`GUN_HEAD_NOD_RAD` in
+packages/client/src/sprites/firing-stance.ts, applied in SpriteRig ~line 12137) — no downward
+head movement. Too subtle to see.
+
+## The fix — a VISIBLE cheek-to-stock read
+1. While a gun is held (same hasGunHeld/rangedAimBlend gating B35 used), the head TRANSLATES
+   DOWN toward the shoulder-level gun line — a real drop, not just rotation. Magnitude: clearly
+   visible at combat zoom (start ~18-25% of head height as the baseline drop; tune on captures).
+2. Scale the drop by the weapon's aiming fiction: LONG-BARREL + SIGHTED weapons (rifles,
+   snipers/bolt family, railguns — derive from catalog family/handling tags, document the
+   mapping) get the FULL drop (aiming down the sight); pistols/short guns get ~half.
+3. Keep B35's rotation nod, amplified to stay proportionate with the drop (rotation + translation
+   together read as the soldier cheek-weld).
+4. Both facings; no clipping of head into torso/gun art; smooth blend in/out with the existing
+   rangedAimBlend so it doesn't snap.
+
+## Guardrails
+- Rebase onto CURRENT main (B38 hammer-layering just landed in SpriteRig — build on it).
+- Presentation only; no schema/server changes expected. LF endings; migrate affected tests.
+
+## Verification
+- `pnpm typecheck` + FULL `pnpm test` green.
+- Live gate on PRIVATE EPHEMERAL PORTS (never 5180/2567) on `proto-cowboy-hidden-face`: hold a
+  bolt-action rifle, a railgun, and a pistol; capture both facings; the rifle/railgun captures
+  must show an OBVIOUS head-down-to-gun read (side-by-side with an unarmed idle capture for
+  contrast). Evidence under `docs/owner-notes-audit-v11-evidence/b39-stance-amplify/`.
+
+## Rules
+Worktree; COMMIT YOUR WORK; orchestrator merges. Report at
+`docs/sol-reports/impl-b39-stance-amplify.md`. FINAL line = verdict: drop px by weapon class,
+rotation rad, contrast captures retained, files touched.
