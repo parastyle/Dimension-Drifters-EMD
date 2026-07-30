@@ -1,0 +1,369 @@
+{
+  "name": "overgrown-ruin-v3-stage-foliage-and-bird",
+  "canvas": {
+    "width": 3840,
+    "height": 2160,
+    "aspect": "16:9"
+  },
+  "render_order": [
+    "deep-background-static",
+    "parallax-bird-actor",
+    "stage-plate-clean",
+    "battleground-fern-sprites",
+    "characters-and-vfx",
+    "foreground-lens-overlay"
+  ],
+  "layers": {
+    "deep-background-static": "layers/deep-background-static-3840x2160.png",
+    "stage-plate-clean": "layers/stage-plate-clean-alpha-3840x2160.png",
+    "foreground-lens-overlay": "layers/foreground-lens-overlay-alpha-3840x2160.png",
+    "battleground-ferns-placement-preview-layer": "props/battleground-ferns-placement-alpha-3840x2160.png"
+  },
+  "battleground_fern_pieces": [
+    {
+      "id": "01-green-broadleaf-fern",
+      "cropped_path": "props/battleground-ferns/cropped/01-green-broadleaf-fern.png",
+      "sheet_aligned_path": "props/battleground-ferns/full-canvas/01-green-broadleaf-fern-sheet-aligned.png",
+      "source_sheet_bounds_xywh": [
+        572,
+        68,
+        436,
+        275
+      ],
+      "pivot_local_xy": [
+        218,
+        269
+      ],
+      "suggested_stage_placement": {
+        "anchor_world_xy": [
+          540,
+          940
+        ],
+        "scale": 0.54,
+        "render_order": 18,
+        "notes": "Anchor is the bottom base of the plant cluster on the 3840x2160 stage canvas."
+      },
+      "suggested_animation": {
+        "type": "stage-fern-sway",
+        "rotation_degrees": 2.2,
+        "period_seconds": 5.7,
+        "phase_seconds": 0.0,
+        "translation_px": [
+          4.2,
+          0
+        ],
+        "notes": "Increased sway for visible preview motion; reduce by ~50% for a subtler in-game idle."
+      }
+    },
+    {
+      "id": "02-purple-broadleaf-fern",
+      "cropped_path": "props/battleground-ferns/cropped/02-purple-broadleaf-fern.png",
+      "sheet_aligned_path": "props/battleground-ferns/full-canvas/02-purple-broadleaf-fern-sheet-aligned.png",
+      "source_sheet_bounds_xywh": [
+        98,
+        87,
+        387,
+        251
+      ],
+      "pivot_local_xy": [
+        193,
+        245
+      ],
+      "suggested_stage_placement": {
+        "anchor_world_xy": [
+          1250,
+          930
+        ],
+        "scale": 0.5,
+        "render_order": 18,
+        "notes": "Anchor is the bottom base of the plant cluster on the 3840x2160 stage canvas."
+      },
+      "suggested_animation": {
+        "type": "stage-fern-sway",
+        "rotation_degrees": 2.0,
+        "period_seconds": 6.1,
+        "phase_seconds": -1.2,
+        "translation_px": [
+          3.8,
+          0
+        ],
+        "notes": "Increased sway for visible preview motion; reduce by ~50% for a subtler in-game idle."
+      }
+    },
+    {
+      "id": "03-low-yellow-green-fern",
+      "cropped_path": "props/battleground-ferns/cropped/03-low-yellow-green-fern.png",
+      "sheet_aligned_path": "props/battleground-ferns/full-canvas/03-low-yellow-green-fern-sheet-aligned.png",
+      "source_sheet_bounds_xywh": [
+        1074,
+        153,
+        348,
+        179
+      ],
+      "pivot_local_xy": [
+        174,
+        173
+      ],
+      "suggested_stage_placement": {
+        "anchor_world_xy": [
+          1770,
+          965
+        ],
+        "scale": 0.43,
+        "render_order": 18,
+        "notes": "Anchor is the bottom base of the plant cluster on the 3840x2160 stage canvas."
+      },
+      "suggested_animation": {
+        "type": "stage-fern-sway",
+        "rotation_degrees": 1.8,
+        "period_seconds": 5.4,
+        "phase_seconds": -2.0,
+        "translation_px": [
+          3.2,
+          0
+        ],
+        "notes": "Increased sway for visible preview motion; reduce by ~50% for a subtler in-game idle."
+      }
+    },
+    {
+      "id": "04-serrated-green-fern",
+      "cropped_path": "props/battleground-ferns/cropped/04-serrated-green-fern.png",
+      "sheet_aligned_path": "props/battleground-ferns/full-canvas/04-serrated-green-fern-sheet-aligned.png",
+      "source_sheet_bounds_xywh": [
+        1008,
+        392,
+        419,
+        253
+      ],
+      "pivot_local_xy": [
+        209,
+        247
+      ],
+      "suggested_stage_placement": {
+        "anchor_world_xy": [
+          2530,
+          965
+        ],
+        "scale": 0.48,
+        "render_order": 18,
+        "notes": "Anchor is the bottom base of the plant cluster on the 3840x2160 stage canvas."
+      },
+      "suggested_animation": {
+        "type": "stage-fern-sway",
+        "rotation_degrees": 2.1,
+        "period_seconds": 6.3,
+        "phase_seconds": -0.6,
+        "translation_px": [
+          3.7,
+          0
+        ],
+        "notes": "Increased sway for visible preview motion; reduce by ~50% for a subtler in-game idle."
+      }
+    },
+    {
+      "id": "05-curled-vine-sprout",
+      "cropped_path": "props/battleground-ferns/cropped/05-curled-vine-sprout.png",
+      "sheet_aligned_path": "props/battleground-ferns/full-canvas/05-curled-vine-sprout-sheet-aligned.png",
+      "source_sheet_bounds_xywh": [
+        148,
+        405,
+        280,
+        237
+      ],
+      "pivot_local_xy": [
+        140,
+        231
+      ],
+      "suggested_stage_placement": {
+        "anchor_world_xy": [
+          3220,
+          960
+        ],
+        "scale": 0.5,
+        "render_order": 18,
+        "notes": "Anchor is the bottom base of the plant cluster on the 3840x2160 stage canvas."
+      },
+      "suggested_animation": {
+        "type": "stage-fern-sway",
+        "rotation_degrees": 2.5,
+        "period_seconds": 5.9,
+        "phase_seconds": -1.7,
+        "translation_px": [
+          4.5,
+          0
+        ],
+        "notes": "Increased sway for visible preview motion; reduce by ~50% for a subtler in-game idle."
+      }
+    },
+    {
+      "id": "06-broad-low-leaf-cluster",
+      "cropped_path": "props/battleground-ferns/cropped/06-broad-low-leaf-cluster.png",
+      "sheet_aligned_path": "props/battleground-ferns/full-canvas/06-broad-low-leaf-cluster-sheet-aligned.png",
+      "source_sheet_bounds_xywh": [
+        504,
+        457,
+        432,
+        200
+      ],
+      "pivot_local_xy": [
+        216,
+        194
+      ],
+      "suggested_stage_placement": {
+        "anchor_world_xy": [
+          740,
+          1300
+        ],
+        "scale": 0.34,
+        "render_order": 18,
+        "notes": "Anchor is the bottom base of the plant cluster on the 3840x2160 stage canvas."
+      },
+      "suggested_animation": {
+        "type": "stage-fern-sway",
+        "rotation_degrees": 1.7,
+        "period_seconds": 6.8,
+        "phase_seconds": -0.9,
+        "translation_px": [
+          2.9,
+          0
+        ],
+        "notes": "Increased sway for visible preview motion; reduce by ~50% for a subtler in-game idle."
+      }
+    },
+    {
+      "id": "07-long-arched-fern",
+      "cropped_path": "props/battleground-ferns/cropped/07-long-arched-fern.png",
+      "sheet_aligned_path": "props/battleground-ferns/full-canvas/07-long-arched-fern-sheet-aligned.png",
+      "source_sheet_bounds_xywh": [
+        804,
+        679,
+        374,
+        258
+      ],
+      "pivot_local_xy": [
+        187,
+        252
+      ],
+      "suggested_stage_placement": {
+        "anchor_world_xy": [
+          2960,
+          1290
+        ],
+        "scale": 0.36,
+        "render_order": 18,
+        "notes": "Anchor is the bottom base of the plant cluster on the 3840x2160 stage canvas."
+      },
+      "suggested_animation": {
+        "type": "stage-fern-sway",
+        "rotation_degrees": 1.7,
+        "period_seconds": 7.0,
+        "phase_seconds": -2.4,
+        "translation_px": [
+          2.8,
+          0
+        ],
+        "notes": "Increased sway for visible preview motion; reduce by ~50% for a subtler in-game idle."
+      }
+    },
+    {
+      "id": "08-small-ground-sprout",
+      "cropped_path": "props/battleground-ferns/cropped/08-small-ground-sprout.png",
+      "sheet_aligned_path": "props/battleground-ferns/full-canvas/08-small-ground-sprout-sheet-aligned.png",
+      "source_sheet_bounds_xywh": [
+        302,
+        713,
+        405,
+        224
+      ],
+      "pivot_local_xy": [
+        202,
+        218
+      ],
+      "suggested_stage_placement": {
+        "anchor_world_xy": [
+          1970,
+          1170
+        ],
+        "scale": 0.32,
+        "render_order": 18,
+        "notes": "Anchor is the bottom base of the plant cluster on the 3840x2160 stage canvas."
+      },
+      "suggested_animation": {
+        "type": "stage-fern-sway",
+        "rotation_degrees": 1.6,
+        "period_seconds": 6.5,
+        "phase_seconds": -1.5,
+        "translation_px": [
+          2.6,
+          0
+        ],
+        "notes": "Increased sway for visible preview motion; reduce by ~50% for a subtler in-game idle."
+      }
+    }
+  ],
+  "parallax_bird_actor": {
+    "id": "forest-parallax-bird",
+    "path": "props/forest-parallax-bird-alpha.png",
+    "source_path": "props/forest-parallax-bird-alpha-raw.png",
+    "bounds_xywh": [
+      0,
+      91,
+      1310,
+      850
+    ],
+    "pivot_local_xy": [
+      655,
+      425
+    ],
+    "render_order": 5,
+    "suggested_motion": {
+      "type": "background-parallax-actor",
+      "from_xy": [
+        -900,
+        520
+      ],
+      "to_xy": [
+        4300,
+        360
+      ],
+      "duration_seconds": 28,
+      "scale": 0.34,
+      "bob_px": 14,
+      "notes": "Render above static deep background and below stage plate. Do not scroll the deep background."
+    },
+    "wings_down_path": "props/forest-parallax-bird-wings-down-alpha.png",
+    "wings_down_source_path": "props/forest-parallax-bird-wings-down-alpha-raw.png",
+    "flap_animation": {
+      "type": "two-frame-flap",
+      "frame_size": [
+        1672,
+        941
+      ],
+      "frame_duration_seconds": 0.14,
+      "normalized_frames": [
+        "props/bird-flap/frame-01-wings-up-alpha.png",
+        "props/bird-flap/frame-02-wings-down-alpha.png"
+      ],
+      "spritesheet_path": "props/bird-flap/forest-parallax-bird-flap-sheet-2x.png",
+      "notes": "Use normalized same-canvas frames for playback to avoid placement jitter. Frame 02 is shifted slightly down in the normalized canvas so the head/body align with frame 01. The cropped standalone bird files are for inspection or custom placement.",
+      "frame_02_alignment_offset_xy": [
+        -8,
+        95
+      ]
+    }
+  },
+  "previews": {
+    "clean_stage_static_background": "previews/clean-stage-static-background-preview.png",
+    "clean_stage_with_separate_ferns": "previews/clean-stage-with-separate-ferns-preview.png",
+    "full_composite_with_ferns_and_lens": "previews/full-composite-with-ferns-and-lens-preview.png",
+    "bird_behind_stage": "previews/bird-behind-stage-preview.png",
+    "bird_parallax_actor_clear": "previews/bird-parallax-actor-clear-preview.png",
+    "fern_contact_sheet": "previews/battleground-fern-pieces-contact-sheet.png",
+    "animated_html": "index.html",
+    "bird_flap_contact_sheet": "previews/bird-flap-2frame-contact-sheet.png",
+    "bird_flap_gif": "previews/bird-flap-2frame-preview.gif",
+    "bird_flap_normalized_alignment": "previews/bird-flap-normalized-alignment-preview.png",
+    "bird_flap_in_scene_gif": "previews/bird-flap-in-scene-preview.gif"
+  },
+  "prompt_handoff": "prompt.md"
+}

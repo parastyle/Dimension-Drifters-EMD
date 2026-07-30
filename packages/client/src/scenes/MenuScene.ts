@@ -798,6 +798,18 @@ export class MenuScene extends Phaser.Scene {
     // A deliberate browser reload is a fresh playtest boundary, not a transport failure. Consume the
     // page-surviving marker here, before ArenaScene can see it, and create a private fresh room so the
     // still-reserved old seat cannot catch the new session through joinOrCreate matchmaking.
+    // SLICE 1 of the squad-autobattler direction (docs/DESIGN_LOG.md) — `?battle=1` opens the Overgrown
+    // Ruin stage standalone. Checked FIRST, ahead of the reconnect-reservation and dev deep-links,
+    // because this scene has no room, no session and no server: a stale arena reservation from a prior
+    // playtest would otherwise short-circuit straight into `arena` and the route would look broken.
+    // Deliberately its own scene so the existing game is untouched while the new direction is prototyped.
+    if (new URLSearchParams(location.search).get("battle")) {
+      void import("./battle/BattleScene.js").then(({ BattleScene }) => {
+        if (!this.scene.get("battle")) this.scene.add("battle", BattleScene, false);
+        this.scene.start("battle");
+      });
+      return;
+    }
     const reloadReservation = loadReconnectReservation();
     if (reloadReservation) {
       clearReconnectReservation(reloadReservation.token);
