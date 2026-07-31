@@ -160,3 +160,25 @@ describe("dodge presentation", () => {
     expect(fight).toContain("this.sim.isDodging(unit)");
   });
 });
+
+describe("widescreen fill", () => {
+  const stage = readFileSync(path.join(here, "BattleStage.ts"), "utf8");
+
+  it("offers cover as well as contain, so a wider-than-16:9 display can fill", () => {
+    // The stage art is authored 3840x2160. Contain preserves the whole frame and therefore pillarboxes on
+    // anything wider — measured at 320px bars a side on 2560x1080. Cover fills and crops instead.
+    expect(stage).toContain("Math.max(width / CANVAS_W, height / CANVAS_H)");
+    expect(stage).toContain("setFillMode");
+  });
+
+  it("refuses to crop past the band the fight occupies", () => {
+    expect(stage).toContain("MIN_VISIBLE_CANVAS_H");
+    expect(stage).toContain("Math.min(cover, maxCrop)");
+  });
+
+  it("is what the widescreen toggle actually switches", () => {
+    expect(readFileSync(path.join(here, "BattleScene.ts"), "utf8")).toContain(
+      "this.stage?.setFillMode(on)",
+    );
+  });
+});

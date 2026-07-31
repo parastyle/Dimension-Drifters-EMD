@@ -30,6 +30,9 @@ const CANVAS_H = manifest.canvas.height;
 /** The handoff notes preview sway is deliberately exaggerated: "reduce by ~50% for a subtler idle". */
 const FERN_SWAY_SCALE = 0.5;
 
+/** The vertical slice that must stay on screen in fill mode — the band the fight is fought in, plus air. */
+const MIN_VISIBLE_CANVAS_H = 1560;
+
 type FernPiece = (typeof manifest.battleground_fern_pieces)[number];
 
 interface SwayingFern {
@@ -59,6 +62,7 @@ export class BattleStage {
   private birdFlapMs = 0;
   private birdFrame: 0 | 1 = 0;
   private birdTravelMs = 0;
+  private fillMode = false;
 
   static preload(scene: Phaser.Scene): void {
     const load = (path: string): void => {
@@ -138,7 +142,16 @@ export class BattleStage {
   }
 
   /**
-   * Letterbox the 16:9 virtual canvas into whatever viewport we actually have.
+   * Fit the 16:9 virtual canvas into whatever viewport we actually have.
+   *
+   * CONTAIN (default) preserves the whole frame, so a display wider than 16:9 gets pillarbox bars — that is
+   * not a bug, it is what showing 16:9 art on a 21:9 screen means. COVER fills the display instead and
+   * crops the surplus off the top and bottom.
+   *
+   * Cropping is safe here because the fight is deliberately confined to a band in the middle of the plate
+   * (see the roster's lane comments): at 21:9 cover removes ~260px top and bottom of a 2160 canvas, which
+   * is sky and foreground vine, well clear of the ~1040-1820 band the units occupy. `MIN_VISIBLE_CANVAS_H`
+   * keeps that true on even wider displays by refusing to crop past it.
    *
    * ONLY `root` is transformed. `actorLayer` is a child of `root` and inherits this for free — scaling it
    * here as well applied the fit twice, rendering the fight at a third of its size in the top-left corner
@@ -146,9 +159,24 @@ export class BattleStage {
    */
   private fit(): void {
     const { width, height } = this.scene.scale;
-    const scale = Math.min(width / CANVAS_W, height / CANVAS_H);
+    const contain = Math.min(width / CANVAS_W, height / CANVAS_H);
+    const cover = Math.max(width / CANVAS_W, height / CANVAS_H);
+    // Never crop so hard that the units' band leaves the screen.
+    const maxCrop = height / MIN_VISIBLE_CANVAS_H;
+    const scale = this.fillMode ? Math.min(cover, maxCrop) : contain;
     this.root.setScale(scale);
     this.root.setPosition((width - CANVAS_W * scale) / 2, (height - CANVAS_H * scale) / 2);
+  }
+
+  /** Fill the display (cropping the frame's margins) instead of showing the whole 16:9 frame. */
+  setFillMode(on: boolean): void {
+    if (this.fillMode === on) return;
+    this.fillMode = on;
+    this.fit();
+  }
+
+  get filling(): boolean {
+    return this.fillMode;
   }
 
   update(deltaMs: number): void {

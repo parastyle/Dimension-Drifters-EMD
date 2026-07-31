@@ -69,8 +69,12 @@ export class BattleScene extends Phaser.Scene {
    * 4K depends on the display and OS scaling — it should be verifiable, not asserted.
    */
   private toggleWidescreen(): void {
-    if (this.scale.isFullscreen) this.scale.stopFullscreen();
-    else this.scale.startFullscreen();
+    const on = !this.scale.isFullscreen;
+    if (on) this.scale.startFullscreen();
+    else this.scale.stopFullscreen();
+    // Fill the display as well as filling the window. On a 16:9 screen these are the same thing; on
+    // anything wider, CONTAIN would pillarbox the 16:9 stage art and "widescreen" would still show bars.
+    this.stage?.setFillMode(on);
   }
 
   override update(_time: number, deltaMs: number): void {
