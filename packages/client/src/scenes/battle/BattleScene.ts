@@ -1,18 +1,23 @@
 import Phaser from "phaser";
 import { BattleStage } from "./BattleStage.js";
+import { BattleFight } from "./BattleFight.js";
 
 /**
  * SLICE 1 host scene for the squad-autobattler direction (see `docs/DESIGN_LOG.md`, 2026-07-28).
  *
- * Right now this is the Overgrown Ruin backdrop and nothing else — no units, no beats, no parry. It
- * exists so the art can be judged in the engine rather than in a preview composite, and so there is a
- * real place for the fight to be built into: everything gameplay goes into `stage.actorLayer`.
+ * Two halves, deliberately kept apart:
+ *   - `BattleStage` is the Overgrown Ruin backdrop, driven entirely by its art manifest.
+ *   - `BattleFight` is the 4v4 encounter, built into the stage's `actorLayer`.
  *
- * Deliberately standalone. It does not touch ArenaScene, the server, or any existing system, so the
+ * Standalone by design. It does not touch ArenaScene, the server, or any existing system, so the
  * current game keeps working untouched while this direction is prototyped.
+ *
+ * The question this slice exists to answer is not "does it run" — it is "is 90 seconds of this fun?",
+ * which only playing it can settle.
  */
 export class BattleScene extends Phaser.Scene {
   private stage?: BattleStage;
+  private fight?: BattleFight;
 
   constructor() {
     super("battle");
@@ -20,30 +25,26 @@ export class BattleScene extends Phaser.Scene {
 
   preload(): void {
     BattleStage.preload(this);
+    BattleFight.preload(this);
   }
 
   create(): void {
     this.cameras.main.setBackgroundColor("#05070a");
     this.stage = new BattleStage(this);
+    this.fight = new BattleFight(this, this.stage.actorLayer);
 
-    // Placeholder marker so the actor layer is provably in the right depth band — it must sit above
-    // the ferns and below the lens overlay. Delete once real units land here.
-    const label = this.add
-      .text(1920, 1080, "ACTOR LAYER", {
-        fontFamily: "monospace",
-        fontSize: "64px",
-        color: "#ffffff",
-      })
-      .setOrigin(0.5)
-      .setAlpha(0.28);
-    this.stage.actorLayer.add(label);
+    // R restarts the encounter — the fight is short and the whole point is watching it repeatedly.
+    this.input.keyboard?.on("keydown-R", () => this.scene.restart());
   }
 
   override update(_time: number, deltaMs: number): void {
     this.stage?.update(deltaMs);
+    this.fight?.update(deltaMs);
   }
 
   shutdown(): void {
+    this.fight?.destroy();
+    this.fight = undefined;
     this.stage?.destroy();
     this.stage = undefined;
   }

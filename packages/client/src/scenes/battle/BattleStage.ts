@@ -137,14 +137,18 @@ export class BattleStage {
     );
   }
 
-  /** Letterbox the 16:9 virtual canvas into whatever viewport we actually have. */
+  /**
+   * Letterbox the 16:9 virtual canvas into whatever viewport we actually have.
+   *
+   * ONLY `root` is transformed. `actorLayer` is a child of `root` and inherits this for free — scaling it
+   * here as well applied the fit twice, rendering the fight at a third of its size in the top-left corner
+   * while the backdrop behind it looked perfectly correct.
+   */
   private fit(): void {
     const { width, height } = this.scene.scale;
     const scale = Math.min(width / CANVAS_W, height / CANVAS_H);
-    for (const container of [this.root, this.actorLayer]) {
-      container.setScale(scale);
-      container.setPosition((width - CANVAS_W * scale) / 2, (height - CANVAS_H * scale) / 2);
-    }
+    this.root.setScale(scale);
+    this.root.setPosition((width - CANVAS_W * scale) / 2, (height - CANVAS_H * scale) / 2);
   }
 
   update(deltaMs: number): void {
