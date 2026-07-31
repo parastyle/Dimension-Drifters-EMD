@@ -2151,6 +2151,15 @@ export interface RigAnim {
   fireHeld?: boolean;
   /** Enemy-only locomotion vocabulary. Player rigs omit it. */
   enemyArchetype?: "runner" | "cultist" | "big" | "dummy";
+  /**
+   * §S1 hard facing override: +1 faces right, -1 faces left, undefined keeps the ordinary rules.
+   *
+   * Ordinary facing for a non-self rig follows `moveX`, so a unit that walks backwards turns its back.
+   * In a two-sided battle line that is always wrong — a squad holds the line facing the enemy whether it
+   * is advancing or retreating. The visual mirror still EASES between values, so a forced flip reads as a
+   * turn rather than a snap.
+   */
+  facingLock?: 1 | -1;
 }
 
 /** Pure ranged-pose envelope. The held window owns the plateau; linger precedes a soft rest-pose settle. */
@@ -2235,6 +2244,8 @@ export interface SpriteRigContext {
   callerRigScale: number;
   /** §S1 multiplier on the FIXED on-screen weapon size. 1 keeps the arena's behaviour exactly. */
   weaponScaleMul: number;
+  /** §S1 when false, skip the camera-space LOD cull — see `setViewCulling`. */
+  viewCulling: boolean;
   baseScale: number;
   readonly body: Phaser.GameObjects.Image;
   readonly slideAfterimageA: Phaser.GameObjects.Image;
@@ -2703,6 +2714,7 @@ export interface SpriteRigContext {
   stepDeathPop(deltaMs: number): boolean;
   setRigScale(mult: number): void;
   setWeaponScaleMul(mult: number): void;
+  setViewCulling(on: boolean): void;
   addGlow(color: number): void;
   resetSwingCombo(): void;
   beginComboStageTransition(acceptedAtMs: number, swing: RigSwingDescriptor): void;
@@ -3113,6 +3125,23 @@ export const rigCoreMethods = {
    *
    * Defaults to 1 everywhere, so no existing caller changes.
    */
+  /**
+   * Enable/disable the camera-space LOD cull.
+   *
+   * The cull compares `root.x/y` against `cameras.main.worldView`, which is only meaningful when the rig
+   * is a direct scene child — as it is in the arena. A rig parented under a TRANSFORMED container has
+   * local coordinates in that container's space, so the comparison is nonsense: a scene laying rigs out on
+   * a 3840x2160 virtual canvas had most of its cast judged off-screen, which silently skipped the floating
+   * head sync, limb physics, flourish and attack-signature passes. Heads were left stranded thousands of
+   * px from their bodies.
+   *
+   * Defaults to ON, so the arena is unchanged. Callers whose rigs are not in camera world space turn it off
+   * and accept animating everyone.
+   */
+  setViewCulling(this: SpriteRigContext, on: boolean): void {
+    this.viewCulling = on;
+  },
+
   setWeaponScaleMul(this: SpriteRigContext, mult: number): void {
     this.weaponScaleMul = Number.isFinite(mult) && mult > 0 ? mult : 1;
   },

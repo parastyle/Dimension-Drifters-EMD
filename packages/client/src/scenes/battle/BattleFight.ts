@@ -14,6 +14,10 @@ import {
   classifyParryIncidence,
   randomSeed,
   PARRY_GUARD_RESET_SECONDS,
+  STANCE_NONE,
+  STANCE_ROLL,
+  SLIDE_PHASE_GROUND,
+  SLIDE_PHASE_OFF,
   type ParryGuardPose,
 } from "@dd/shared";
 import { AudioBus } from "../../audio/AudioBus.js";
@@ -76,8 +80,9 @@ const HIT_STOP_PLAYER_PARRY_MS = 110;
 /** B26 cycles three authored guard poses so repeated parries never replay the same animation. */
 const PARRY_GUARD_POSES = 3;
 
-/** Bolt art is authored for the arena's 1280-wide view; this canvas is 3x that. */
-const BOLT_ART_SCALE = 2.6;
+/** Bolt art is authored for the arena's 1280-wide view; this canvas is 3x that, and the owner asked for
+ *  bolts that read at a glance across a 4K stage. */
+const BOLT_ART_SCALE = 4.2;
 
 interface RigEntry {
   readonly rig: SpriteRig;
@@ -184,6 +189,10 @@ export class BattleFight {
       rig.setRigScale(RIG_SCALE);
       // Undo the rig's fixed-on-screen-weapon division (see WEAPON_BOOST) so weapons scale with the body.
       rig.setWeaponScaleMul(RIG_SCALE * wholeArtCharacterVisualScale(unit.spec.spriteId) * WEAPON_BOOST);
+      // These rigs live inside the stage's scaled container, so their local coords are canvas coords and the
+      // rig's camera-space LOD test is meaningless — it judged most of the cast off-screen and skipped their
+      // head sync, limb physics and flourish passes, stranding heads thousands of px away.
+      rig.setViewCulling(false);
       this.rigLayer.add(rig.root);
       const presented = createPresentedActorState(this.frame);
       presented.actorId = unit.spec.id;
@@ -351,6 +360,7 @@ export class BattleFight {
     }
 
     const facing = unit.spec.team === 0 ? 1 : -1;
+    const rolling = this.sim.isDodging(unit);
     const pose = entry.presented;
     pose.frame = this.frame;
     pose.rootX = unit.x;
@@ -364,8 +374,15 @@ export class BattleFight {
     pose.aimY = 0;
     pose.aimDxPx = facing * 1000;
     pose.aimDir = facing === 1 ? 0 : Math.PI;
+    // A battle line always faces the enemy. Ordinary rig facing follows moveX, so a retreating unit turned
+    // its back — the lock keeps left looking right and right looking left whatever direction they walk.
+    pose.facingLock = facing;
     pose.isSelf = unit.controlled;
     pose.jumpVh = 0;
+    // Reuse the authored roll (STANCE_ROLL / the slide kit) for the dodge, rather than inventing a pose.
+    pose.moveStance = rolling ? STANCE_ROLL : STANCE_NONE;
+    pose.slidePhase = rolling ? SLIDE_PHASE_GROUND : SLIDE_PHASE_OFF;
+    pose.slideTick = rolling ? (pose.slideTick ?? 0) + 1 : 0;
     rig.animate(pose);
     rig.setDepth(unit.y);
   }
@@ -479,6 +496,12 @@ export class BattleFight {
         this.audio.play("death", { x: entry?.unit.x, amt: 0.8 });
         this.shake(0.012, 260);
         if (entry) this.burst(entry.unit.x, entry.unit.y - 100, 0xffffff, 2.2);
+        break;
+      case "dodge":
+        if (entry) {
+          this.burst(entry.unit.x, entry.unit.y, 0xd8e6c8, 0.7);
+          this.audio.play("weapon:swap", { x: entry.unit.x, amt: 0.25 });
+        }
         break;
       case "beat":
         this.beatPulse = 1;

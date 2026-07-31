@@ -57,6 +57,11 @@ export const PROJECTILE_HIT_RADIUS = 62;
 /** How hard B26's parry slide shoves the guard off the line it just held, per px of authored slide. */
 export const PARRY_SLIDE_SHOVE = 2.6;
 
+/** Depth band a dodge roll may use. Matches the ruin's usable stone floor — rolling into the foreground
+ *  vines or off the back of the plate looks like a bug even when the sim is right. */
+export const DODGE_MIN_Y = 1040;
+export const DODGE_MAX_Y = 1820;
+
 /**
  * Weapon reach is authored against the ~1200-wide arena; this stage is 3840 across and its characters are
  * drawn correspondingly larger. Scaling reach by the same factor keeps a greatsword's swing the same
@@ -68,7 +73,9 @@ export const WEAPON_REACH_SCALE = 3.2;
  * than one beat. Stretching them onto the beat grid keeps the RELATIVE differences — a greatsword still
  * swings far slower than a nailgun — without every weapon collapsing to "once per beat".
  */
-export const WEAPON_CADENCE_SCALE = 3;
+/** Raised from 3 on owner feedback that the fight read as a constant stream. Everything fires less
+ *  often; the RELATIVE differences between weapons are untouched. */
+export const WEAPON_CADENCE_SCALE = 4.5;
 export const MIN_BEATS_PER_ACTION = 1;
 export const MAX_BEATS_PER_ACTION = 5;
 /**
@@ -79,7 +86,7 @@ export const MAX_BEATS_PER_ACTION = 5;
  * ONE scalar, applied to every weapon equally, so the relative differences the catalog encodes survive
  * intact. If the fight needs to be longer or shorter, this is the dial — not per-weapon edits.
  */
-export const WEAPON_DAMAGE_SCALE = 3;
+export const WEAPON_DAMAGE_SCALE = 5;
 
 /**
  * Sudden death. From this beat onward every hit lands harder, ramping without limit.
@@ -128,6 +135,10 @@ export interface Unit {
   slung: boolean;
   /** True when the player has taken this unit over. */
   controlled: boolean;
+  /** Dodge roll: active until this timestamp, rolling in `dodgeDirY`. */
+  dodgeUntilMs: number;
+  dodgeReadyAtMs: number;
+  dodgeDirY: number;
 }
 
 export interface Projectile {
@@ -167,6 +178,7 @@ export type BattleEvent =
       readonly damage: number;
       readonly byPlayer: boolean;
     }
+  | { readonly type: "dodge"; readonly unitId: string; readonly dirY: number }
   | { readonly type: "death"; readonly unitId: string }
   | { readonly type: "beat"; readonly index: number };
 
@@ -248,6 +260,9 @@ export class BattleSim {
         parryReadyAtMs: 0,
         slung: false,
         controlled: false,
+        dodgeUntilMs: 0,
+        dodgeReadyAtMs: 0,
+        dodgeDirY: 0,
       });
     });
   }
@@ -306,6 +321,7 @@ export class BattleSim {
 
     for (const unit of this.units) {
       if (!unit.alive) continue;
+      this.tryDodge(unit);
       this.moveUnit(unit, dt);
       this.applyMidlineSling(unit, dt);
     }
@@ -330,6 +346,54 @@ export class BattleSim {
    * Movement is positional, so being slung never fights the walk: the spring velocity is added on top and
    * bleeds away on its own.
    */
+  /**
+   * Read the incoming fire and roll out of the way.
+   *
+   * Sideways only, and always back toward the home row afterwards, so a squad keeps its formation over a
+   * whole fight instead of scattering — the roll buys one bolt, it does not relocate anybody. The cooldown
+   * is what keeps this from deleting ranged damage: a unit under sustained fire dodges the first bolt and
+   * eats the next.
+   *
+   * The reaction window is a stat, so a twitchy sniper genuinely reads shots earlier than a slab of a
+   * vanguard. Nothing here rolls dice — the bolt is dodged because the body physically left the line.
+   */
+  private tryDodge(unit: Unit): void {
+    if (unit.controlled) return; // the player dodges by walking; we never steer for them
+    if (this.elapsedMs < unit.dodgeReadyAtMs) return;
+    if (this.elapsedMs < unit.dodgeUntilMs) return;
+
+    const stats = unit.spec.stats;
+    if (stats.dodgeSpeed <= 0) return;
+
+    for (const shot of this.projectiles) {
+      if (!shot.alive || shot.team === unit.spec.team) continue;
+      const speed = Math.hypot(shot.vx, shot.vy);
+      if (speed <= 1) continue;
+      const eta = (Math.hypot(unit.x - shot.x, unit.y - shot.y) - PROJECTILE_HIT_RADIUS) / speed;
+      if (eta < 0 || eta > stats.dodgeReactionSeconds) continue;
+      // Where the bolt will be when it draws level — if that misses us anyway, do not waste the roll.
+      const closingY = shot.y + shot.vy * eta;
+      const closingX = shot.x + shot.vx * eta;
+      if (Math.hypot(closingX - unit.x, closingY - unit.y) > PROJECTILE_HIT_RADIUS * 1.6) continue;
+
+      // Roll AWAY from the bolt's line, and away from the stage edge if we are already near one.
+      let dir = unit.y >= closingY ? 1 : -1;
+      const projected = unit.y + dir * stats.dodgeSpeed * (stats.dodgeDurationMs / 1000);
+      if (projected < DODGE_MIN_Y || projected > DODGE_MAX_Y) dir = -dir;
+
+      unit.dodgeDirY = dir;
+      unit.dodgeUntilMs = this.elapsedMs + stats.dodgeDurationMs;
+      unit.dodgeReadyAtMs = this.elapsedMs + stats.dodgeCooldownMs;
+      this.events.push({ type: "dodge", unitId: unit.spec.id, dirY: dir });
+      return;
+    }
+  }
+
+  /** True while the roll is airborne — the renderer shows the authored roll pose for exactly this window. */
+  isDodging(unit: Unit): boolean {
+    return this.elapsedMs < unit.dodgeUntilMs;
+  }
+
   private moveUnit(unit: Unit, dt: number): void {
     const stride = unit.spec.stats.speed * dt;
     if (unit.controlled) {
@@ -347,6 +411,16 @@ export class BattleSim {
     const delta = home - unit.x;
     unit.x += Math.abs(delta) <= stride ? delta : Math.sign(delta) * stride;
     unit.x += unit.vx * dt;
+
+    // A roll owns the depth axis while it lasts, then ordinary lane homing walks the unit back — which is
+    // exactly what keeps the formation intact across a long fight.
+    if (this.isDodging(unit)) {
+      unit.y = Math.min(
+        DODGE_MAX_Y,
+        Math.max(DODGE_MIN_Y, unit.y + unit.dodgeDirY * unit.spec.stats.dodgeSpeed * dt),
+      );
+      return;
+    }
 
     // Lateral escort. Only an interposing unit leaves its row, and only to get into a line it means to
     // block.
@@ -540,8 +614,11 @@ export class BattleSim {
   private actStrike(unit: Unit): void {
     const target = this.pickNearest(unit);
     if (!target) return;
-    if (Math.hypot(target.x - unit.x, target.y - unit.y) > unit.weapon.reach) return;
+    // The swing ALWAYS happens; only the damage is gated on reach. A melee unit that only animated when it
+    // could connect stood frozen for most of the fight, which read as "the fighters do nothing" — and a
+    // whiffed swing is honest information: you can see he is trying and falling short.
     this.events.push({ type: "attack", unitId: unit.spec.id, targetId: target.spec.id });
+    if (Math.hypot(target.x - unit.x, target.y - unit.y) > unit.weapon.reach) return;
     this.damage(target, unit.weapon.damage, Math.sign(target.x - unit.x), 0);
   }
 

@@ -460,6 +460,7 @@ export const rigPoseMethods = {
     this.jigglePrevRootY = this.root.y;
     const view = this.scene.cameras.main.worldView;
     const outsidePaperView =
+      this.viewCulling &&
       !anim.isSelf &&
       (this.root.x < view.left - JIGGLE_LOD_MARGIN_PX ||
         this.root.x > view.right + JIGGLE_LOD_MARGIN_PX ||
@@ -699,7 +700,9 @@ export const rigPoseMethods = {
     // (±6px hysteresis kills strobe at the exact centre) — a normalized-|aimX| threshold went sticky when the
     // cursor sat far above/below (|aimX|≈0 however clearly the midpoint was crossed). Remotes/enemies keep the
     // small normalized deadzone (they aim from synced angles/movement, not a cursor).
-    if (anim.isSelf && anim.aimDxPx !== undefined) {
+    if (anim.facingLock !== undefined) {
+      this.facing = anim.facingLock;
+    } else if (anim.isSelf && anim.aimDxPx !== undefined) {
       if (Math.abs(anim.aimDxPx) > 6) this.facing = anim.aimDxPx >= 0 ? 1 : -1;
     } else if (Math.abs(dirX) > 0.05) {
       this.facing = dirX >= 0 ? 1 : -1;

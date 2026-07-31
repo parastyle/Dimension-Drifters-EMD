@@ -87,3 +87,48 @@ describe("camera shake routing", () => {
     expect(read("BattleScene.ts")).toContain("budgetedCameraShakeIntensity(");
   });
 });
+
+describe("facing is locked to the battle line", () => {
+  it("passes a hard facing override rather than letting movement decide", () => {
+    // Ordinary rig facing follows moveX, so a retreating unit turned its back on the enemy — measured at
+    // 8-9% of frames on both vanguards, which are the units that move laterally most.
+    const fight = readFileSync(path.join(here, "BattleFight.ts"), "utf8");
+    expect(fight).toContain("pose.facingLock = facing;");
+  });
+
+  it("keeps the override optional in the rig, so the arena is unaffected", () => {
+    const core = readFileSync(path.join(here, "../../entities/rig/rig-core.ts"), "utf8");
+    expect(core).toContain("facingLock?: 1 | -1;");
+    const pose = readFileSync(path.join(here, "../../entities/rig/rig-pose.ts"), "utf8");
+    expect(pose).toContain("if (anim.facingLock !== undefined) {");
+  });
+});
+
+describe("the camera-space LOD cull", () => {
+  it("is turned off for rigs that live under a transformed container", () => {
+    // The cull compares root.x/y against cameras.main.worldView. These rigs are laid out on a 3840x2160
+    // virtual canvas inside a scaled container, so that comparison judged most of the cast off-screen and
+    // skipped their head sync — heads ended up ~4200px from their bodies.
+    expect(readFileSync(path.join(here, "BattleFight.ts"), "utf8")).toContain(
+      "rig.setViewCulling(false)",
+    );
+  });
+
+  it("still defaults to on, so the arena keeps its LOD", () => {
+    expect(readFileSync(path.join(here, "../../entities/SpriteRig.ts"), "utf8")).toContain(
+      "private viewCulling = true;",
+    );
+    expect(readFileSync(path.join(here, "../../entities/rig/rig-pose.ts"), "utf8")).toContain(
+      "this.viewCulling &&",
+    );
+  });
+});
+
+describe("dodge presentation", () => {
+  it("reuses the authored roll stance instead of inventing a pose", () => {
+    const fight = readFileSync(path.join(here, "BattleFight.ts"), "utf8");
+    expect(fight).toContain("STANCE_ROLL");
+    expect(fight).toContain("SLIDE_PHASE_GROUND");
+    expect(fight).toContain("this.sim.isDodging(unit)");
+  });
+});

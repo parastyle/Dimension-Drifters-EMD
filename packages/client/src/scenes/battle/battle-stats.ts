@@ -65,11 +65,23 @@ export interface UnitStats {
   readonly mend: number;
   /** How far a heal reaches — gives support a genuine positioning problem. */
   readonly mendRange: number;
+  /** Sideways burst speed of a dodge roll, px/s. */
+  readonly dodgeSpeed: number;
+  /** How long the roll lasts, ms. Distance covered is roughly speed x duration. */
+  readonly dodgeDurationMs: number;
+  /** Recovery between rolls. This is what stops anyone dodging everything. */
+  readonly dodgeCooldownMs: number;
+  /** How far ahead a unit reads an incoming bolt, seconds. Higher = reacts earlier. */
+  readonly dodgeReactionSeconds: number;
 }
 
 /** Placeholder role baselines. Individual units bias these; see `battle-roster.ts`. */
 export const ROLE_STATS = {
   vanguard: {
+    dodgeSpeed: 520,
+    dodgeDurationMs: 300,
+    dodgeCooldownMs: 2600,
+    dodgeReactionSeconds: 0.34,
     maxHp: 210,
     might: 1,
     guard: 0.8,
@@ -81,6 +93,10 @@ export const ROLE_STATS = {
     mendRange: 0,
   },
   ranged: {
+    dodgeSpeed: 700,
+    dodgeDurationMs: 280,
+    dodgeCooldownMs: 1500,
+    dodgeReactionSeconds: 0.46,
     maxHp: 70,
     might: 1,
     guard: 1,
@@ -92,6 +108,10 @@ export const ROLE_STATS = {
     mendRange: 0,
   },
   medic: {
+    dodgeSpeed: 640,
+    dodgeDurationMs: 290,
+    dodgeCooldownMs: 1900,
+    dodgeReactionSeconds: 0.42,
     maxHp: 80,
     might: 0.8,
     guard: 1,

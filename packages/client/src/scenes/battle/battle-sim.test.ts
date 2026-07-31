@@ -8,6 +8,8 @@ import {
   MAX_BEATS_PER_ACTION,
   MIN_BEATS_PER_ACTION,
   SLING_MAX_DEPTH_PX,
+  DODGE_MAX_Y,
+  DODGE_MIN_Y,
   SUDDEN_DEATH_BEAT,
   WEAPON_DAMAGE_SCALE,
   WEAPON_REACH_SCALE,
@@ -180,12 +182,19 @@ describe("the fight", () => {
     expect(sim.units.map((u) => u.hp)).toEqual(before);
   });
 
-  it("keeps everyone except the vanguard welded to their depth lane", () => {
+  it("holds the formation over a long fight, even though everyone dodges", () => {
+    // Units are no longer welded to their row — they roll out of the way of bolts. What must survive is
+    // that a roll is temporary: lane homing walks them back, so the battle line still exists at the end.
     const sim = new BattleSim(BATTLE_ROSTER);
     run(sim, 20_000);
     for (const unit of sim.units) {
-      if (unit.spec.role === "vanguard") continue; // the escort is the one unit allowed to change rows
-      expect(unit.y).toBe(unit.spec.laneY);
+      if (!unit.alive) continue;
+      const drift = Math.abs(unit.y - unit.spec.laneY);
+      const budget = unit.spec.stats.dodgeSpeed * (unit.spec.stats.dodgeDurationMs / 1000);
+      // Never further from home than a single roll could have carried them (plus the escort's own range
+      // for units that interpose).
+      const escort = unit.spec.abilities.includes("interpose") ? 600 : 0;
+      expect(drift).toBeLessThanOrEqual(budget + escort + 1);
     }
   });
 
@@ -545,5 +554,109 @@ describe("the fight always resolves", () => {
     const share = left / (left + right);
     expect(share).toBeGreaterThan(0.3);
     expect(share).toBeLessThan(0.7);
+  });
+});
+
+describe("dodge rolls", () => {
+  /** Put one bolt on a collision course with a unit and let it react. */
+  function incoming(sim: BattleSim, targetId: string) {
+    const u = sim.unit(targetId)!;
+    sim.projectiles.push({
+      id: 77,
+      team: u.spec.team === 0 ? 1 : 0,
+      ownerId: "crane",
+      targetId,
+      x: u.x + (u.spec.team === 0 ? 300 : -300),
+      y: u.y,
+      vx: u.spec.team === 0 ? -900 : 900,
+      vy: 0,
+      damage: 7,
+      alive: true,
+    });
+    return u;
+  }
+
+  it("gives every unit a real dodge, not just the squishy ones", () => {
+    for (const spec of BATTLE_ROSTER) {
+      expect(spec.stats.dodgeSpeed).toBeGreaterThan(0);
+      expect(spec.stats.dodgeDurationMs).toBeGreaterThan(0);
+      expect(spec.stats.dodgeCooldownMs).toBeGreaterThan(0);
+    }
+  });
+
+  it("rolls out of the path of an incoming bolt", () => {
+    const sim = new BattleSim(BATTLE_ROSTER, 5);
+    const unit = incoming(sim, "tuli");
+    const y0 = unit.y;
+    run(sim, 260);
+    expect(Math.abs(unit.y - y0)).toBeGreaterThan(60);
+  });
+
+  it("returns to its own row afterwards, so the formation survives", () => {
+    // The roll buys one bolt; it must not relocate anybody permanently.
+    const sim = new BattleSim(BATTLE_ROSTER, 5);
+    const unit = incoming(sim, "tuli");
+    run(sim, 300);
+    const displaced = Math.abs(unit.y - unit.spec.laneY);
+    expect(displaced).toBeGreaterThan(40);
+    sim.projectiles.length = 0;
+    run(sim, 4000);
+    expect(Math.abs(unit.y - unit.spec.laneY)).toBeLessThan(displaced);
+  });
+
+  it("cannot dodge everything — the cooldown bites", () => {
+    const sim = new BattleSim(BATTLE_ROSTER, 5);
+    const unit = sim.unit("tuli")!;
+    let rolls = 0;
+    for (let i = 0; i < 60; i++) {
+      sim.projectiles.length = 0;
+      incoming(sim, "tuli");
+      sim.step(16);
+      for (const e of sim.takeEvents()) if (e.type === "dodge" && e.unitId === "tuli") rolls++;
+    }
+    expect(rolls).toBeGreaterThan(0);
+    expect(rolls).toBeLessThan(4); // one second of constant fire is not four dodges
+    expect(unit.alive).toBe(true);
+  });
+
+  it("keeps rolls inside the stage's usable floor", () => {
+    const sim = new BattleSim(BATTLE_ROSTER, 9);
+    run(sim, 30_000);
+    for (const unit of sim.units) {
+      expect(unit.y).toBeGreaterThanOrEqual(DODGE_MIN_Y - 1);
+      expect(unit.y).toBeLessThanOrEqual(DODGE_MAX_Y + 1);
+    }
+  });
+
+  it("never steers the unit the player took over", () => {
+    const sim = new BattleSim(BATTLE_ROSTER, 5);
+    sim.setControlled("kord");
+    const unit = sim.unit("kord")!;
+    sim.setIntent(0, 0, false);
+    incoming(sim, "kord");
+    const y0 = unit.y;
+    run(sim, 300);
+    expect(unit.y).toBe(y0);
+  });
+});
+
+describe("melee always swings", () => {
+  it("emits an attack even when the target is out of reach", () => {
+    // A vanguard that only animated when it could connect stood frozen for most of the fight.
+    const sim = new BattleSim(BATTLE_ROSTER, 3);
+    const kord = sim.unit("kord")!;
+    const halvard = sim.unit("halvard")!;
+    halvard.x = MIDLINE_X + 1500; // far out of any weapon's reach
+    let swings = 0;
+    let damaged = false;
+    const before = halvard.hp;
+    for (let i = 0; i < 40; i++) {
+      halvard.x = MIDLINE_X + 1500;
+      sim.step(BEAT_MS);
+      for (const e of sim.takeEvents()) if (e.type === "attack" && e.unitId === kord.spec.id) swings++;
+      if (halvard.hp < before) damaged = true;
+    }
+    expect(swings).toBeGreaterThan(0);
+    expect(damaged).toBe(false); // swinging, but whiffing
   });
 });
