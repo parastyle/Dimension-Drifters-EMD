@@ -13,7 +13,10 @@ import {
   weaponDisplaySpriteId,
   classifyParryIncidence,
   randomSeed,
+  PARRY_CHAIN_WINDOW,
   PARRY_GUARD_RESET_SECONDS,
+  swingDescriptorFor,
+  swingDescriptorForAttackSeq,
   STANCE_NONE,
   STANCE_ROLL,
   SLIDE_PHASE_GROUND,
@@ -25,7 +28,8 @@ import {
   ensureWholeArtCharacterTextures,
   wholeArtCharacterVisualScale,
 } from "../../sprites/whole-art-character.js";
-import { makeBullet, makeGunIdentityProjectile } from "../arena/projectile-factory.js";
+import { defaultProjectileKind, makeProjectileArt } from "../arena/projectile-art.js";
+import { spawnComboPop, spawnParrySpark } from "../arena/parry-vfx.js";
 import { BATTLE_ROSTER, PLAYER_TEAM } from "./battle-roster.js";
 import { BattleSim, MIDLINE_X, type BattleEvent, type Unit } from "./battle-sim.js";
 
@@ -84,6 +88,9 @@ const PARRY_GUARD_POSES = 3;
  *  bolts that read at a glance across a 4K stage. */
 const BOLT_ART_SCALE = 4.2;
 
+/** The arena's parry VFX is authored for its 1280-wide view; this canvas is 3x that. */
+const PARRY_VFX_SCALE = 3;
+
 interface RigEntry {
   readonly rig: SpriteRig;
   readonly unit: Unit;
@@ -96,6 +103,8 @@ interface RigEntry {
   flashReadyAtMs: number;
   /** Re-arm gate for the held-guard brace pose, so it re-triggers rather than stuttering every frame. */
   braceReadyAtMs: number;
+  /** Counts this unit's swings. Feeds the authored combo chain so each attack is the NEXT step. */
+  attackSeq: number;
 }
 
 /** One live projectile's art. The factory builds a real container; we just fly and retire it. */
@@ -142,6 +151,9 @@ export class BattleFight {
   private hitStopMs = 0;
   /** B26 guard-pose cursor per unit, plus when it lapses back to the first pose. */
   private readonly guardPose = new Map<string, { pose: ParryGuardPose; expiresAtMs: number }>();
+  /** Parry chain, mirroring the arena: parries inside PARRY_CHAIN_WINDOW extend it, a lapse restarts at 1. */
+  private parryChain = 0;
+  private parryChainAtMs = -1e9;
   /** Beat pulse for the banner — a visible metronome so the beat is felt, not inferred. */
   private beatPulse = 0;
   /** Fades in only while somebody is being thrown back, so the boundary stays invisible until it bites. */
@@ -205,6 +217,7 @@ export class BattleFight {
         deadPopped: false,
         flashReadyAtMs: 0,
         braceReadyAtMs: 0,
+        attackSeq: 0,
       });
 
       const label = scene.add
@@ -437,7 +450,7 @@ export class BattleFight {
         const source = entry?.unit;
         const aim =
           target && source ? Math.atan2(target.y - source.y, target.x - source.x) : 0;
-        entry?.rig.triggerSwing(this.clockMs, aim);
+        if (entry && source) this.playAttackAnimation(entry, aim);
         if (source) {
           const def = WEAPONS[source.spec.weaponId];
           const muzzle = def?.gun?.muzzleColor ?? TEAM_COLOR[source.spec.team] ?? 0xffffff;
@@ -461,16 +474,30 @@ export class BattleFight {
             this.nextGuardPose(entry.unit.spec.id),
             reaction,
           );
-          this.burst(entry.unit.x, entry.unit.y - 120, 0xdff0ff, 1.4);
+          // The arena's actual parry spark, not a lookalike — shared from `arena/parry-vfx`.
+          spawnParrySpark(this.scene, entry.unit.x, entry.unit.y - 120, this.boltLayer, PARRY_VFX_SCALE);
         }
         this.midlineFlash = Math.max(this.midlineFlash, 0.35);
-        this.audio.play("parry", { x: entry?.unit.x, amt: 0.7 });
-        // Only the PLAYER's own parry earns hit-stop and shake. The AI parries several times a second, and
-        // freezing for each would turn the whole fight into a stutter.
-        if (event.byPlayer) {
+        // Same mix as the arena: full for the parry you made, quieter for a squadmate's.
+        this.audio.play("parry", { x: entry?.unit.x, amt: event.byPlayer ? 1 : 0.4 });
+        // Only the PLAYER's own parry earns hit-stop, shake and the chain. The AI parries several times a
+        // second, and freezing for each would turn the whole fight into a stutter.
+        if (event.byPlayer && entry) {
           this.hitStopMs = HIT_STOP_PLAYER_PARRY_MS;
           this.shake(0.006, 140);
-          if (entry) this.spawnNumber(entry.unit.x, entry.unit.y - 300, "PARRY", "#8fd4ff");
+          this.parryChain =
+            this.clockMs - this.parryChainAtMs <= PARRY_CHAIN_WINDOW * 1000 ? this.parryChain + 1 : 1;
+          this.parryChainAtMs = this.clockMs;
+          if (this.parryChain >= 2) {
+            spawnComboPop(
+              this.scene,
+              entry.unit.x,
+              entry.unit.y - 200,
+              this.parryChain,
+              this.hudLayer,
+              PARRY_VFX_SCALE,
+            );
+          }
         }
         break;
       }
@@ -509,6 +536,33 @@ export class BattleFight {
       default:
         break;
     }
+  }
+
+  /**
+   * Play the right attack for the weapon in hand, and step the authored combo.
+   *
+   * Two things were wrong before. Guns were being given a MELEE swing, when the rig has a dedicated recoil
+   * for them. And every melee attack replayed the same default swing, because `triggerSwing` was called
+   * with no descriptor — so a fighter's authored combo chain never advanced past its first step.
+   *
+   * `swingDescriptorForAttackSeq` resolves which step of the weapon's combo a given attack number is, so a
+   * per-unit counter is all the chain needs: swing 1 -> 2 -> 3 -> back to 1, per the sequence the weapon
+   * actually ships with. This is the same call ArenaScene uses to drive enemy combos.
+   */
+  private playAttackAnimation(entry: RigEntry, aim: number): void {
+    const def = WEAPONS[entry.unit.spec.weaponId];
+    if (!def) return;
+    if (def.gun) {
+      entry.rig.triggerGunRecoil(this.clockMs, 0);
+      return;
+    }
+    if (def.beam) return;
+    const step = entry.attackSeq++;
+    entry.rig.triggerSwing(
+      this.clockMs,
+      aim,
+      swingDescriptorForAttackSeq(swingDescriptorFor(def, def.cooldown), def, step),
+    );
   }
 
   /**
@@ -587,16 +641,16 @@ export class BattleFight {
   }
 
   private makeBoltArt(shot: { x: number; y: number; vx: number; vy: number; ownerId: string }) {
-    const owner = this.sim.unit(shot.ownerId);
-    const weaponId = owner?.spec.weaponId ?? "";
-    const def = WEAPONS[weaponId];
-    const kind = def?.gun?.bulletKind ?? "spark";
-    const pr = { x: 0, y: 0, vx: shot.vx, vy: shot.vy, kind };
-    // Casters have no `gun` block, so they fall through to the generic tracer rather than rendering nothing.
-    const art = def?.gun
-      ? makeGunIdentityProjectile(this.scene, pr, weaponId, BOLT_ART_SCALE)
-      : null;
-    const container = art ?? makeBullet(this.scene, pr, BOLT_ART_SCALE);
+    const weaponId = this.sim.unit(shot.ownerId)?.spec.weaponId ?? "";
+    // The arena's OWN selection chain, shared rather than reimplemented — authored generated art, per-gun
+    // identity art and caster recipes all come through, and anything without authored art degrades to the
+    // same tracer the arena shows. Position is the container's job, so the art is built at the origin.
+    const container = makeProjectileArt(
+      this.scene,
+      { x: 0, y: 0, vx: shot.vx, vy: shot.vy, kind: defaultProjectileKind(weaponId) },
+      weaponId,
+    );
+    // The authored size is already inside the art; this only lifts it onto a 3x-larger canvas.
     container.setScale(BOLT_ART_SCALE);
     container.setDepth(0);
     return container;

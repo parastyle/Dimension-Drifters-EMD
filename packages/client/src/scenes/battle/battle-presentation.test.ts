@@ -51,14 +51,22 @@ describe("the rig's weapon multiplier stays opt-in", () => {
 describe("projectiles use real weapon art", () => {
   const fight = read("BattleFight.ts");
 
-  it("builds bolts from the arena's projectile factory rather than drawing circles", () => {
-    expect(fight).toContain("makeGunIdentityProjectile(");
-    expect(fight).toContain("makeBullet(");
+  it("builds bolts from the shared selection chain, not its own subset", () => {
+    // The battle scene originally called two of the arena's branches directly, so authored generated art and
+    // caster recipes never appeared and everything degraded to a generic tracer.
+    expect(fight).toContain("makeProjectileArt(");
     expect(fight).toContain("this.syncBolts()");
   });
 
-  it("falls back for casters, which carry no gun block", () => {
-    expect(fight).toContain("def?.gun");
+  it("keeps ONE implementation — the arena calls the same function", () => {
+    const arena = readFileSync(path.join(here, "../ArenaScene.ts"), "utf8");
+    expect(arena).toContain("makeProjectileArt(");
+    // A second inline copy is exactly how the two modes drifted apart the first time.
+    expect(arena).not.toContain("makeSpit(this, pr)");
+  });
+
+  it("derives a projectile kind without a server, so casters are not left generic", () => {
+    expect(fight).toContain("defaultProjectileKind(");
   });
 });
 
@@ -73,6 +81,26 @@ describe("parry presentation", () => {
 
   it("shows the brace stance while guard is held, not only when a bolt lands", () => {
     expect(fight).toContain("rig.triggerBrace(");
+  });
+
+  it("uses the arena's OWN parry spark and chain rather than a lookalike", () => {
+    expect(fight).toContain("spawnParrySpark(");
+    expect(fight).toContain("spawnComboPop(");
+    expect(fight).toContain("PARRY_CHAIN_WINDOW");
+  });
+
+  it("keeps one implementation of the parry spark", () => {
+    const arena = readFileSync(path.join(here, "../ArenaScene.ts"), "utf8");
+    expect(arena).toContain('from "./arena/parry-vfx.js"');
+  });
+
+  it("steps the authored combo chain instead of replaying one swing", () => {
+    expect(fight).toContain("swingDescriptorForAttackSeq(");
+    expect(fight).toContain("entry.attackSeq++");
+  });
+
+  it("gives guns their recoil, not a melee swing", () => {
+    expect(fight).toContain("triggerGunRecoil(");
   });
 });
 

@@ -170,6 +170,8 @@ import {
   weaponSetBonus,
   ZoneKind,
 } from "@dd/shared";
+import { spawnComboPop, spawnParrySpark } from "./arena/parry-vfx.js";
+import { makeProjectileArt } from "./arena/projectile-art.js";
 import { Client, type Room } from "colyseus.js";
 import Phaser from "phaser";
 import { AudioBus } from "../audio/AudioBus.js";
@@ -7375,45 +7377,14 @@ export class ArenaScene extends Phaser.Scene {
           (!!sourceWeapon.gun && projectileKind === baseKind(sourceWeapon.gun.bulletKind)));
       const casterRecipe = casterOwnsKind ? resolveCasterVfxRecipe(sourceWeapon) : undefined;
       const fx = comet ? gunFx("orb:fire") : GUN_FX[projectileKind];
-      const gunIdentity = sourceWeapon?.gun
-        ? makeGunIdentityProjectile(
-            this,
-            pr,
-            sourceWeaponId,
-            sourceWeapon.gun.projectileVisualScale ?? 1,
-          )
-        : null;
-      const wackyIdentity = sourceWeapon ? makeWackyProjectile(this, pr, sourceWeapon.id) : null;
-      const generatedImageIdentity = sourceWeapon
-        ? makeGeneratedImageWeaponProjectile(this, pr, sourceWeapon.id)
-        : null;
-      const container =
-        (pr.kind === "emberleaf-fireball" ? makeEmberleafFireball(this, pr) : null) ??
-        (pr.kind === "rimechoir-pressure-wedge" ? makeRimechoirPressureWedge(this, pr) : null) ??
-        generatedImageIdentity ??
-        wackyIdentity ??
-        gunIdentity ??
-        (weaponEffectRecipe?.projectile === "electric-bolt"
-          ? makeBullet(this, pr, sourceWeapon?.gun?.projectileVisualScale ?? 1, weaponEffectRecipe)
-          : weaponEffectRecipe?.projectile === "crystal-shard-orb"
-            ? makeMagma(this, pr, weaponEffectRecipe)
-            : casterRecipe
-              ? makeCasterProjectile(
-                  this,
-                  pr,
-                  casterRecipe,
-                  prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
-                  sourceWeapon?.gun?.projectileVisualScale ?? 1,
-                )
-              : fx
-                ? makeBullet(this, pr, sourceWeapon?.gun?.projectileVisualScale ?? 1)
-                : isThrownProjectileKind(pr.kind)
-                  ? makeThrownWeapon(this, pr)
-                  : baseKind(pr.kind) === "magma" // §41 scatter balls carry ":<element>" (frost/void/… casters)
-                    ? makeMagma(this, pr)
-                    : pr.kind === "counter" || pr.kind === "deflect"
-                      ? makeCounter(this, pr) // §8 parry projectile (bounce-back counter OR Superman side-glance)
-                      : makeSpit(this, pr));
+      // ONE selection chain, shared with the squad autobattler so authored projectile art cannot appear in
+      // one mode and not the other. See `arena/projectile-art.ts`.
+      const container = makeProjectileArt(
+        this,
+        pr,
+        sourceWeaponId,
+        prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
+      );
       const sourceRig = shooter
         ? (this.blobs.get(shooter) ?? this.enemies.get(shooter))
         : undefined;
@@ -12722,80 +12693,13 @@ export class ArenaScene extends Phaser.Scene {
   /** §8 successful-parry flash (Stage C) — a crisp WHITE ring burst + sparks where a player parried a
    *  telegraphed attack (the §8 white parry-language: white = the parry connected). */
   private spawnParrySpark(x: number, y: number): void {
-    const ADD = Phaser.BlendModes.ADD;
-    const ring = this.add
-      .circle(x, y, 16)
-      .setStrokeStyle(4, 0xffffff, 0.95)
-      .setBlendMode(ADD)
-      .setDepth(99996);
-    this.tweens.add({
-      targets: ring,
-      scale: 2.6,
-      alpha: 0,
-      duration: 260,
-      ease: "Quad.easeOut",
-      onComplete: () => ring.destroy(),
-    });
-    const flash = this.add.circle(x, y, 22, 0xffffff, 0.5).setBlendMode(ADD).setDepth(99995);
-    this.tweens.add({
-      targets: flash,
-      scale: 1.4,
-      alpha: 0,
-      duration: 160,
-      onComplete: () => flash.destroy(),
-    });
-    for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * Math.PI * 2;
-      const s = this.add
-        .rectangle(x, y, 13, 2.4, 0xffffff, 0.95)
-        .setRotation(a)
-        .setBlendMode(ADD)
-        .setDepth(99996);
-      this.tweens.add({
-        targets: s,
-        x: x + Math.cos(a) * 34,
-        y: y + Math.sin(a) * 34,
-        alpha: 0,
-        duration: 200,
-        ease: "Quad.easeOut",
-        onComplete: () => s.destroy(),
-      });
-    }
+    spawnParrySpark(this, x, y);
   }
 
   /** §8 v0.114 PARRY COMBO pop — a floating "PARRY ×N" that punches up over the drifter, growing bolder as
    *  the chain climbs and flipping to a gold "RIPOSTE!" once the chain reaches the counter-strike threshold. */
   private spawnComboPop(x: number, y: number, chain: number): void {
-    const riposte = chain >= PARRY_CHAIN_RIPOSTE_AT;
-    const label = riposte ? `RIPOSTE ×${chain}` : `PARRY ×${chain}`;
-    const color = riposte ? "#ffd479" : "#bfefff";
-    const size = Math.min(15 + chain * 3, 34);
-    const txt = this.add
-      .text(x, y - 42, label, {
-        fontFamily: "monospace",
-        fontSize: `${size}px`,
-        color,
-        fontStyle: "bold",
-        stroke: "#0a0a12",
-        strokeThickness: 5,
-      })
-      .setOrigin(0.5)
-      .setDepth(99998)
-      .setScale(0.5);
-    this.tweens.add({
-      targets: txt,
-      y: y - 78,
-      scale: 1,
-      duration: 260,
-      ease: "Back.easeOut",
-    });
-    this.tweens.add({
-      targets: txt,
-      alpha: 0,
-      delay: 480,
-      duration: 320,
-      onComplete: () => txt.destroy(),
-    });
+    spawnComboPop(this, x, y, chain);
   }
 
   /** One authoritative horizontal Drive bar. Ammo rows, reload copy, and the beam heat arc retire here. */
