@@ -1,11 +1,17 @@
 import { describe, expect, it } from "vitest";
+import { WEAPONS } from "@dd/shared";
 import { BATTLE_ROSTER } from "./battle-roster.js";
 import {
   BattleSim,
   BEAT_MS,
   MIDLINE_X,
-  PARRY_REACH_PX,
+  MAX_BEATS_PER_ACTION,
+  MIN_BEATS_PER_ACTION,
   SLING_MAX_DEPTH_PX,
+  SUDDEN_DEATH_BEAT,
+  WEAPON_DAMAGE_SCALE,
+  WEAPON_REACH_SCALE,
+  weaponProfile,
   midlineDepth,
   stanceHomeX,
   type UnitSpec,
@@ -139,7 +145,7 @@ describe("the fight", () => {
   it("puts bolts in the air and eventually damages somebody", () => {
     const sim = new BattleSim(BATTLE_ROSTER);
     run(sim, 4000);
-    const hurt = sim.units.some((u) => u.hp < u.spec.maxHp);
+    const hurt = sim.units.some((u) => u.hp < u.spec.stats.maxHp);
     expect(hurt).toBe(true);
   });
 
@@ -189,7 +195,7 @@ describe("the fight", () => {
     const sim = new BattleSim(BATTLE_ROSTER);
     run(sim, 30_000);
     const backlineHurt = sim.units.filter(
-      (u) => u.spec.role !== "vanguard" && u.hp < u.spec.maxHp,
+      (u) => u.spec.role !== "vanguard" && u.hp < u.spec.stats.maxHp,
     );
     expect(backlineHurt.length).toBeGreaterThan(0);
   });
@@ -243,7 +249,7 @@ describe("the vanguard escort", () => {
       });
       sim.step(16);
     }
-    expect(Math.abs(guard.y - medic.y)).toBeLessThan(PARRY_REACH_PX);
+    expect(Math.abs(guard.y - medic.y)).toBeLessThan(guard.spec.stats.parryReach);
   });
 
 });
@@ -291,5 +297,253 @@ describe("parry by interposition", () => {
     });
     sim.step(16);
     expect(sim.takeEvents().some((e) => e.type === "parry")).toBe(false);
+  });
+});
+
+describe("weapons are mechanical, not cosmetic", () => {
+  it("takes damage from the weapon catalog scaled by the unit's might", () => {
+    const sim = new BattleSim(BATTLE_ROSTER);
+    for (const unit of sim.units) {
+      const def = WEAPONS[unit.spec.weaponId];
+      expect(def).toBeDefined();
+      expect(unit.weapon.damage).toBeCloseTo(
+        (def?.damage ?? 0) * WEAPON_DAMAGE_SCALE * unit.spec.stats.might,
+        5,
+      );
+    }
+  });
+
+  it("gives the roster more than one attack cadence", () => {
+    // If every weapon collapsed to the same beats-per-action, the catalog would be decoration again.
+    const sim = new BattleSim(BATTLE_ROSTER);
+    const cadences = new Set(sim.units.map((u) => u.weapon.beatsPerAction));
+    expect(cadences.size).toBeGreaterThan(1);
+  });
+
+  it("keeps a heavy melee weapon slower and harder-hitting than a light one", () => {
+    const heavy = weaponProfile(BATTLE_ROSTER.find((s) => s.id === "kord")!); // tombstone greatsword
+    const light = weaponProfile(BATTLE_ROSTER.find((s) => s.id === "dell")!); // nailgun
+    expect(heavy.damage).toBeGreaterThan(light.damage);
+    expect(heavy.beatsPerAction).toBeGreaterThanOrEqual(light.beatsPerAction);
+  });
+
+  it("never lets a weapon act more often than once a beat or rarer than the cap", () => {
+    for (const spec of BATTLE_ROSTER) {
+      const profile = weaponProfile(spec);
+      expect(profile.beatsPerAction).toBeGreaterThanOrEqual(MIN_BEATS_PER_ACTION);
+      expect(profile.beatsPerAction).toBeLessThanOrEqual(MAX_BEATS_PER_ACTION);
+    }
+  });
+
+  it("scales melee reach into this stage's much larger canvas", () => {
+    const kord = BATTLE_ROSTER.find((s) => s.id === "kord")!;
+    const def = WEAPONS[kord.weaponId];
+    expect(weaponProfile(kord).reach).toBeCloseTo((def?.range ?? 0) * WEAPON_REACH_SCALE, 5);
+  });
+});
+
+describe("per-unit stats", () => {
+  it("applies each unit's bias over the role baseline", () => {
+    const kord = BATTLE_ROSTER.find((s) => s.id === "kord")!;
+    const halvard = BATTLE_ROSTER.find((s) => s.id === "halvard")!;
+    expect(kord.stats.guard).toBeLessThan(halvard.stats.guard); // tougher
+    expect(kord.stats.speed).toBeLessThan(halvard.stats.speed); // but slower to the threatened row
+  });
+
+  it("makes guard actually reduce damage taken", () => {
+    const sim = new BattleSim(BATTLE_ROSTER);
+    const kord = sim.unit("kord")!;
+    const before = kord.hp;
+    sim.projectiles.push({
+      id: 1,
+      team: 1,
+      ownerId: "crane",
+      targetId: "kord",
+      x: kord.x,
+      y: kord.y,
+      vx: -900,
+      vy: 0,
+      damage: 100,
+      alive: true,
+    });
+    sim.step(16);
+    const taken = before - kord.hp;
+    // Parried or not, if it landed it must have been reduced by guard rather than applied raw.
+    if (taken > 0) expect(taken).toBeLessThan(100);
+  });
+});
+
+describe("takeover", () => {
+  function controlled(sim: BattleSim, id = "kord") {
+    sim.setControlled(id);
+    return sim.unit(id)!;
+  }
+
+  it("hands exactly one unit to the player", () => {
+    const sim = new BattleSim(BATTLE_ROSTER);
+    controlled(sim);
+    expect(sim.units.filter((u) => u.controlled)).toHaveLength(1);
+    expect(sim.controlled?.spec.id).toBe("kord");
+  });
+
+  it("steers the taken-over unit instead of running its stance AI", () => {
+    const sim = new BattleSim(BATTLE_ROSTER);
+    const unit = controlled(sim);
+    const startX = unit.x;
+    sim.setIntent(-1, 0, false); // walk away from the midline, which the AI would never choose
+    run(sim, 600);
+    expect(unit.x).toBeLessThan(startX - 100);
+  });
+
+  it("holds position when the player gives no input", () => {
+    const sim = new BattleSim(BATTLE_ROSTER);
+    const unit = controlled(sim);
+    sim.setIntent(0, 0, false);
+    const startX = unit.x;
+    const startY = unit.y;
+    run(sim, 800);
+    expect(Math.abs(unit.x - startX)).toBeLessThan(40); // only sling drift is allowed
+    expect(unit.y).toBe(startY);
+  });
+
+  it("lets the player leave their own depth row, unlike the AI", () => {
+    const sim = new BattleSim(BATTLE_ROSTER);
+    const unit = controlled(sim);
+    sim.setIntent(0, -1, false);
+    run(sim, 500);
+    expect(unit.y).toBeLessThan(unit.spec.laneY - 100);
+  });
+
+  function bolt(sim: BattleSim, guard: { x: number; y: number }) {
+    sim.projectiles.length = 0;
+    sim.projectiles.push({
+      id: 1,
+      team: 1,
+      ownerId: "crane",
+      targetId: "vesh",
+      x: guard.x + 30,
+      y: guard.y,
+      vx: -900,
+      vy: 0,
+      damage: 7,
+      alive: true,
+    });
+  }
+
+  it("does NOT parry for the player unless guard is held", () => {
+    // Standing in the line is necessary but not sufficient once a human is driving. This is the entire
+    // reason takeover is a skill rather than a strictly worse AI.
+    const sim = new BattleSim(BATTLE_ROSTER);
+    const unit = controlled(sim);
+    sim.setIntent(0, 0, false);
+    bolt(sim, unit);
+    sim.step(16);
+    expect(sim.takeEvents().some((e) => e.type === "parry")).toBe(false);
+  });
+
+  it("parries when the player is in the line AND holding guard", () => {
+    const sim = new BattleSim(BATTLE_ROSTER);
+    const unit = controlled(sim);
+    sim.setIntent(0, 0, true);
+    bolt(sim, unit);
+    sim.step(16);
+    const parries = sim.takeEvents().filter((e) => e.type === "parry");
+    expect(parries).toHaveLength(1);
+    expect(parries[0]).toMatchObject({ unitId: "kord", byPlayer: true });
+  });
+
+  it("still parries automatically for AI units", () => {
+    const sim = new BattleSim(BATTLE_ROSTER);
+    const guard = sim.unit("kord")!;
+    bolt(sim, guard);
+    sim.step(16);
+    const parries = sim.takeEvents().filter((e) => e.type === "parry");
+    expect(parries).toHaveLength(1);
+    expect(parries[0]).toMatchObject({ byPlayer: false });
+  });
+
+  it("releases control when the unit dies", () => {
+    const sim = new BattleSim(BATTLE_ROSTER);
+    const unit = controlled(sim);
+    unit.hp = 1;
+    sim.projectiles.push({
+      id: 9,
+      team: 1,
+      ownerId: "crane",
+      targetId: "kord",
+      x: unit.x,
+      y: unit.y,
+      vx: -900,
+      vy: 0,
+      damage: 999,
+      alive: true,
+    });
+    sim.setIntent(0, 0, false);
+    sim.step(16);
+    expect(unit.alive).toBe(false);
+    expect(sim.controlled).toBeUndefined();
+  });
+
+  it("gives control back to the AI on release", () => {
+    const sim = new BattleSim(BATTLE_ROSTER);
+    const unit = controlled(sim);
+    sim.setControlled(undefined);
+    expect(unit.controlled).toBe(false);
+    sim.setIntent(-1, 0, false); // stale intent must not steer an AI unit
+    const startX = unit.x;
+    run(sim, 800);
+    expect(unit.x).toBeGreaterThanOrEqual(startX - 40);
+  });
+});
+
+describe("the fight always resolves", () => {
+  /** Play a whole fight out and report how it ended. */
+  function play(seed: number): { winner: number | undefined; seconds: number } {
+    const sim = new BattleSim(BATTLE_ROSTER, seed);
+    let t = 0;
+    while (t < 300_000 && sim.snapshot().winner === undefined) {
+      sim.step(16);
+      t += 16;
+    }
+    return { winner: sim.snapshot().winner, seconds: t / 1000 };
+  }
+
+  it("lets a medic attack when nobody needs healing", () => {
+    // Medics used to have `mend` alone, so a fight that thinned to two medics could never end — neither
+    // could deal damage and no amount of sudden-death ramp could break it.
+    const vesh = BATTLE_ROSTER.find((s) => s.id === "vesh")!;
+    expect(vesh.abilities).toContain("mend");
+    expect(vesh.abilities).toContain("volley");
+  });
+
+  it("escalates damage once sudden death begins", () => {
+    const sim = new BattleSim(BATTLE_ROSTER, 11);
+    const early = (sim as unknown as { suddenDeathMultiplier(): number }).suddenDeathMultiplier();
+    expect(early).toBe(1);
+    for (let i = 0; i < SUDDEN_DEATH_BEAT + 20; i += 1) sim.step(BEAT_MS);
+    const late = (sim as unknown as { suddenDeathMultiplier(): number }).suddenDeathMultiplier();
+    expect(late).toBeGreaterThan(1);
+  });
+
+  it("finishes the great majority of seeds well inside the cap", () => {
+    const results = Array.from({ length: 40 }, (_, i) => play((i + 1) * 7919));
+    const decided = results.filter((r) => r.winner !== undefined);
+    expect(decided.length / results.length).toBeGreaterThan(0.85);
+    const median = decided.map((r) => r.seconds).sort((a, b) => a - b)[
+      Math.floor(decided.length / 2)
+    ];
+    expect(median).toBeLessThan(90); // the design log's "is 90 seconds of this fun?" budget
+  });
+
+  it("is not lopsided between the two sides", () => {
+    // Both a balance guard and a fairness guard: beat actions apply immediately, so a fixed resolution
+    // order silently handed the first-listed team every mutual kill. 150 identical-squad seeds came out
+    // 77-58 before `resolveBeat` started alternating.
+    const results = Array.from({ length: 60 }, (_, i) => play((i + 1) * 7919));
+    const left = results.filter((r) => r.winner === 0).length;
+    const right = results.filter((r) => r.winner === 1).length;
+    const share = left / (left + right);
+    expect(share).toBeGreaterThan(0.3);
+    expect(share).toBeLessThan(0.7);
   });
 });

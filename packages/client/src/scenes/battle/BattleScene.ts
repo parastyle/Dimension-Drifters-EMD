@@ -33,8 +33,25 @@ export class BattleScene extends Phaser.Scene {
     this.stage = new BattleStage(this);
     this.fight = new BattleFight(this, this.stage.actorLayer);
 
-    // R restarts the encounter — the fight is short and the whole point is watching it repeatedly.
+    // R restarts the encounter with a NEW seed — the fight is short and meant to be re-run.
     this.input.keyboard?.on("keydown-R", () => this.scene.restart());
+    this.input.keyboard?.on("keydown-F", () => this.toggleWidescreen());
+  }
+
+  /**
+   * 4K widescreen toggle.
+   *
+   * The stage art is authored at 3840x2160 and the scene letterboxes it into whatever viewport exists, so
+   * "4K" here means giving it a viewport big enough to draw 1:1 instead of downscaled. Fullscreen does
+   * that: `main.ts` resizes the drawing buffer to the CSS window times the chosen render DPR, so on a 4K
+   * display a fullscreen window lands on a 3840x2160 buffer and every stage layer renders at native size.
+   *
+   * The HUD prints the live buffer dimensions rather than claiming a mode, because whether you actually get
+   * 4K depends on the display and OS scaling — it should be verifiable, not asserted.
+   */
+  private toggleWidescreen(): void {
+    if (this.scale.isFullscreen) this.scale.stopFullscreen();
+    else this.scale.startFullscreen();
   }
 
   override update(_time: number, deltaMs: number): void {

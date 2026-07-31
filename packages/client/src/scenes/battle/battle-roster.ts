@@ -1,20 +1,51 @@
 /**
  * The slice-1 encounter: four Drifters against four Wardens on the Overgrown Ruin.
  *
- * Every character and weapon here is an EXISTING catalog asset — no placeholder art, no bespoke
- * sprites. That is deliberate: the point of this slice is to find out whether the squad direction is
- * fun using the assets the project already has, not to find out whether new art would be.
+ * Every character and weapon here is an EXISTING catalog asset — no placeholder art, no bespoke sprites.
+ * The point of this slice is to find out whether the squad direction is fun using the assets the project
+ * already has, not whether new art would be.
  *
- * Units are named rather than numbered because the design log's Fire Emblem entry argues the whole
- * value of permadeath is losing *Vesh*, not losing "ranged unit 3". Costs nothing to start now.
+ * Units are named rather than numbered because the design log's Fire Emblem entry argues the whole value of
+ * permadeath is losing *Vesh*, not losing "ranged unit 3". Costs nothing to start now.
  *
- * FORMATION. `rankOffsetPx` is the unit's distance from the midline at rest, so the roster reads as a
- * battle line: vanguard closest, DPS behind, medic furthest back. `laneY` is mirrored between the two
- * teams so opposing roles share a row — without that the two vanguards would never be close enough to
- * actually clash, and the melee half of the fight would silently never happen.
+ * WHAT A UNIT IS MADE OF: a role baseline from `battle-stats.ts`, an optional per-unit bias, an ability
+ * set, and a real weapon. Damage, cadence and reach are NOT written here — they come from the weapon
+ * definition (see `weaponProfile` in the sim), which is what makes the 395-weapon catalog matter.
+ *
+ * FORMATION: `rankOffsetPx` is the unit's distance from the midline at rest, so the roster reads as a
+ * battle line — vanguard closest, DPS behind, medic furthest back. `laneY` is mirrored between the teams so
+ * opposing roles share a row; without that the two vanguards would never come within melee reach and the
+ * melee half of the fight would silently never happen.
  */
 
-import type { UnitSpec } from "./battle-sim.js";
+import {
+  ROLE_ABILITIES,
+  ROLE_STATS,
+  applyStats,
+  type AbilityId,
+  type StatBias,
+  type UnitStats,
+} from "./battle-stats.js";
+
+export type BattleTeam = 0 | 1;
+export type BattleRole = "vanguard" | "medic" | "ranged";
+
+export interface UnitSpec {
+  readonly id: string;
+  readonly name: string;
+  readonly team: BattleTeam;
+  readonly role: BattleRole;
+  /** Whole-art character sprite id, straight from the existing roster. */
+  readonly spriteId: string;
+  /** Real catalog weapon id. Drives damage, cadence and reach — not just what is drawn in hand. */
+  readonly weaponId: string;
+  readonly stats: UnitStats;
+  readonly abilities: readonly AbilityId[];
+  /** Distance from the midline this unit stands at in `hold` stance. Its rank in the formation. */
+  readonly rankOffsetPx: number;
+  /** Home depth row. Only units with `interpose` ever leave it. */
+  readonly laneY: number;
+}
 
 /**
  * Shared depth lanes. Front (higher y) draws over back.
@@ -24,8 +55,8 @@ import type { UnitSpec } from "./battle-sim.js";
  * because a second capture at 1840 put the front rank in the bottom corners, where the foreground vine
  * overlay draws over them.
  *
- * The 180px spacing is deliberately wider than `PARRY_REACH_PX`, so a vanguard parked in one row genuinely
- * cannot cover its neighbour: it has to walk, and walking there means leaving somewhere else open.
+ * The 180px spacing is deliberately wider than any unit's `parryReach`, so a vanguard parked in one row
+ * genuinely cannot cover its neighbour: it has to walk, and walking there means leaving somewhere open.
  */
 const LANE = {
   rangedBack: 1150,
@@ -34,9 +65,9 @@ const LANE = {
   rangedFront: 1690,
 } as const;
 
-/** Rest distance from the midline. The vanguard sits close enough that pressing forward puts the two
- *  tanks inside melee reach of each other — that meeting at the line is the picture the fight is built
- *  around, so it must be reachable by construction rather than by luck. */
+/** Rest distance from the midline. The vanguard sits close enough that pressing forward puts the two tanks
+ *  inside melee reach of each other — that meeting at the line is the picture the fight is built around, so
+ *  it must be reachable by construction rather than by luck. */
 const RANK = {
   vanguard: 380,
   rangedFront: 820,
@@ -44,26 +75,22 @@ const RANK = {
   medic: 1080,
 } as const;
 
-interface RoleTemplate {
-  readonly maxHp: number;
-  readonly moveSpeed: number;
-  readonly beatsPerAction: number;
-  readonly damage: number;
-  readonly healRange?: number;
+interface RosterEntry {
+  readonly id: string;
+  readonly name: string;
+  readonly team: BattleTeam;
+  readonly role: BattleRole;
+  readonly spriteId: string;
+  readonly weaponId: string;
+  readonly rankOffsetPx: number;
+  readonly laneY: number;
+  /** Per-unit deviation from the role baseline. This is where character identity will live. */
+  readonly bias?: StatBias;
 }
 
-/** Deliberately the biggest pool in the fight. A live probe at 140 had both vanguards dead inside 17
- *  seconds — they soak the whole enemy volley AND trade melee with each other, so the encounter
- *  collapsed into a naked shootout before the interposition game had a chance to be interesting. */
-const VANGUARD: RoleTemplate = { maxHp: 210, moveSpeed: 430, beatsPerAction: 2, damage: 11 };
-const RANGED: RoleTemplate = { maxHp: 70, moveSpeed: 340, beatsPerAction: 2, damage: 7 };
-/** `damage` is the heal size for a medic — one number, one meaning: "how much this unit moves a bar". */
-const MEDIC: RoleTemplate = { maxHp: 80, moveSpeed: 300, beatsPerAction: 3, damage: 9, healRange: 700 };
-
-export const BATTLE_ROSTER: readonly UnitSpec[] = [
+const ROSTER: readonly RosterEntry[] = [
   // ----- Drifters (left) -----
   {
-    ...VANGUARD,
     id: "kord",
     name: "Kord",
     team: 0,
@@ -72,9 +99,10 @@ export const BATTLE_ROSTER: readonly UnitSpec[] = [
     weaponId: "tombstone-greatsword",
     rankOffsetPx: RANK.vanguard,
     laneY: LANE.vanguard,
+    // Slower and tougher than Halvard: the same job, done by standing still and taking it.
+    bias: { guard: 0.72, speed: 400 },
   },
   {
-    ...RANGED,
     id: "tuli",
     name: "Tuli",
     team: 0,
@@ -83,9 +111,9 @@ export const BATTLE_ROSTER: readonly UnitSpec[] = [
     weaponId: "x-gun-revolver-cannon",
     rankOffsetPx: RANK.rangedBack,
     laneY: LANE.rangedBack,
+    bias: { might: 1.15, maxHp: 64 },
   },
   {
-    ...RANGED,
     id: "sabra",
     name: "Sabra",
     team: 0,
@@ -94,9 +122,9 @@ export const BATTLE_ROSTER: readonly UnitSpec[] = [
     weaponId: "x-gun-ricochet-pistol",
     rankOffsetPx: RANK.rangedFront,
     laneY: LANE.rangedFront,
+    bias: { speed: 400, focus: 0.85 },
   },
   {
-    ...MEDIC,
     id: "vesh",
     name: "Vesh",
     team: 0,
@@ -105,22 +133,23 @@ export const BATTLE_ROSTER: readonly UnitSpec[] = [
     weaponId: "x-staff-arcane-lance",
     rankOffsetPx: RANK.medic,
     laneY: LANE.medic,
+    bias: { mend: 10 },
   },
 
   // ----- Wardens (right) -----
   {
-    ...VANGUARD,
     id: "halvard",
     name: "Halvard",
     team: 1,
     role: "vanguard",
     spriteId: "proto-royal-executioner",
-    weaponId: "driftblade",
+    weaponId: "x2-choir-iron-greataxe",
     rankOffsetPx: RANK.vanguard,
     laneY: LANE.vanguard,
+    // The mirror of Kord: quicker to the threatened row, softer when it arrives.
+    bias: { guard: 0.87, speed: 430 },
   },
   {
-    ...RANGED,
     id: "crane",
     name: "Crane",
     team: 1,
@@ -129,9 +158,9 @@ export const BATTLE_ROSTER: readonly UnitSpec[] = [
     weaponId: "x-gun-coffin-shotgun",
     rankOffsetPx: RANK.rangedBack,
     laneY: LANE.rangedBack,
+    bias: { maxHp: 74, might: 1.15 },
   },
   {
-    ...RANGED,
     id: "dell",
     name: "Dell",
     team: 1,
@@ -140,9 +169,9 @@ export const BATTLE_ROSTER: readonly UnitSpec[] = [
     weaponId: "x-gun-nailgun",
     rankOffsetPx: RANK.rangedFront,
     laneY: LANE.rangedFront,
+    bias: { speed: 370 },
   },
   {
-    ...MEDIC,
     id: "moss",
     name: "Moss",
     team: 1,
@@ -151,5 +180,22 @@ export const BATTLE_ROSTER: readonly UnitSpec[] = [
     weaponId: "x-staff-storm-rod",
     rankOffsetPx: RANK.medic,
     laneY: LANE.medic,
+    bias: { mend: 10, mendRange: 760 },
   },
 ];
+
+export const BATTLE_ROSTER: readonly UnitSpec[] = ROSTER.map((entry) => ({
+  id: entry.id,
+  name: entry.name,
+  team: entry.team,
+  role: entry.role,
+  spriteId: entry.spriteId,
+  weaponId: entry.weaponId,
+  rankOffsetPx: entry.rankOffsetPx,
+  laneY: entry.laneY,
+  stats: applyStats(ROLE_STATS[entry.role], entry.bias),
+  abilities: ROLE_ABILITIES[entry.role],
+}));
+
+/** The squad the player commands. Takeover is limited to these. */
+export const PLAYER_TEAM: BattleTeam = 0;

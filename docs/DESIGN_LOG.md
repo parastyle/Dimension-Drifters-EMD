@@ -159,6 +159,35 @@ Takeover is a spike tool for the moment that matters, not a mode you live in.
 
 ---
 
+## 2026-07-30 — Roles have subclasses; the subclass owns the weapon category
+
+**Owner, verbatim:** *"each role will have subclasses with bonuses to their thing"*.
+
+The three roles (vanguard / support / ranged) are the *job*. A **subclass** is how that job is done, and
+it is what binds a unit to a weapon category. Vanguard is specified:
+
+| Subclass | Weapons | How it holds the line |
+|---|---|---|
+| **Defender** | shield | Straight block. The only true parry. |
+| **Fighter** | two-handed | Off-tank. Melees, and parries as a *block* — cannot hard-block. |
+| **Rogue** | throwing, 1H, dual-wield | Crosses the midline for a second at a time. |
+
+**Why this matters more than it looks:** it is the first mechanism that makes the 395-weapon catalog
+load-bearing. Rarity and raw stats do not decide what a unit can carry — its subclass does — which is the
+"weapon aptitude" axis the roster entry (2026-07-28) called for, now with a concrete owner.
+
+It also gives the midline a second job. The Rogue is defined *by* being the one who can be across it
+briefly, so the sling stops being a boundary rule and becomes a class fantasy.
+
+**Not built yet.** Recorded so it is designed once. The abilities framework in `battle-stats.ts` exists to
+receive it: a subclass is a named set of ability ids plus stat biases, so adding one should not touch the
+simulation.
+
+**Open:** whether the Rogue's crossing is a timed dash with its own cooldown or simply a weaker sling, and
+whether Defender's hard block costs a resource.
+
+---
+
 ## Open questions — do not guess
 
 - **What the orchestrator does while not taking over.** Watching is only fun with micro-decisions:
