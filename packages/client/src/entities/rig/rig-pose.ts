@@ -2979,7 +2979,8 @@ export const rigPoseMethods = {
         const grips = held ? resolvedGunGripPoints(held.def) : undefined;
         if (held && grips?.secondary) {
           const ownsSwingScale = this.swingHand === "both" || this.swingHand === 0;
-          const base = held.baseScale / (this.baseScale || 1);
+          // Same weapon-size basis as the draw pass, or the support hand misses an up-scaled gun's grip.
+          const base = (held.baseScale / (this.baseScale || 1)) * this.weaponScaleMul;
           const handling = gunHandlingMechanismFor(held.def);
           const handlingHand = gunHandlingHandFor(held.def);
           const cycle = this.gunHandlingCycles[0];
@@ -3230,7 +3231,7 @@ export const rigPoseMethods = {
       if (!w) continue;
       if (i === 1 && dualWhirlwindOwnsOffWeapon) continue;
       const heldScale = i === 0 && this.tome?.openVisible ? this.tome.openBaseScale : w.baseScale;
-      const base = heldScale / (this.baseScale || 1); // fixed on-screen weapon size (§29)
+      const base = (heldScale / (this.baseScale || 1)) * this.weaponScaleMul; // fixed on-screen size (§29)
       if (i === 0 && this.signatureMotion && this.attackGripBlend > 0) {
         // Fulcrum/hero-spin exception: the authored weapon path supplies the grip, then the hand follows.
         const front = this.hands.find((hand) => hand.front);

@@ -9,7 +9,7 @@ import {
 } from "./camera-shake.js";
 
 describe("V5G1 global player-weapon camera budget", () => {
-  it("keeps the raw Phaser shake API behind the three audited camera-layer adapters", () => {
+  it("keeps the raw Phaser shake API behind the audited camera-layer adapters", () => {
     const sourceRoot = path.dirname(fileURLToPath(import.meta.url));
     const directSites: string[] = [];
     const visit = (directory: string): void => {
@@ -27,6 +27,9 @@ describe("V5G1 global player-weapon camera budget", () => {
     expect(directSites.sort()).toEqual([
       "scenes/ArenaScene.ts",
       "scenes/arena/vfx.ts",
+      // The squad-autobattler scene owns a separate camera, so it carries its own budgeted adapter
+      // (`BattleScene.shakeCam`) instead of an exemption. Everything in that scene routes through it.
+      "scenes/battle/BattleScene.ts",
       "vfx/worm-boss-vfx.ts",
     ]);
   });

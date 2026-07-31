@@ -308,6 +308,8 @@ export class SpriteRig {
   private readonly visualEnvelopeScale: number;
   /** Caller-owned gameplay/render multiplier retained separately from the final visual root transform. */
   private callerRigScale = 1;
+  /** §S1 weapon-size multiplier over the fixed on-screen size. 1 = arena behaviour. */
+  private weaponScaleMul = 1;
   /** Rig-level UNIFORM scale multiplier (tough/boss size-up). Applied to BOTH axes every frame so
    *  the facing flip never stretches the sprite — art keeps its painted aspect ratio (§28.4). This is the
    *  composed final scale so weapon/VFX counter-scaling and animation math all see one transform. */
@@ -1351,6 +1353,8 @@ export class SpriteRig {
    *  `animate()` re-applies it to both axes (the facing flip only touches scaleX). */
     declare setRigScale: OmitThisParameter<typeof rigCoreMethods.setRigScale>;
 
+    declare setWeaponScaleMul: OmitThisParameter<typeof rigCoreMethods.setWeaponScaleMul>;
+
   /** Add a pulsing glow behind the body — the §15 "tough = glowier" tell. Lives in the container
    *  so it scales + moves with the rig. */
     declare addGlow: OmitThisParameter<typeof rigCoreMethods.addGlow>;
@@ -1705,6 +1709,7 @@ installPrototypeMembers(SpriteRig, [
   [rigCoreMethods, "deathPop"],
   [rigCoreMethods, "stepDeathPop"],
   [rigCoreMethods, "setRigScale"],
+  [rigCoreMethods, "setWeaponScaleMul"],
   [rigCoreMethods, "addGlow"],
   [rigCombatMethods, "resetSwingCombo"],
   [rigCombatMethods, "beginComboStageTransition"],

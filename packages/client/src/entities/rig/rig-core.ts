@@ -2233,6 +2233,8 @@ export interface SpriteRigContext {
   scale: number;
   readonly visualEnvelopeScale: number;
   callerRigScale: number;
+  /** §S1 multiplier on the FIXED on-screen weapon size. 1 keeps the arena's behaviour exactly. */
+  weaponScaleMul: number;
   baseScale: number;
   readonly body: Phaser.GameObjects.Image;
   readonly slideAfterimageA: Phaser.GameObjects.Image;
@@ -2700,6 +2702,7 @@ export interface SpriteRigContext {
   deathPop(vx: number, vy: number, treatment?: PaperDeathTreatment): void;
   stepDeathPop(deltaMs: number): boolean;
   setRigScale(mult: number): void;
+  setWeaponScaleMul(mult: number): void;
   addGlow(color: number): void;
   resetSwingCombo(): void;
   beginComboStageTransition(acceptedAtMs: number, swing: RigSwingDescriptor): void;
@@ -3100,6 +3103,20 @@ export const rigCoreMethods = {
 
   /** Scale the whole rig UNIFORMLY (bosses/toughs are BIGGER, not more detailed — §28.6). Stored so
    *  `animate()` re-applies it to both axes (the facing flip only touches scaleX). */
+  /**
+   * Scale held weapons relative to their normal FIXED on-screen size.
+   *
+   * Weapon scale is divided by the rig's `baseScale` every frame so the same weapon reads identically in
+   * every hand (§29 / task #20 "weapons: fixed size regardless of character"). That is right for the
+   * arena, but it means a caller that scales a rig UP gets characters that grow while their weapons stay
+   * put. Pass the rig's own `baseScale` here to make weapons track the character instead.
+   *
+   * Defaults to 1 everywhere, so no existing caller changes.
+   */
+  setWeaponScaleMul(this: SpriteRigContext, mult: number): void {
+    this.weaponScaleMul = Number.isFinite(mult) && mult > 0 ? mult : 1;
+  },
+
   setRigScale(this: SpriteRigContext, mult: number): void {
     if (mult !== this.callerRigScale) {
       this.resetFlourishState(false);

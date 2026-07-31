@@ -1,4 +1,8 @@
 import Phaser from "phaser";
+import {
+  budgetedCameraShakeIntensity,
+  type CameraShakeSource,
+} from "../../camera-shake.js";
 import { BattleStage } from "./BattleStage.js";
 import { BattleFight } from "./BattleFight.js";
 
@@ -36,6 +40,21 @@ export class BattleScene extends Phaser.Scene {
     // R restarts the encounter with a NEW seed — the fight is short and meant to be re-run.
     this.input.keyboard?.on("keydown-R", () => this.scene.restart());
     this.input.keyboard?.on("keydown-F", () => this.toggleWidescreen());
+  }
+
+  /**
+   * The scene's camera-shake adapter.
+   *
+   * `camera-shake.test.ts` pins raw `cameras.main.shake` to a short audited list so every shake passes
+   * through the player-weapon budget and nothing can quietly spam the camera. A new scene with its own
+   * camera needs its own adapter rather than an exemption, so this is it — and the scene is registered in
+   * that list alongside the arena's.
+   *
+   * Every shake here is `world`: they are discrete events (a death, a parry you landed), not the continuous
+   * self-inflicted recoil the player-weapon budget exists to damp.
+   */
+  shakeCam(durationMs: number, intensity: number, source: CameraShakeSource = "world"): void {
+    this.cameras.main.shake(durationMs, budgetedCameraShakeIntensity(intensity, source), true);
   }
 
   /**

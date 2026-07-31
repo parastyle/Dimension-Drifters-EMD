@@ -19,7 +19,7 @@
  * subclasses coming in the design log all hold the line differently, and they must be data, not branches.
  */
 
-import { WEAPONS, makeRng, type Rng } from "@dd/shared";
+import { WEAPONS, makeRng, parrySlideDistance, type Rng } from "@dd/shared";
 import type { AbilityId } from "./battle-stats.js";
 import type { BattleRole, BattleTeam, UnitSpec } from "./battle-roster.js";
 
@@ -53,6 +53,9 @@ export const SLING_MAX_DEPTH_PX = 190;
 export const PROJECTILE_SPEED = 900;
 /** A bolt connects when it gets this close to a hostile body. */
 export const PROJECTILE_HIT_RADIUS = 62;
+
+/** How hard B26's parry slide shoves the guard off the line it just held, per px of authored slide. */
+export const PARRY_SLIDE_SHOVE = 2.6;
 
 /**
  * Weapon reach is authored against the ~1200-wide arena; this stage is 3840 across and its characters are
@@ -416,6 +419,10 @@ export class BattleSim {
       if (Math.hypot(unit.x - shot.x, unit.y - shot.y) > unit.spec.stats.parryReach) continue;
       shot.alive = false;
       unit.parryReadyAtMs = this.elapsedMs + unit.spec.stats.parryCooldownMs;
+      // B26's knockback slide, as a real cost: catching a bolt shoves you off the line you were holding,
+      // so back-to-back parries on the same lane are not free. The shove is damped by the midline spring's
+      // ordinary velocity bleed, so it eases out rather than snapping.
+      unit.vx += (unit.spec.team === 0 ? -1 : 1) * parrySlideDistance(shot.damage) * PARRY_SLIDE_SHOVE;
       this.events.push({
         type: "parry",
         unitId: unit.spec.id,

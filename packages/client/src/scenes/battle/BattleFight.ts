@@ -8,9 +8,20 @@ import {
   type PresentationFrame,
   type PresentedActorState,
 } from "../../entities/rig/rig-presentation.js";
-import { WEAPONS, weaponDisplaySpriteId, classifyParryIncidence, randomSeed } from "@dd/shared";
+import {
+  WEAPONS,
+  weaponDisplaySpriteId,
+  classifyParryIncidence,
+  randomSeed,
+  PARRY_GUARD_RESET_SECONDS,
+  type ParryGuardPose,
+} from "@dd/shared";
 import { AudioBus } from "../../audio/AudioBus.js";
-import { ensureWholeArtCharacterTextures } from "../../sprites/whole-art-character.js";
+import {
+  ensureWholeArtCharacterTextures,
+  wholeArtCharacterVisualScale,
+} from "../../sprites/whole-art-character.js";
+import { makeBullet, makeGunIdentityProjectile } from "../arena/projectile-factory.js";
 import { BATTLE_ROSTER, PLAYER_TEAM } from "./battle-roster.js";
 import { BattleSim, MIDLINE_X, type BattleEvent, type Unit } from "./battle-sim.js";
 
@@ -27,12 +38,22 @@ import { BattleSim, MIDLINE_X, type BattleEvent, type Unit } from "./battle-sim.
 /**
  * Characters are authored against a ~1200-wide arena; this stage is 3840 across, so they need roughly 3x to
  * read at a comparable on-screen size once the stage letterboxes down.
- *
- * Weapon size needs no correction here. `setRigScale` scales the rig's root container and nothing anywhere
- * compensates for it, so the weapon-to-character ratio is scale-invariant — identical to the arena at any
- * value of this constant.
  */
-const RIG_SCALE = 3.2;
+const RIG_SCALE = 2.88;
+
+/**
+ * Weapon size, relative to the rig.
+ *
+ * The rig divides a weapon's scale by its own `baseScale` every frame so a weapon is a FIXED on-screen
+ * size whoever holds it (§29 / task #20). That is right for the arena and wrong here: scaling characters up
+ * for a 3840-wide stage left their weapons at 1x, which is why they read as toys. `setWeaponScaleMul` takes
+ * the rig's own baseScale back out, so weapons track the character again.
+ *
+ * 1.0 means "exactly the authored ratio": a weapon renders at `displayLength` against a `TARGET_BODY_H`
+ * body, which is the relationship the catalog was authored for and the arena shows. A first pass at 1.25
+ * overshot — a pistol came out longer than the person holding it.
+ */
+const WEAPON_BOOST = 1;
 
 /**
  * How far above a unit's feet its bar and name sit, in canvas px. Must stay BELOW the roster's 180px lane
@@ -52,6 +73,12 @@ const ROLE_LABEL: Record<string, string> = {
 const HIT_STOP_DEATH_MS = 150;
 const HIT_STOP_PLAYER_PARRY_MS = 110;
 
+/** B26 cycles three authored guard poses so repeated parries never replay the same animation. */
+const PARRY_GUARD_POSES = 3;
+
+/** Bolt art is authored for the arena's 1280-wide view; this canvas is 3x that. */
+const BOLT_ART_SCALE = 2.6;
+
 interface RigEntry {
   readonly rig: SpriteRig;
   readonly unit: Unit;
@@ -62,6 +89,14 @@ interface RigEntry {
   deadPopped: boolean;
   /** Gate for the hit/heal tint — see `flashOnce`. */
   flashReadyAtMs: number;
+  /** Re-arm gate for the held-guard brace pose, so it re-triggers rather than stuttering every frame. */
+  braceReadyAtMs: number;
+}
+
+/** One live projectile's art. The factory builds a real container; we just fly and retire it. */
+interface ProjectileView {
+  readonly container: Phaser.GameObjects.Container;
+  readonly team: number;
 }
 
 interface FloatingNumber {
@@ -76,12 +111,14 @@ export class BattleFight {
 
   private readonly scene: Phaser.Scene;
   private readonly rigLayer: Phaser.GameObjects.Container;
+  private readonly boltLayer: Phaser.GameObjects.Container;
   private readonly fxLayer: Phaser.GameObjects.Graphics;
   private readonly hudLayer: Phaser.GameObjects.Container;
   private readonly entries: RigEntry[] = [];
   private readonly labels = new Map<string, Phaser.GameObjects.Text>();
   private readonly pendingArt = new Set<string>();
   private readonly failedArt = new Set<string>();
+  private readonly bolts = new Map<number, ProjectileView>();
   private readonly floaters: FloatingNumber[] = [];
   private readonly floaterPool: Phaser.GameObjects.Text[] = [];
   private readonly bannerText: Phaser.GameObjects.Text;
@@ -98,6 +135,10 @@ export class BattleFight {
   private frame: PresentationFrame;
   private clockMs = 0;
   private hitStopMs = 0;
+  /** B26 guard-pose cursor per unit, plus when it lapses back to the first pose. */
+  private readonly guardPose = new Map<string, { pose: ParryGuardPose; expiresAtMs: number }>();
+  /** Beat pulse for the banner — a visible metronome so the beat is felt, not inferred. */
+  private beatPulse = 0;
   /** Fades in only while somebody is being thrown back, so the boundary stays invisible until it bites. */
   private midlineFlash = 0;
 
@@ -131,14 +172,18 @@ export class BattleFight {
     this.sim = new BattleSim(BATTLE_ROSTER, randomSeed());
 
     this.rigLayer = scene.add.container(0, 0);
+    this.boltLayer = scene.add.container(0, 0);
     this.fxLayer = scene.add.graphics();
     this.hudLayer = scene.add.container(0, 0);
-    actorLayer.add([this.rigLayer, this.fxLayer, this.hudLayer]);
+    // Bolts fly ABOVE the fighters so a shot crossing a body is never lost behind it.
+    actorLayer.add([this.rigLayer, this.boltLayer, this.fxLayer, this.hudLayer]);
     this.frame = this.frameClock.advance(scene.time.now, 16, true);
 
     for (const unit of this.sim.units) {
       const rig = new SpriteRig(scene, unit.x, unit.y, false, unit.spec.id, unit.spec.spriteId);
       rig.setRigScale(RIG_SCALE);
+      // Undo the rig's fixed-on-screen-weapon division (see WEAPON_BOOST) so weapons scale with the body.
+      rig.setWeaponScaleMul(RIG_SCALE * wholeArtCharacterVisualScale(unit.spec.spriteId) * WEAPON_BOOST);
       this.rigLayer.add(rig.root);
       const presented = createPresentedActorState(this.frame);
       presented.actorId = unit.spec.id;
@@ -150,6 +195,7 @@ export class BattleFight {
         equipped: false,
         deadPopped: false,
         flashReadyAtMs: 0,
+        braceReadyAtMs: 0,
       });
 
       const label = scene.add
@@ -250,6 +296,8 @@ export class BattleFight {
     for (const event of this.sim.takeEvents()) this.playEvent(event);
     for (const entry of this.entries) this.syncRig(entry, raw);
     this.stepFloaters(raw);
+    this.syncBolts();
+    this.beatPulse = Math.max(0, this.beatPulse - raw / 260);
 
     this.rigLayer.sort("depth");
     this.drawEffects();
@@ -295,6 +343,13 @@ export class BattleFight {
 
     // Everyone faces the midline: team 0 looks right, team 1 looks left. `aimDxPx` is what commits the
     // sprite flip, so it must be a real horizontal offset, not a normalized axis.
+    // Holding guard shows B26's brace stance even on a beat where nothing arrives — the player needs to
+    // see that the input took, not just discover it when a bolt happens to land.
+    if (unit.controlled && this.keys?.guard.isDown && this.clockMs >= entry.braceReadyAtMs) {
+      entry.braceReadyAtMs = this.clockMs + 260;
+      rig.triggerBrace(this.clockMs);
+    }
+
     const facing = unit.spec.team === 0 ? 1 : -1;
     const pose = entry.presented;
     pose.frame = this.frame;
@@ -366,19 +421,38 @@ export class BattleFight {
         const aim =
           target && source ? Math.atan2(target.y - source.y, target.x - source.x) : 0;
         entry?.rig.triggerSwing(this.clockMs, aim);
+        if (source) {
+          const def = WEAPONS[source.spec.weaponId];
+          const muzzle = def?.gun?.muzzleColor ?? TEAM_COLOR[source.spec.team] ?? 0xffffff;
+          this.burst(
+            source.x + Math.cos(aim) * 70,
+            source.y + Math.sin(aim) * 70,
+            muzzle,
+            def?.gun ? 0.7 : 1.1,
+          );
+        }
         break;
       }
       case "parry": {
-        // B26's directional parry, reused exactly: the incidence classifier picks which of the three
-        // authored guard reactions plays, so a bolt from the left braces differently from one from above.
+        // B26's directional parry, in full: the incidence classifier picks the reaction (a bolt from the
+        // left braces differently from one from above) and the guard pose CYCLES, so holding a lane never
+        // replays one animation. The sim also shoves the guard off the line it just held.
         const reaction = classifyParryIncidence(event.fromX, event.fromY);
-        entry?.rig.triggerParrySuccess(this.clockMs, 1, reaction);
+        if (entry) {
+          entry.rig.triggerParrySuccess(
+            this.clockMs,
+            this.nextGuardPose(entry.unit.spec.id),
+            reaction,
+          );
+          this.burst(entry.unit.x, entry.unit.y - 120, 0xdff0ff, 1.4);
+        }
         this.midlineFlash = Math.max(this.midlineFlash, 0.35);
         this.audio.play("parry", { x: entry?.unit.x, amt: 0.7 });
-        // Only the PLAYER's own parry earns hit-stop. The AI parries several times a second, and freezing
-        // for each would turn the whole fight into a stutter.
+        // Only the PLAYER's own parry earns hit-stop and shake. The AI parries several times a second, and
+        // freezing for each would turn the whole fight into a stutter.
         if (event.byPlayer) {
           this.hitStopMs = HIT_STOP_PLAYER_PARRY_MS;
+          this.shake(0.006, 140);
           if (entry) this.spawnNumber(entry.unit.x, entry.unit.y - 300, "PARRY", "#8fd4ff");
         }
         break;
@@ -388,6 +462,8 @@ export class BattleFight {
           this.flashOnce(entry, 0xff5555);
           this.spawnNumber(entry.unit.x, entry.unit.y - 260, `${event.amount}`, "#ff8f8f");
           this.audio.play("hit", { x: entry.unit.x, amt: 0.4 });
+          this.burst(entry.unit.x, entry.unit.y - 90, 0xff6a6a, 0.9);
+          if (entry.unit.controlled) this.shake(0.004, 110); // only what YOU feel shakes the camera
         }
         break;
       case "heal": {
@@ -401,6 +477,11 @@ export class BattleFight {
       case "death":
         this.hitStopMs = HIT_STOP_DEATH_MS;
         this.audio.play("death", { x: entry?.unit.x, amt: 0.8 });
+        this.shake(0.012, 260);
+        if (entry) this.burst(entry.unit.x, entry.unit.y - 100, 0xffffff, 2.2);
+        break;
+      case "beat":
+        this.beatPulse = 1;
         break;
       default:
         break;
@@ -454,6 +535,93 @@ export class BattleFight {
   // Effects + HUD
   // -------------------------------------------------------------------------------------------
 
+  /**
+   * Reconcile the sim's bolts against real projectile art.
+   *
+   * Uses the arena's own `projectile-factory`, which was extracted precisely so a scene could stay a thin
+   * reconciler: each weapon's authored bullet kind, colour and trail come along for free, so a nailgun's
+   * spike does not look like a revolver's slug. Placeholder circles are gone.
+   */
+  private syncBolts(): void {
+    const live = new Set<number>();
+    for (const shot of this.sim.projectiles) {
+      live.add(shot.id);
+      let view = this.bolts.get(shot.id);
+      if (!view) {
+        view = { container: this.makeBoltArt(shot), team: shot.team };
+        this.boltLayer.add(view.container);
+        this.bolts.set(shot.id, view);
+      }
+      view.container.setPosition(shot.x, shot.y);
+    }
+    for (const [id, view] of this.bolts) {
+      if (live.has(id)) continue;
+      // A bolt leaves the sim when it lands, is parried, or exits — burst where it died either way.
+      this.burst(view.container.x, view.container.y, TEAM_COLOR[view.team] ?? 0xffffff);
+      view.container.destroy();
+      this.bolts.delete(id);
+    }
+  }
+
+  private makeBoltArt(shot: { x: number; y: number; vx: number; vy: number; ownerId: string }) {
+    const owner = this.sim.unit(shot.ownerId);
+    const weaponId = owner?.spec.weaponId ?? "";
+    const def = WEAPONS[weaponId];
+    const kind = def?.gun?.bulletKind ?? "spark";
+    const pr = { x: 0, y: 0, vx: shot.vx, vy: shot.vy, kind };
+    // Casters have no `gun` block, so they fall through to the generic tracer rather than rendering nothing.
+    const art = def?.gun
+      ? makeGunIdentityProjectile(this.scene, pr, weaponId, BOLT_ART_SCALE)
+      : null;
+    const container = art ?? makeBullet(this.scene, pr, BOLT_ART_SCALE);
+    container.setScale(BOLT_ART_SCALE);
+    container.setDepth(0);
+    return container;
+  }
+
+  /** A short-lived spark ring. Used for muzzles, impacts and parries — one primitive, three meanings. */
+  private burst(x: number, y: number, color: number, size = 1): void {
+    const ring = this.scene.add
+      .circle(x, y, 18 * size, color, 0.5)
+      .setBlendMode(Phaser.BlendModes.ADD);
+    this.boltLayer.add(ring);
+    this.scene.tweens.add({
+      targets: ring,
+      scale: 3.2 * size,
+      alpha: 0,
+      duration: 220,
+      ease: "Quad.easeOut",
+      onComplete: () => ring.destroy(),
+    });
+  }
+
+  /** Screen shake, scaled so a death outweighs a parry outweighs a hit. Routed through the scene's
+   *  audited adapter (see `BattleScene.shakeCam`) rather than touching the camera directly. */
+  private shake(intensity: number, durationMs: number): void {
+    const host = this.scene as Phaser.Scene & {
+      shakeCam?: (d: number, i: number) => void;
+    };
+    host.shakeCam?.(durationMs, intensity);
+  }
+
+  /**
+   * B26's three authored guard poses, cycled so consecutive parries never replay the same animation, and
+   * lapsing back to the first pose after `PARRY_GUARD_RESET_SECONDS` of not parrying.
+   */
+  private nextGuardPose(unitId: string): ParryGuardPose {
+    const now = this.clockMs;
+    const state = this.guardPose.get(unitId);
+    const pose =
+      !state || now > state.expiresAtMs
+        ? 0
+        : (((state.pose + 1) % PARRY_GUARD_POSES) as ParryGuardPose);
+    this.guardPose.set(unitId, {
+      pose,
+      expiresAtMs: now + PARRY_GUARD_RESET_SECONDS * 1000,
+    });
+    return pose;
+  }
+
   private drawEffects(): void {
     const g = this.fxLayer;
     g.clear();
@@ -476,10 +644,6 @@ export class BattleFight {
         g.lineStyle(3, TEAM_COLOR[shot.team] ?? 0xffffff, target.controlled ? 0.4 : 0.16);
         g.lineBetween(shot.x, shot.y, target.x, target.y);
       }
-      g.fillStyle(TEAM_COLOR[shot.team] ?? 0xffffff, 0.9);
-      g.fillCircle(shot.x, shot.y, 13);
-      g.fillStyle(0xffffff, 0.5);
-      g.fillCircle(shot.x, shot.y, 6);
     }
 
     const controlled = this.sim.controlled;
@@ -529,10 +693,12 @@ export class BattleFight {
   private drawBanner(): void {
     const { winner, beatIndex } = this.sim.snapshot();
     if (winner === undefined) {
-      this.bannerText.setAlpha(0.4);
+      this.bannerText.setAlpha(0.32 + this.beatPulse * 0.5);
+      this.bannerText.setScale(1 + this.beatPulse * 0.14);
       this.bannerText.setText(`BEAT ${beatIndex}`);
       return;
     }
+    this.bannerText.setScale(1);
     this.bannerText.setAlpha(1);
     this.bannerText.setText(winner === PLAYER_TEAM ? "DRIFTERS HOLD THE RUIN" : "WARDENS HOLD THE RUIN");
   }
@@ -555,6 +721,9 @@ export class BattleFight {
   }
 
   destroy(): void {
+    for (const view of this.bolts.values()) view.container.destroy();
+    this.bolts.clear();
+    this.boltLayer.destroy(true);
     for (const entry of this.entries) entry.rig.destroy();
     this.rigLayer.destroy(true);
     this.fxLayer.destroy();
