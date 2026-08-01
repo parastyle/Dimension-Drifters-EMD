@@ -1,0 +1,39 @@
+# Line endings are part of this repo's CORRECTNESS, not just tidiness.
+#
+# Several suites are SOURCE-CONTRACT tests: they read a source file as a string and assert it contains an
+# exact multi-line snippet, or hash its bytes. Those comparisons are line-ending sensitive. Without this
+# file, a checkout inherits the machine's `core.autocrlf` — Git for Windows defaults it to `true` — so a
+# fresh clone lands CRLF and three suites fail with mismatched hashes and "expected ... to contain ...".
+#
+# Proven, not assumed: a clean clone of this branch on a machine with the default setting failed
+#   - flourish raw Arena cancellation panel (multi-line snippet match)
+#   - B56 belt-mode permanent regressions (indexOf returned -1)
+#   - B24 shared radial fallback removal (content hash mismatch)
+# while the same commit passed 3011/3011 in an LF working copy.
+#
+# `text=auto eol=lf` normalizes on checkout everywhere, so every machine — and CI — sees the same bytes.
+* text=auto eol=lf
+
+# Binary assets must never be touched. `text=auto` detects most of these, but the game's art and audio are
+# the last thing that should depend on heuristics.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.mp3 binary
+*.ogg binary
+*.wav binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.zip binary
+*.sqlite binary
+*.sqlite3 binary
+*.pdf binary
+
+# Windows-only scripts genuinely need CRLF to run.
+*.bat text eol=crlf
+*.cmd text eol=crlf
