@@ -326,7 +326,11 @@ describe("Lava Foundry — graph placement, walkability, and determinism", () =>
         );
       }
     }
-  }, 30_000);
+    // 100 full arena generations + validations. It takes ~22s on the machine this was written on, which
+    // left almost nothing under a 30s cap: a clean clone on a busier or slower box timed out here while
+    // every assertion still passed. Matched to the 2,000-seed test below rather than left on a limit that
+    // depends on the hardware.
+  }, 120_000);
 
   it("constructs exact collision-surface clearance and traversal invariants over 2,000 seeds", async () => {
     const failures: string[] = [];
